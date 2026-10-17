@@ -14,6 +14,7 @@ import 'data/backup.dart';
 import 'data/results_client.dart';
 import 'data/wallet_store.dart';
 import 'domain/wallet.dart';
+import 'domain/receipt_ocr.dart';
 
 final storeProvider = Provider<WalletStore>(
   (ref) => throw UnimplementedError(),
@@ -749,12 +750,25 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
         final text = await recognizer.processImage(
           InputImage.fromFilePath(picked.path),
         );
+        final extracted = parseScannedReceipt(text);
         if (mounted) {
           setState(() {
             image = File(picked.path);
             ocrText = text.text;
             source = 'physical';
+            if (extracted.lines.isNotEmpty) {
+              lines.text = extracted.lines.join('\\n');
+            }
+            if (extracted.code != null && code.text.trim().isEmpty) {
+              code.text = extracted.code!;
+            }
+            if (extracted.amount != null && cost.text.trim().isEmpty) {
+              cost.text = extracted.amount!;
+            }
           });
+          message(context, extracted.lines.isEmpty
+              ? 'OCR concluído, mas nenhuma chave completa foi validada. Corrija a imagem ou introduza as chaves manualmente.'
+              : '${extracted.lines.length} chave(s) reconhecida(s). Confirme todos os dados e as apostas em falta.');
         }
       } finally {
         await recognizer.close();
@@ -897,7 +911,7 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
               ),
             if (ocrText.isNotEmpty)
               ExpansionTile(
-                title: const Text('Texto OCR local — confirmar manualmente'),
+                title: const Text('Texto OCR local — consultar transcrição'),
                 children: [SelectableText(ocrText)],
               ),
             const SizedBox(height: 16),
@@ -931,7 +945,7 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
               maxLines: 3,
             ),
             const Text(
-              'O OCR transcreve o texto para consulta; o preenchimento dos campos é manual nesta versão. Nunca são enviadas imagens ao servidor.',
+              'O OCR tenta importar apenas chaves completas e válidas. Confirme sempre todas as chaves, estrelas e valores antes de guardar. Imagens não são enviadas ao servidor.',
             ),
             const SizedBox(height: 20),
             FilledButton.icon(
