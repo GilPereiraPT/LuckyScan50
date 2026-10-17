@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.env
+.dart_tool/
+build/
+*.iml
+.idea/
+.vscode/
+.DS_Store
+*.jks
+*.keystore
+app/android/key.properties
+docs/ticket-formats/samples/
