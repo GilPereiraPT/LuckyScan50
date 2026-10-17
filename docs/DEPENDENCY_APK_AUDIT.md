@@ -1,5 +1,8 @@
 # LuckyScan50 — auditoria de dependências e APK de diagnóstico
 
+> Registo histórico do pedido anterior. A continuação atual suspende nova
+> distribuição e está documentada em [OCR_CELL_RECOVERY.md](OCR_CELL_RECOVERY.md).
+
 Data: 17/10/2026. Base pedida: `df260a3`, branch
 `codex/luckyscan50-android-wallet`. Comparação anterior ao multi-pass: `4df2127`.
 A autorização atual permite distribuir um APK **de diagnóstico**; não constitui

@@ -92,3 +92,46 @@ A consulta de runs pela API continua bloqueada com `Forbidden`; não se afirma
 que já existe um artefacto remoto. API cPanel, dados de produção, main e Play
 não foram alterados. Relatório e inventários completos em
 [DEPENDENCY_APK_AUDIT.md](DEPENDENCY_APK_AUDIT.md).
+
+
+## Recuperação por células com diagnóstico real — continuação
+
+Base preservada `5aa4679`, branch `codex/luckyscan50-android-wallet`.
+Analisados o JSON real `LuckyScan50-OCR-1792267583612.json` e a fotografia visível
+na conversa. O fixture conserva geometria/recortes, sem identificadores
+administrativos ou fotografias. Foi identificado que quatro palavras verticais
+correspondem a pares de caixas de algarismos sobrepostas em duas colunas.
+
+Implementadas células relativas às âncoras N, sondagem e verificação do marcador
+E entre linhas, colunas separadas para estrelas, consenso por aposta/tipo/posição,
+proveniência com caixas/estados e correções numéricas com confirmação. Campos
+iniciais que não possam ser associados são conservados pelo fallback. A seleção
+de orientação rejeita âncoras invertidas. A preparação nativa reutiliza
+BitmapRegionDecoder; recortes são eliminados após OCR e o JSON regista fases e
+limpeza, sem fotografias. Edições manuais, M1lhão, carteira e prémios preservados.
+
+No replay dos resultados **já existentes** no JSON, o 20 do recorte `row-5@1x`
+passa a N[3] da quinta aposta: 14 → 15 posições numéricas confirmadas. Permanecem
+0 apostas completas e 0 estrelas nesse replay; não é uma recuperação visual nova.
+Precisão e latência reais no Android não foram medidas. ADB sem dispositivos,
+sem emulador/KVM e sem binário da fotografia disponível no checkout para o harness.
+A imagem recebida é visível para inspeção humana, não uma prova de execução ML Kit.
+
+Validação final: **66 testes Flutter**, **1 SQLite FFI**, **13 Python** aprovados;
+análise estática e formatação sem problemas. Compilação release ARM64 do código
+`a459865` aprovada; assinatura/CRC/ABI/ELF e ZIP de 16 KB verificados. As falhas
+intermédias de estilo e configuração XDG foram corrigidas; a compilação final
+inclui Kotlin com o ambiente ativado corretamente.
+
+Comparação release ARM64 equivalente: **31 729 912 → 31 860 984 bytes**,
+**+131 072 bytes (+0,413087%)**. Cresce o código; não se acrescentaram bibliotecas
+ou modelos. Grafo Maven release, pubspec/lock/Gradle e três bibliotecas externas
+permanecem iguais; libapp.so inclui a lógica nova. A limpeza anterior já isolou
+as dependências de teste. Modelos Latin offline mantidos, Tesseract só desktop.
+
+Não foi publicado novo APK/AAB/Release e a etapa de upload Android foi removida
+do workflow, incluindo execuções manuais. O APK anterior em artifacts não foi
+alterado. Commits pequenos `1fa87c9`, `8a6a946`, `8c4f85d`, `3d15819`, `b01c12a`,
+`47cbc3b`, `444336e`, `a459865`; relatório em [OCR_CELL_RECOVERY.md](OCR_CELL_RECOVERY.md).
+Sem merge para main, mudanças em cPanel, migração de dados ou publicação Play.
+Aceitação com as duas orientações num Android continua obrigatória e pendente.

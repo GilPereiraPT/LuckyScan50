@@ -1,5 +1,10 @@
 # Recuperação OCR por múltiplas passagens — estado de engenharia
 
+> Estado atual: recuperação por células e consolidação geométrica em
+> [OCR_CELL_RECOVERY.md](OCR_CELL_RECOVERY.md). Não publicar outro APK
+> automaticamente; a validação real Android continua pendente.
+
+
 17/10/2026. **Não validado nas fotografias reais.** O pedido seguinte autorizou um APK de diagnóstico com exportação, sem certificar o OCR. Ver [DEPENDENCY_APK_AUDIT.md](DEPENDENCY_APK_AUDIT.md); os números debug abaixo são históricos.
 
 ## Diagnóstico de entrada e evidência

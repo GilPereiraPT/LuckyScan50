@@ -1,0 +1,219 @@
+{
+  "apk": "after.apk",
+  "bytes": 31860984,
+  "sha256": "69786dc008391a4c53d5de173d23989cfd7a2e5ec7e378c3bd046e62a1db63e8",
+  "versionName": "0.2.2",
+  "abi": "arm64-v8a",
+  "signatureVerified": true,
+  "certificateSha256": "0695a638827b0ffa1725698204080edd8b76d65971cbe30ff2d5219d2d0ee860",
+  "nativeLibraries": 4,
+  "packagedFiles": [
+    {
+      "path": "assets/dexopt/baseline.prof",
+      "bytes": 926,
+      "compressedBytes": 926,
+      "sha256": "319d81628e97bf6c34a5f7fd028cf241a69fedb953e924663d1a8e48f24295df"
+    },
+    {
+      "path": "assets/dexopt/baseline.profm",
+      "bytes": 178,
+      "compressedBytes": 178,
+      "sha256": "7f0b2ec7ef127d5087f189d19240a5201bf3a6b11d25101c27055340a1a64a49"
+    },
+    {
+      "path": "lib/arm64-v8a/libapp.so",
+      "bytes": 6685616,
+      "compressedBytes": 6685616,
+      "sha256": "90291f778f03a243fbfb67638dd0b5d55c1b976706eac0c720b25772c5a57b9b"
+    },
+    {
+      "path": "lib/arm64-v8a/libdartjni.so",
+      "bytes": 131240,
+      "compressedBytes": 131240,
+      "sha256": "1ae40bd68e03a491c2c34cd915d184862455cbbf76bbc1a24eac3a8960298e9a"
+    },
+    {
+      "path": "lib/arm64-v8a/libflutter.so",
+      "bytes": 11037032,
+      "compressedBytes": 11037032,
+      "sha256": "ee37eb8be8e01a0d840558f75e0a09c4ca135d721c2ca6145c050e4f89785129"
+    },
+    {
+      "path": "lib/arm64-v8a/libmlkit_google_ocr_pipeline.so",
+      "bytes": 11064544,
+      "compressedBytes": 11064544,
+      "sha256": "fa41d509a661e8aa8b3e3ac1a28541f8823f308414fcad733fe26d61feea2646"
+    },
+    {
+      "path": "assets/flutter_assets/AssetManifest.bin",
+      "bytes": 2,
+      "compressedBytes": 4,
+      "sha256": "f566cc6fccc657365c0197accf3a7d6f80f85209ff666ff774f4dcbc524aa842"
+    },
+    {
+      "path": "assets/flutter_assets/AssetManifest.json",
+      "bytes": 2,
+      "compressedBytes": 4,
+      "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    {
+      "path": "assets/flutter_assets/FontManifest.json",
+      "bytes": 82,
+      "compressedBytes": 69,
+      "sha256": "28b1eb2b3d2e1ad60b8c8b0f9100b1ccbf492f7fa97f5bebb51ea97e73926e7d"
+    },
+    {
+      "path": "assets/flutter_assets/NOTICES.Z",
+      "bytes": 92515,
+      "compressedBytes": 87672,
+      "sha256": "03fe431086c5d87f757eba5987b387483bbda862e4ed5fa5307cbc1e1f1a90c3"
+    },
+    {
+      "path": "assets/flutter_assets/NativeAssetsManifest.json",
+      "bytes": 45,
+      "compressedBytes": 47,
+      "sha256": "9548a31e4a048135c1d94f919328bfb62ae2c7bb3cab96557c7941daa97776cb"
+    },
+    {
+      "path": "assets/flutter_assets/fonts/MaterialIcons-Regular.otf",
+      "bytes": 4300,
+      "compressedBytes": 2797,
+      "sha256": "52139a75c2320aa76bbe8410d16b195f2c3e734782bd659a1aedd6e672f64417"
+    },
+    {
+      "path": "assets/flutter_assets/shaders/ink_sparkle.frag",
+      "bytes": 21320,
+      "compressedBytes": 5137,
+      "sha256": "e5e61d50c9549bc35382bbbd1c9548d46c4fb9ddf40c3a698415ac7e005516c8"
+    },
+    {
+      "path": "assets/mlkit-google-ocr-models/aksara/aksara_page_layout_analysis_rpn_gcn.binarypb",
+      "bytes": 276,
+      "compressedBytes": 208,
+      "sha256": "b2963b78c7e55fdfd5ed82ca60f045aace7a7e373b5d93254e9ac979dcb5bb67"
+    },
+    {
+      "path": "assets/mlkit-google-ocr-models/aksara/aksara_page_layout_analysis_ti_rpn_gcn.binarypb",
+      "bytes": 278,
+      "compressedBytes": 209,
+      "sha256": "d448c5de8d480d491ac128657926e6253a770baa90afb0e97a67740c93c1e9f3"
+    },
+    {
+      "path": "assets/mlkit-google-ocr-models/gocr/gocr_models/line_recognition_legacy_mobile/Latn_ctc/optical/assets.extra/LabelMap.pb",
+      "bytes": 3809,
+      "compressedBytes": 1521,
+      "sha256": "c6d345043a561f9dfdb1472cfca7cdda0128b19cb6909c67032c5783077c92b3"
+    },
+    {
+      "path": "assets/mlkit-google-ocr-models/gocr/gocr_models/line_recognition_legacy_mobile/Latn_ctc/optical/conv_model.fb",
+      "bytes": 40848,
+      "compressedBytes": 30829,
+      "sha256": "64aba719b4ed1ee5b3d4886c5aaf0b1ac051bf5879e9b08e861e0e29e20a08a7"
+    },
+    {
+      "path": "assets/mlkit-google-ocr-models/gocr/gocr_models/line_recognition_legacy_mobile/Latn_ctc/optical/lstm_model.fb",
+      "bytes": 309568,
+      "compressedBytes": 181609,
+      "sha256": "0ed62e4fbe0fc5c4090aec473b136e188f828590765c028382358daddb3ccb6e"
+    },
+    {
+      "path": "assets/mlkit-google-ocr-models/gocr/gocr_models/line_recognition_legacy_mobile/Latn_ctc_cpu.binarypb",
+      "bytes": 333,
+      "compressedBytes": 259,
+      "sha256": "a1dce9a376905a597366f6c9a0b3723205486880e176869e1ad65e92d68e068b"
+    },
+    {
+      "path": "assets/mlkit-google-ocr-models/gocr/gocr_models/line_recognition_legacy_mobile/tflite_langid.tflite",
+      "bytes": 315520,
+      "compressedBytes": 315520,
+      "sha256": "7f931f6f7c1dd0ec591ace7780df91645a450fafc83505f3ff45ce5ef7c8441b"
+    },
+    {
+      "path": "assets/mlkit-google-ocr-models/gocr/layout/line_clustering_custom_ops/model.tflite",
+      "bytes": 129612,
+      "compressedBytes": 129612,
+      "sha256": "ecda697ed244c5762410e0497878eabcda5f8b0682fb7c3800cd88a7f45dd8e6"
+    },
+    {
+      "path": "assets/mlkit-google-ocr-models/gocr/layout/line_splitting_custom_ops/model.tflite",
+      "bytes": 114384,
+      "compressedBytes": 114384,
+      "sha256": "f42197e656972c330bb9f092edbe298b4a6c2fcd808ff6d614381311f8dd22a7"
+    },
+    {
+      "path": "assets/mlkit-google-ocr-models/taser/detector/region_proposal_text_detector_tflite_vertical_mbv2_v1.bincfg",
+      "bytes": 452,
+      "compressedBytes": 381,
+      "sha256": "7ac2d4c04fb2fe0cd5c33e3030d9276c40286c73f97c2daa3ab94ea8c3f314c3"
+    },
+    {
+      "path": "assets/mlkit-google-ocr-models/taser/detector/rpn_text_detector_mobile_space_to_depth_quantized_mbv2_v1.tflite",
+      "bytes": 340760,
+      "compressedBytes": 340760,
+      "sha256": "eb811a1290738f131e4005d8a1d63ef21770866414b847190a932f0b56c0d18f"
+    },
+    {
+      "path": "assets/mlkit-google-ocr-models/taser/rpn_text_detection_tflite_mobile_mbv2.binarypb",
+      "bytes": 194,
+      "compressedBytes": 143,
+      "sha256": "86660be29934bdd123a65ea30ec09eaa66481a7ac2def8e8f376e78484f8774a"
+    },
+    {
+      "path": "assets/mlkit-google-ocr-models/taser/segmenter/tflite_script_detector_0.3.bincfg",
+      "bytes": 1118,
+      "compressedBytes": 487,
+      "sha256": "d4223c23cd8ee3d3d4999d4e10bb16ec0b8119f8812e5e66e64e907c5508f21b"
+    },
+    {
+      "path": "assets/mlkit-google-ocr-models/taser/segmenter/tflite_script_detector_0.3.conv_model",
+      "bytes": 40808,
+      "compressedBytes": 30535,
+      "sha256": "16be9fc0c0c9429cc3714d5d2e8662c53bd28cf0031375e237db288dc8da8d5f"
+    },
+    {
+      "path": "assets/mlkit-google-ocr-models/taser/segmenter/tflite_script_detector_0.3.lstm_model",
+      "bytes": 161448,
+      "compressedBytes": 119566,
+      "sha256": "2281a01686f9ff9164f2a12ed743818e2b8e0af6ae7c73240924d70342d3f2cb"
+    },
+    {
+      "path": "assets/mlkit-google-ocr-models/taser/taser_script_identification_tflite_mobile.binarypb",
+      "bytes": 136,
+      "compressedBytes": 114,
+      "sha256": "a3ebf2720f86e1440e42604f8bd48194111e152fa93886f987655f01a9336d32"
+    },
+    {
+      "path": "assets/mlkit-google-ocr-models/taser_tflite_gocrlatin_mbv2_scriptid_aksara_layout_gcn_mobile_engine.binarypb",
+      "bytes": 13178,
+      "compressedBytes": 2764,
+      "sha256": "78210a92ad8ff692898e15d37718094c179149c9546a8fd53759b22939d39348"
+    },
+    {
+      "path": "assets/mlkit-google-ocr-models/taser_tflite_gocrlatin_mbv2_scriptid_aksara_layout_gcn_mobile_engine_ti.binarypb",
+      "bytes": 13183,
+      "compressedBytes": 2769,
+      "sha256": "bfd6e9cb8ed0536d03fc9c06a31bc79de3996bc7dcfbe9f4cc19f819231b7d0a"
+    },
+    {
+      "path": "assets/mlkit-google-ocr-models/taser_tflite_gocrlatin_mbv2_scriptid_aksara_layout_gcn_mobile_recognizer.binarypb",
+      "bytes": 233,
+      "compressedBytes": 188,
+      "sha256": "e80538539371576a5ad7dd58ed314a4f4d9fd9fca7ad73efdac476a6c3eb1ab4"
+    },
+    {
+      "path": "assets/mlkit-google-ocr-models/taser_tflite_gocrlatin_mbv2_scriptid_aksara_layout_gcn_mobile_runner.binarypb",
+      "bytes": 331,
+      "compressedBytes": 233,
+      "sha256": "32c2c1b72ba32605c23a96a8b7bf4ebf8f5a916df6cd672724556a17d3d6c59e"
+    },
+    {
+      "path": "assets/mlkit-google-ocr-models/taser_tflite_gocrlatin_mbv2_scriptid_aksara_layout_gcn_mobile_runner_ti.binarypb",
+      "bytes": 334,
+      "compressedBytes": 234,
+      "sha256": "2c8581869ebb972a2d82403c9cd871a1d4c8d6419ae371fc1d859ad2bce2d5dc"
+    }
+  ],
+  "elf16KbAligned": true,
+  "zip16KbAligned": true,
+  "realPhotoOcrValidated": false
+}
