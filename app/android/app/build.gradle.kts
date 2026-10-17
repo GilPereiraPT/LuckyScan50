@@ -32,8 +32,11 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Production signing is deliberately not configured.
+            // INTERNAL TESTING ONLY: sign the optimized release with the debug key.
+            // Replace with private signing credentials before any publication.
+            signingConfig = signingConfigs.getByName("debug")
+            isMinifyEnabled = true
+            isShrinkResources = true
         }
     }
 }
