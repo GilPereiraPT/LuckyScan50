@@ -765,7 +765,7 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
             image = File(picked.path);
             ocrText = text.text;
             source = 'physical';
-            if (extracted.lines.isNotEmpty) {
+            if (extracted.lines.isNotEmpty && lines.text.trim().isEmpty) {
               lines.text = extracted.lines.join('\n');
             }
             if (extracted.code != null && code.text.trim().isEmpty) {
@@ -775,9 +775,12 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
               cost.text = extracted.amount!;
             }
           });
+          final expected = extracted.expectedLines;
           message(context, extracted.lines.isEmpty
-              ? 'OCR concluído, mas nenhuma chave completa foi validada. Corrija a imagem ou introduza as chaves manualmente.'
-              : '${extracted.lines.length} chave(s) reconhecida(s). Confirme todos os dados e as apostas em falta.');
+              ? 'OCR concluído, mas nenhuma chave completa foi validada. Tente outra fotografia ou introduza as chaves manualmente.'
+              : '${extracted.lines.length} chave(s) reconhecida(s)'
+                '${expected == null ? '' : ' de $expected esperadas'}. '
+                'Confirme e complete as restantes antes de guardar.');
         }
       } finally {
         await recognizer.close();
