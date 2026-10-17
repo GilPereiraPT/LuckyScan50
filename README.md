@@ -54,3 +54,7 @@ Consulte [instalação Android](app/README.md), [Passenger e migrações](api-py
 ## Auditoria OCR de 17/10/2026
 
 Consulte o [relatório técnico integral](docs/AUDITORIA_TECNICA_LUCKYSCAN50.md) para causas reproduzidas, matriz de funcionalidades, comparação ML Kit/Tesseract e limitações. O APK de auditoria compilado localmente passou verificação de assinatura, ABI e alinhamento de 16 KB; isso não demonstra reconhecimento correto das fotografias ausentes. A CI publica apenas artefactos debug verificados, sem release definitiva.
+
+### Estado atual do OCR multi-pass
+
+Foi acrescentada recuperação por recortes de linhas para o diagnóstico de colunas verticais. A implementação e os testes controlados não substituem as fotografias reais e o Android: **a distribuição de novos APKs está suspensa até essa demonstração**. Consulte [OCR_MULTIPASS.md](docs/OCR_MULTIPASS.md) para funcionamento, limitações, medição interna de tamanho e teste de aceitação.

@@ -46,3 +46,11 @@ Executado nesta continuação: 13 testes Python, 31 Flutter e 10 TypeScript apro
 APK debug 0.2.1+3 ARM64 produzido com código `75e248f`, assinatura/CRC/SHA-256/ABI/alinhamento ELF e ZIP de 16 KB verificados; chave debug local inalterada. O artefacto local está em `/workspace/artifacts/LuckyScan50-audit-0.2.1-arm64.apk`; checksum e manifesto estão ao lado. A consulta de runs GitHub devolveu Forbidden, pelo que não se confirma execução/artefacto remoto. A produção cPanel não foi alterada ou migrada.
 
 As fotografias reais vertical/90° e os binários originais de identidade visual não estão disponíveis. Não se declara o objetivo OCR real concluído. O relatório integral, matriz, comparação fundamentada com Tesseract, riscos e plano estão em [AUDITORIA_TECNICA_LUCKYSCAN50.md](AUDITORIA_TECNICA_LUCKYSCAN50.md).
+
+## Recuperação de colunas verticais — continuação
+
+O diagnóstico real comunicado pelo utilizador identifica palavras verticais a ~90° e 685–698 px. Foi implementado um protótipo de recuperação por zona/linhas observadas, recortes PNG nativos da imagem sem redução prévia, EXIF normalizado, tentativas por linha/2× e orientações alternativas quando faltam âncoras. Preserva leitura inicial, edições manuais, metadados e proveniência por valor; conflitos não são resolvidos por preenchimento conhecido.
+
+Validação desta continuação: 44 testes Flutter e 13 Python passaram; análise estática e compilação Kotlin/debug interna passaram. Não havia fotografias reais nem dispositivos Android no ADB: o teste de aceitação real **não foi executado**, e precisão/latência real permanecem não medidas. O novo teste Android exige ambas as imagens e compara saídas reais e preenchimento do formulário.
+
+Nenhum novo APK foi publicado ou disponibilizado. O upload foi removido do workflow até demonstração real, e há guarda contra fotos privadas nos assets de CI. Foi medido um snapshot debug interno (119 599 026 bytes, +22 647 294 face ao anterior), incluindo suporte de teste e empacotamento; não representa impacto isolado do recorte nem tamanho release. O protótipo Tesseract é desktop e limitado a regiões N/E, sem novo motor no APK. Ver [OCR_MULTIPASS.md](OCR_MULTIPASS.md) e o estado estruturado em `docs/validation/2026-10-17-multipass-status.json`.

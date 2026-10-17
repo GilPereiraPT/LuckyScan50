@@ -48,3 +48,7 @@ Testar captura/galeria, permissões, qualidade OCR em comprovativos anonimizados
 ## APK de auditoria 0.2.1+3
 
 A página Sobre identifica a versão e o SHA compilado. Antes de substituir um APK instalado, compare o certificado de assinatura; chaves debug de runners diferentes podem ser incompatíveis. Não desinstale nem elimine dados sem backup. O workflow de desenvolvimento exige testes, assinatura válida, ZIP íntegro, apenas ARM64 e alinhamento ELF/ZIP de 16 KB, e publica APK, checksum SHA-256 e manifesto de verificação. Não existe aprovação de OCR real enquanto faltarem as fotos de referência.
+
+## OCR multi-pass: distribuição suspensa
+
+O protótipo atual preserva a primeira leitura e tenta recuperar colunas verticais através de recortes de linhas, EXIF e passagens adicionais, mantendo proveniência e proteção de edições. Não foi validado nas duas fotografias originais. Não publicar um novo APK sem executar a aceitação Android descrita em [OCR_MULTIPASS.md](../docs/OCR_MULTIPASS.md). A CI não faz upload de APK nesta fase. Fotos de teste privadas são ignoradas pelo Git e devem ser removidas antes de qualquer build distribuído.

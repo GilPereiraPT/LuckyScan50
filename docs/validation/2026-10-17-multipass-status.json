@@ -1,0 +1,22 @@
+{
+  "date": "2026-10-17",
+  "releaseGate": "blocked_pending_real_android_both_orientations",
+  "newApkPublished": false,
+  "realPhotosAvailable": false,
+  "androidDevicesAttached": 0,
+  "realAndroidOcrAcceptanceExecuted": false,
+  "realAccuracyPerBet": null,
+  "realOcrLatencyMs": null,
+  "flutterTestsPassed": 44,
+  "pythonTestsPassed": 13,
+  "staticAnalysis": "passed",
+  "kotlinCompilation": "passed",
+  "internalDebugBuild": "passed",
+  "baselineAuditDebugBytes": 96951732,
+  "internalPrototypeDebugBytes": 119599026,
+  "debugDeltaBytes": 22647294,
+  "debugDeltaPercent": 23.3593,
+  "sizeCaveat": "Internal debug snapshot includes AndroidX EXIF and integration-test dependencies plus packaging overhead; not an isolated crop-engine delta or release measurement.",
+  "baselineArtifactUnchanged": true,
+  "tesseract": "desktop numeric-region prototype only; real comparison not executed"
+}

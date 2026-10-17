@@ -259,3 +259,9 @@ Os testes Linux SQLite necessitam de libsqlite3; o executor usa uma ligação lo
 Faltam as duas fotografias originais, uma saída ML Kit real e execução Android no mesmo dispositivo; logótipo/hero/ícones originais; certificado do APK já instalado; acesso à consulta dos runs remotos. Não se inventaram dados para preencher estas lacunas.
 
 Recomenda-se um **APK debug de auditoria 0.2.1+3**, identificado pelo SHA, para recolher diagnóstico local do recibo de referência, confirmar vertical/90°, texto, coordenadas, parser e controladores. A compilação e os testes textuais não permitem anunciar o objetivo fundamental como atingido. Só depois da demonstração reproduzível nas fotos reais se deve considerar uma versão de utilização normal, mantendo confirmação humana e API de produção intacta.
+
+## Adenda: diagnóstico real de palavras verticais e recuperação multi-pass
+
+O diagnóstico posterior fornecido pelo utilizador revela uma falha de segmentação nativa: colunas numéricas foram reconhecidas como palavras verticais (~90°, 685–698 px), perdendo dígitos e estrelas. As correções de parser anteriores não recuperam caracteres ausentes. A continuação implementa recuperação por recortes e um teste Android real, descritos em [OCR_MULTIPASS.md](OCR_MULTIPASS.md).
+
+As validações locais atualizadas são 44 testes Flutter e 13 Python aprovados, análise estática e compilação Kotlin/debug interna aprovadas. A aceitação das duas fotografias e da UI no Android continua não executada por falta de ficheiros e dispositivo. A publicação automática de novos APKs foi suspensa; o APK de auditoria mencionado anteriormente é anterior a esta alteração e não demonstra este novo pipeline.
