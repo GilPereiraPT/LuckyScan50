@@ -136,12 +136,17 @@ CropPlan planBetCrops(List<ReceiptToken> tokens, double width, double height) {
     width,
     math.min(height, anchorBottom + h * 2),
   );
-  final relevant = vertical.where((t) => receiptTokenBox(t).intersects(seed)).toList();
+  final relevant = vertical
+      .where((t) => receiptTokenBox(t).intersects(seed))
+      .toList();
   final top = relevant.isEmpty
       ? seed.top
       : math.max(
           0.0,
-          math.min(seed.top, relevant.map((t) => receiptTokenBox(t).top).reduce(math.min)),
+          math.min(
+            seed.top,
+            relevant.map((t) => receiptTokenBox(t).top).reduce(math.min),
+          ),
         );
   final bottom = relevant.isEmpty
       ? seed.bottom

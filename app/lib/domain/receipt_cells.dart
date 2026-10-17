@@ -30,13 +30,15 @@ CellGrid planBetCells(
     if (m != null &&
         plan.rows.any((r) => r.index == int.parse(m[1]!) && r.printedIndex)) {
       final index = int.parse(m[1]!);
-      if (anchors.containsKey(index))
+      if (anchors.containsKey(index)) {
         return const CellGrid([], [], ['Índices N repetidos; grelha ambígua.']);
+      }
       anchors[index] = t;
     }
   }
-  if (anchors.isEmpty)
+  if (anchors.isEmpty) {
     return const CellGrid([], [], ['Sem âncoras N numeradas para células.']);
+  }
   final ordered = anchors.entries.toList()
     ..sort((a, b) => a.value.y.compareTo(b.value.y));
   final h = _median(anchors.values.map((t) => t.height).toList());
@@ -73,8 +75,9 @@ CellGrid planBetCells(
         math.min(width, n.x + n.width / 2 + h * .3),
         math.min(height, next - h * .35),
       );
-      if (box.height >= h * .7)
+      if (box.height >= h * .7) {
         markers.add(BetCrop(index, box, printedIndex: true, kind: 'marker'));
+      }
     } else {
       warnings.add('Aposta $index: linha E não identificada com segurança.');
     }
@@ -103,12 +106,14 @@ CellGrid planBetCells(
         right: (t.x + t.width / 2 - n.x) / span,
       );
       if (crosses(n.y + slope(n) * (t.x - n.x)) &&
-          (!inline || t.x < e.x - e.width / 2))
+          (!inline || t.x < e.x - e.width / 2)) {
         nSamples.add(sample);
+      }
       if (e != null &&
           crosses(e.y + slope(n) * (t.x - e.x)) &&
-          t.x - t.width / 2 > e.x + e.width / 2)
+          t.x - t.width / 2 > e.x + e.width / 2) {
         eSamples.add(sample);
+      }
     }
   }
   // Touching digit bounds merge into one TWO-DIGIT column. The real report
@@ -162,7 +167,7 @@ CellGrid planBetCells(
             : (e.y - n.y - slope(n) * (e.x - n.x)).abs();
         final halfHeight = math.min(
           h * .65,
-          separation > h * .6 ? separation * .46 : h * .65,
+          separation > h * .6 ? separation * .49 : h * .65,
         );
         final box = CropBox(
           math.max(0, x - halfWidth),
@@ -192,8 +197,9 @@ CellGrid planBetCells(
   String kind,
 ) {
   final raw = text.trim().toUpperCase();
-  if (!RegExp(r'^[0-9OIS]{1,2}$').hasMatch(raw))
+  if (!RegExp(r'^[0-9OIS]{1,2}$').hasMatch(raw)) {
     return (value: null, raw: raw, correction: null);
+  }
   final normal = raw
       .replaceAll('O', '0')
       .replaceAll('I', '1')

@@ -1,5 +1,7 @@
 import 'receipt_parser.dart';
 import 'receipt_evidence.dart';
+import 'receipt_cells.dart';
+import 'receipt_cell_recovery.dart';
 export 'receipt_evidence.dart';
 import 'receipt_geometry.dart';
 export 'receipt_geometry.dart';
@@ -88,7 +90,7 @@ export 'receipt_geometry.dart';
       values.add(
         ValueEvidence(
           pair.kind,
-          i,
+          pair.values.length == (pair.kind == 'N' ? 5 : 2) ? i : -1,
           n,
           raw,
           pass,
@@ -117,6 +119,18 @@ Future<MultiPassResult> recoverReceiptRows({
   final first = initial.parse();
   final meta = metadata ?? first;
   final plan = planBetCrops(initial.tokens, width, height);
+  final grid = planBetCells(initial.tokens, plan, width, height);
+  if (meta.game == 'euromilhoes' && grid.cells.isNotEmpty) {
+    return recoverReceiptCells(
+      initialGrid: grid,
+      initial: initial,
+      metadata: meta,
+      plan: plan,
+      width: width,
+      height: height,
+      recognizeCrop: recognizeCrop,
+    );
+  }
   final bets = {for (final b in first.bets) b.index: b};
   final evidence = <int, List<ValueEvidence>>{};
   final issues = <int, List<String>>{};
