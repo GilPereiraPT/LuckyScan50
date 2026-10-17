@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'dart:ui';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 
@@ -35,36 +34,76 @@ ScannedReceipt parseScannedReceipt(RecognizedText recognized) {
   final expected = RegExp(r'\b(\d{1,2})\s+AP\s+SIMPLES\b').firstMatch(raw);
   final expectedLines = expected == null ? null : int.tryParse(expected.group(1)!);
 
-  fragments.sort((a, b) => a.y.compareTo(b.y));
-  final labels = fragments.where((f) => RegExp(r'^[1-9][.]?\s*N[.:]?$').hasMatch(f.text)).toList();
-  if (labels.isEmpty) {
-    return ScannedReceipt(lines: const [], code: code, amount: amount, expectedLines: expectedLines);
-  }
-  final rows = <String>[];
-  for (final n in labels) {
-    final later = labels.where((f) => f.y > n.y).toList();
-    final boundary = later.isNotEmpty ? later.first.y : double.infinity;
-    final stars = fragments.where((f) =>
-      f.y > n.y + n.height * 0.4 &&
-      f.y < math.min(boundary, n.y + n.height * 3.3) &&
-      RegExp(r'^E[.:]?$').hasMatch(f.text)
-    ).toList();
-    if (stars.isEmpty) continue;
-    final e = stars.first;
-    final tolerance = math.max(n.height, e.height) * 0.65;
-    final numberElements = fragments.where((f) =>
-      (f.y - n.y).abs() <= tolerance && f.box.center.dx > n.box.right
-    ).toList()..sort((a,b) => a.box.left.compareTo(b.box.left));
-    final starElements = fragments.where((f) =>
-      (f.y - e.y).abs() <= tolerance && f.box.center.dx > e.box.right
-    ).toList()..sort((a,b) => a.box.left.compareTo(b.box.left));
-    final numbers = _numbers(numberElements);
-    final starNumbers = _numbers(starElements);
-    if (_valid(numbers, 5, 50) && _valid(starNumbers, 2, 12)) {
-      rows.add("${numbers.join(' ')} + ${starNumbers.join(' ')}");
+  // ML Kit may merge the marker and numbers into a single text element.
+  // Prefer its line grouping, then use geometric reconstruction as fallback.
+  final sourceLines = <String>[];
+  for (final block in recognized.blocks) {
+    for (final line in block.lines) {
+      sourceLines.add(line.text.toUpperCase());
     }
   }
-  return ScannedReceipt(lines: rows, code: code, amount: amount, expectedLines: expectedLines);
+  final parsed = _parseBetLines(sourceLines);
+  if (parsed.isNotEmpty) {
+    return ScannedReceipt(lines: parsed, code: code, amount: amount, expectedLines: expectedLines);
+  }
+  fragments.sort((a, b) => a.y.compareTo(b.y));
+  final reconstructed = <String>[];
+  final heights = fragments.map((f) => f.height).where((h) => h > 0).toList()..sort();
+  final medianHeight = heights.isEmpty ? 12.0 : heights[heights.length ~/ 2];
+  var row = <_Fragment>[];
+  double center = 0;
+  for (final fragment in fragments) {
+    if (row.isNotEmpty && (fragment.y - center).abs() > medianHeight * 0.65) {
+      row.sort((a, b) => a.box.left.compareTo(b.box.left));
+      reconstructed.add(row.map((f) => f.text).join(' '));
+      row = <_Fragment>[];
+    }
+    row.add(fragment);
+    center = row.map((f) => f.y).reduce((a, b) => a + b) / row.length;
+  }
+  if (row.isNotEmpty) {
+    row.sort((a, b) => a.box.left.compareTo(b.box.left));
+    reconstructed.add(row.map((f) => f.text).join(' '));
+  }
+  return ScannedReceipt(
+    lines: _parseBetLines(reconstructed), code: code, amount: amount, expectedLines: expectedLines,
+  );
+}
+
+List<String> _parseBetLines(List<String> input) {
+  final bets = <String>[];
+  List<int>? numbers;
+  bool inBetSection = false;
+  for (final original in input) {
+    final line = original.trim().toUpperCase();
+    if (line.contains('EUROMILH') && line.contains('M1LH')) break;
+    final nMatch = RegExp(r'^\s*(?:[1-9]\s*[.]\s*)?N\s*[:.]?\s*(.*)$').firstMatch(line);
+    final eMatch = RegExp(r'^\s*E\s*[:.]?\s*(.*)$').firstMatch(line);
+    if (nMatch != null) {
+      inBetSection = true;
+      final found = _parseNumericTokens(nMatch.group(1)!);
+      numbers = _valid(found, 5, 50) ? found : null;
+    } else if (eMatch != null && inBetSection) {
+      final stars = _parseNumericTokens(eMatch.group(1)!);
+      if (numbers != null && _valid(stars, 2, 12)) {
+        bets.add("${numbers!.map((n) => n.toString().padLeft(2, '0')).join(' ')} + ${stars.map((n) => n.toString().padLeft(2, '0')).join(' ')}");
+      }
+      numbers = null;
+    }
+  }
+  return bets;
+}
+
+List<int> _parseNumericTokens(String text) {
+  final tokens = text.trim().split(RegExp(r'\s+'));
+  final values = <int>[];
+  for (final token in tokens) {
+    final normalized = token.replaceAll(RegExp(r'[OQD]'), '0')
+        .replaceAll(RegExp(r'[IL|]'), '1').replaceAll('S', '5').replaceAll('B', '8');
+    if (!RegExp(r'^\d{1,2}$').hasMatch(normalized)) return const [];
+    values.add(int.parse(normalized));
+  }
+  return values;
 }
 
 List<int> _numbers(List<_Fragment> elements) {
