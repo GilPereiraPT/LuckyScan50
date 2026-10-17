@@ -28,7 +28,8 @@ ScannedReceipt parseScannedReceipt(RecognizedText recognized) {
     }
   }
   final raw = recognized.text.toUpperCase();
-  final code = RegExp(r'\b\d{3}-\d{8}-\d{3}\b').firstMatch(raw)?.group(0) ??\n      RegExp(r'\b\d{3}-\d{8}-[A-Z0-9]{2,4}\b').firstMatch(raw)?.group(0);
+  final code = RegExp(r'\b\d{3}-\d{8}-\d{3}\b').firstMatch(raw)?.group(0) ??
+      RegExp(r'\b\d{3}-\d{8}-[A-Z0-9]{2,4}\b').firstMatch(raw)?.group(0);
   final amount = RegExp(r'€\s*(\d{1,4}[,.]\d{2})')
       .firstMatch(raw)?.group(1)?.replaceAll('.', ',');
   final expected = RegExp(r'\b(\d{1,2})\s+AP\s+SIMPLES\b').firstMatch(raw);
@@ -85,7 +86,7 @@ List<String> _parseBetLines(List<String> input) {
     } else if (eMatch != null && inBetSection) {
       final stars = _parseNumericTokens(eMatch.group(1)!);
       if (numbers != null && _valid(stars, 2, 12)) {
-        bets.add("${numbers!.map((n) => n.toString().padLeft(2, '0')).join(' ')} + ${stars.map((n) => n.toString().padLeft(2, '0')).join(' ')}");
+        bets.add("${numbers.map((n) => n.toString().padLeft(2, '0')).join(' ')} + ${stars.map((n) => n.toString().padLeft(2, '0')).join(' ')}");
       }
       numbers = null;
     }
@@ -101,21 +102,6 @@ List<int> _parseNumericTokens(String text) {
         .replaceAll(RegExp(r'[IL|]'), '1').replaceAll('S', '5').replaceAll('B', '8');
     if (!RegExp(r'^\d{1,2}$').hasMatch(normalized)) return const [];
     values.add(int.parse(normalized));
-  }
-  return values;
-}
-
-List<int> _numbers(List<_Fragment> elements) {
-  final values = <int>[];
-  for (final f in elements) {
-    final normalized = f.text.replaceAll(RegExp(r'[OQD]'), '0')
-        .replaceAll(RegExp(r'[IL|]'), '1')
-        .replaceAll('S', '5').replaceAll('B', '8');
-    for (final token in normalized.split(RegExp(r'\s+'))) {
-      if (token.isEmpty) continue;
-      if (!RegExp(r'^\d{1,2}$').hasMatch(token)) return const [];
-      values.add(int.parse(token));
-    }
   }
   return values;
 }
