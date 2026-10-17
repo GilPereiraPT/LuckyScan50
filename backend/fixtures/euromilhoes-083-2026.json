@@ -93,33 +93,33 @@
       "tier": 10,
       "main": 3,
       "stars": 0,
-      "amountCents": 0,
-      "winnersPortugal": 0,
-      "winnersTotal": 0
+      "amountCents": 815,
+      "winnersPortugal": 7470,
+      "winnersTotal": 79495
     },
     {
       "tier": 11,
       "main": 1,
       "stars": 2,
-      "amountCents": 0,
-      "winnersPortugal": 0,
-      "winnersTotal": 0
+      "amountCents": 590,
+      "winnersPortugal": 12123,
+      "winnersTotal": 132769
     },
     {
       "tier": 12,
       "main": 2,
       "stars": 1,
-      "amountCents": 0,
-      "winnersPortugal": 0,
-      "winnersTotal": 0
+      "amountCents": 507,
+      "winnersPortugal": 44061,
+      "winnersTotal": 486902
     },
     {
       "tier": 13,
       "main": 2,
       "stars": 0,
-      "amountCents": 0,
-      "winnersPortugal": 0,
-      "winnersTotal": 0
+      "amountCents": 367,
+      "winnersPortugal": 105333,
+      "winnersTotal": 1084418
     }
   ]
 }
