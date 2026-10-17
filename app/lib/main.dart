@@ -22,7 +22,7 @@ const buildSha = String.fromEnvironment(
   'LUCKYSCAN_BUILD_SHA',
   defaultValue: 'local',
 );
-const appVersion = '0.2.2+4';
+const appVersion = '0.2.3+5';
 
 final receiptScannerProvider = Provider<ReceiptScanner>(
   (ref) => scanReceiptImage,
