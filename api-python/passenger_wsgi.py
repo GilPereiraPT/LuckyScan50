@@ -6,12 +6,17 @@ import os
 from pathlib import Path
 import re
 import sqlite3
+import sys
 from urllib.parse import parse_qs
+# Passenger can load this file by absolute path from a different working directory.
+ROOT=Path(__file__).resolve().parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0,str(ROOT))
+
 from domain import validate_result
 from store import Store, read_json
 from result_statistics import frequencies, summary
 
-ROOT=Path(__file__).resolve().parent
 DATA_FILE=Path(os.environ.get('LUCKYSCAN_RESULTS_FILE',str(ROOT/'data'/'results.json')))
 DATABASE_FILE=os.environ.get('LUCKYSCAN_DATABASE')
 log=logging.getLogger('luckyscan50')
