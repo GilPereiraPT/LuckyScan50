@@ -23,3 +23,13 @@ Android: primeira carteira local, navegação, entrada manual, anexos e transcri
 A interface declara as funções ainda indisponíveis. Não estão concluídos todos os pontos do caderno de requisitos: extração estruturada OCR, notificações Android, regras regulamentares e prazos versionados, biometria, calendário, estatísticas históricas/pessoais completas, XLSX, sincronização em segundo plano e AAB assinado. Não se devem inventar prazos ou tratar concursos futuros como concluídos. As dependências de autorização para recolha não impedem a carteira e a API administrativa.
 
 Não há credenciais de produção configuradas; não são necessárias para testes locais. A publicação no GitHub e a compilação Android devem ser verificadas pelo resultado dos comandos, não por esta documentação. Os resultados finais da execução são apresentados no relatório da tarefa.
+
+## Resultados desta execução
+
+- Python: 13 testes passaram; leitura HTTP local de health, lista vazia, 404 esperado, estatísticas e snapshot sync verificada. Carregamento Passenger por caminho absoluto também verificado com Python isolado.
+- TypeScript: 10 testes passaram e verificação de tipos concluída; compilação validada na preparação do ambiente e novamente pelo script de atualização.
+- Flutter: análise estática sem problemas e 12 testes passaram, incluindo widgets, SQLite real, custo único de recibos, resultados parciais, prémios desconhecidos, códigos M1lhão duplicados e backup/restauro com imagens.
+- APK: **não produzido** nesta execução. Instalados Flutter 3.35.7, JDK Temurin 21.0.12.1+1 (SHA-256 verificado), Android SDK e NDK. Corrigidos proxy Java e trust store sem desativar TLS. A compilação ficou bloqueada ao descarregar dependências: o proxy passou a devolver HTTP 503 com `remote connection failure` em Maven, Google, npm e GitHub. Não foi possível validar plugins nativos num dispositivo.
+- Os commits iniciais, até `c04dd72`, foram publicados na branch `codex/luckyscan50-android-wallet` antes da falha de transporte. Os ajustes posteriores estão guardados em commits locais; é necessário repetir o push quando a rede regressar. A execução de CI remota não foi confirmada.
+
+Próxima sequência: recuperar o transporte de rede, publicar os commits locais, concluir o APK e testar em Android real; depois implementar extração estruturada dos comprovativos, notificações e regras regulamentares versionadas. Não ativar recolha automática sem autorização nem fazer deploy cPanel sem validação e autorização próprias.
