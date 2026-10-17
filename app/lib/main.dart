@@ -757,7 +757,7 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
             ocrText = text.text;
             source = 'physical';
             if (extracted.lines.isNotEmpty) {
-              lines.text = extracted.lines.join('\\n');
+              lines.text = extracted.lines.join('\n');
             }
             if (extracted.code != null && code.text.trim().isEmpty) {
               code.text = extracted.code!;
