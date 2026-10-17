@@ -35,8 +35,10 @@ class ScannedReceipt {
     this.tokenCount = 0,
     this.skewDegrees = 0,
     this.strategy = 'text',
+    this.observations = const [],
   });
   final List<ParsedBet> bets;
+  final List<ReceiptToken> observations;
   final List<String> rows, warnings, milhaoCodes;
   final String? code, amount, game, drawDate, drawId;
   final int? expectedLines;
@@ -232,6 +234,7 @@ ScannedReceipt parseReceiptObservations({
     tokenCount: tokens.length,
     skewDegrees: geometric.skew,
     strategy: useGeometry ? 'geometry' : 'text',
+    observations: List.unmodifiable(tokens),
   );
 }
 

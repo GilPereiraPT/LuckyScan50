@@ -28,18 +28,20 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-        // Flutter's target flag filters its engine; also filter native plugin ABIs.
-        // Other requested targets keep the existing Flutter defaults.
-        if (providers.gradleProperty("target-platform").orNull == "android-arm64") {
-            ndk {
-                abiFilters.clear()
-                abiFilters.add("arm64-v8a")
-            }
-        }
+
 
     }
 
     buildTypes {
+        // Flutter 3.35 sets broad filters on build types. Override there, rather
+        // than in defaultConfig, and leave split-per-ABI builds untouched.
+        if (providers.gradleProperty("target-platform").orNull == "android-arm64" &&
+            providers.gradleProperty("split-per-abi").orNull != "true") {
+            configureEach {
+                ndk.abiFilters.clear()
+                ndk.abiFilters.add("arm64-v8a")
+            }
+        }
         release {
             // INTERNAL TESTING ONLY: sign the optimized release with the debug key.
             // Replace with private signing credentials before any publication.

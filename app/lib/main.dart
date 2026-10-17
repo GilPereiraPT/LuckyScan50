@@ -1060,6 +1060,7 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
                     'ML Kit: ${lastScan!.rawText.length} caracteres, ${lastScan!.receipt.tokenCount} elementos, ${lastScan!.ocrMs} ms\n'
                     'Reconstrução: ${lastScan!.receipt.strategy}, inclinação ${lastScan!.receipt.skewDegrees.toStringAsFixed(1)}°\n'
                     'Parser: ${lastScan!.receipt.lines.length} apostas completas, ${lastScan!.parseMs} ms\n'
+                    'Elementos (x,y,altura,ângulo):\n${lastScan!.receipt.observations.map((t) => '${t.text} @ ${t.x.toStringAsFixed(1)},${t.y.toStringAsFixed(1)},${t.height.toStringAsFixed(1)},${t.angle.toStringAsFixed(1)}').join('\n')}\n'
                     'Linhas reconstruídas:\n${lastScan!.receipt.rows.join('\n')}',
                   ),
                 ],
