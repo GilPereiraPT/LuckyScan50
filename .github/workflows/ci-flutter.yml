@@ -45,16 +45,5 @@ jobs:
           SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
           BUILD_TOOLS=$(find "$SDK_ROOT/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)
           python3 ../tools/verify_apk.py build/app/outputs/flutter-apk/app-release.apk --build-tools "$BUILD_TOOLS"
-      - name: Upload diagnostic APK from the development branch
-        if: (github.event_name == 'workflow_dispatch' || github.event_name == 'push') && github.ref == 'refs/heads/codex/luckyscan50-android-wallet'
-        uses: actions/upload-artifact@v4
-        with:
-          name: LuckyScan50-diagnostic-arm64-${{ github.sha }}
-          path: |
-            app/build/app/outputs/flutter-apk/app-release.apk
-            app/build/app/outputs/flutter-apk/app-release.apk.sha256
-            app/build/app/outputs/flutter-apk/app-release.verification.json
-          if-no-files-found: error
-          retention-days: 14
       - name: Record validation scope
-        run: echo "Diagnostic build only. Real receipt OCR and Android autofill remain unvalidated until the private acceptance run passes."
+        run: echo "Build verification only; no APK/AAB/Release is uploaded. Real photo OCR remains unvalidated."
