@@ -2,9 +2,16 @@ import 'dart:math' as math;
 
 /// Engine-independent OCR observations. Coordinates remain local to the device.
 class ReceiptToken {
-  const ReceiptToken(this.text, this.x, this.y, this.height, {this.angle = 0});
+  const ReceiptToken(
+    this.text,
+    this.x,
+    this.y,
+    this.height, {
+    this.angle = 0,
+    this.width = 0,
+  });
   final String text;
-  final double x, y, height, angle;
+  final double x, y, height, angle, width;
 }
 
 class ParsedBet {
@@ -77,7 +84,11 @@ double _median(List<double> values) {
   final valid = tokens
       .where(
         (t) =>
-            t.height > 0 && t.height.isFinite && t.x.isFinite && t.y.isFinite,
+            t.height > 0 &&
+            t.height.isFinite &&
+            t.x.isFinite &&
+            t.y.isFinite &&
+            (((t.angle % 180) + 180) % 180 - 90).abs() > 20,
       )
       .toList();
   if (valid.isEmpty) return (rows: <String>[], skew: 0.0);

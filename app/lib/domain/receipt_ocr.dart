@@ -1,10 +1,14 @@
 import 'dart:math' as math;
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'receipt_parser.dart';
+import 'receipt_multipass.dart';
 export 'receipt_parser.dart';
 
 /// Adapt ML Kit observations without mixing recognition, parsing and form state.
-ScannedReceipt parseScannedReceipt(RecognizedText recognized) {
+ScannedReceipt parseScannedReceipt(RecognizedText recognized) =>
+    receiptFrame(recognized).parse();
+
+OcrFrame receiptFrame(RecognizedText recognized) {
   final tokens = <ReceiptToken>[];
   final rows = <String>[];
   for (final block in recognized.blocks) {
@@ -27,14 +31,11 @@ ScannedReceipt parseScannedReceipt(RecognizedText recognized) {
             element.boundingBox.center.dy,
             element.boundingBox.height,
             angle: angle,
+            width: element.boundingBox.width,
           ),
         );
       }
     }
   }
-  return parseReceiptObservations(
-    text: recognized.text,
-    textRows: rows,
-    tokens: tokens,
-  );
+  return OcrFrame(recognized.text, tokens, rows: rows);
 }
