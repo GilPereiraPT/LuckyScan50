@@ -738,6 +738,8 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
   String source = 'manual', ocrText = '';
   File? image;
   bool busy = false;
+  bool milhaoDetected = false;
+  int? expectedBets;
   @override
   void dispose() {
     for (final c in [code, cost, draws, milhaoDraws, milhaoCodes, lines]) {
@@ -765,7 +767,9 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
             image = File(picked.path);
             ocrText = text.text;
             source = 'physical';
-            if (extracted.lines.isNotEmpty && lines.text.trim().isEmpty) {
+            milhaoDetected = text.text.toUpperCase().contains('M1LH');
+            expectedBets = extracted.expectedLines;
+            if (extracted.lines.isNotEmpty) {
               lines.text = extracted.lines.join('\n');
             }
             if (extracted.code != null && code.text.trim().isEmpty) {
@@ -797,6 +801,24 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
     }
   }
 
+  Future<void> scanMilhao(ImageSource selected) async {
+    final picked = await ImagePicker().pickImage(source: selected, maxWidth: 3000);
+    if (picked == null || !mounted) return;
+    setState(() => busy = true);
+    final recognizer = TextRecognizer(script: TextRecognitionScript.latin);
+    try {
+      final result = await recognizer.processImage(InputImage.fromFilePath(picked.path));
+      if (!mounted) return;
+      // Do not guess a code from arbitrary OCR tokens.
+      message(context, 'Fotografia M1lhão lida. Confirme e introduza o código no campo M1lhão.');
+      setState(() => ocrText = '$ocrText\n--- M1LHÃO ---\n${result.text}');
+    } catch (_) {
+      if (mounted) message(context, 'Não foi possível ler o M1lhão. Introduza o código manualmente.');
+    } finally {
+      await recognizer.close();
+      if (mounted) setState(() => busy = false);
+    }
+  }
   Future<void> save() async {
     try {
       final parsed = lines.text
@@ -920,6 +942,38 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Image.file(image!, height: 180),
+              ),
+            if (expectedBets != null && ocrText.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Text(
+                  'Apostas reconhecidas: ${lines.text.trim().isEmpty ? 0 : lines.text.trim().split(String.fromCharCode(10)).length} / $expectedBets',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            if (milhaoDetected)
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('M1lhão detetado — fotografe o boletim do M1lhão',
+                          style: TextStyle(fontWeight: FontWeight.bold)),
+                      const Text('O código M1lhão não é o identificador do recibo. Confirme o código antes de guardar.'),
+                      Wrap(spacing: 8, children: [
+                        OutlinedButton.icon(
+                          onPressed: busy ? null : () => scanMilhao(ImageSource.camera),
+                          icon: const Icon(Icons.camera_alt), label: const Text('Fotografar M1lhão'),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: busy ? null : () => scanMilhao(ImageSource.gallery),
+                          icon: const Icon(Icons.image), label: const Text('Importar M1lhão'),
+                        ),
+                      ]),
+                    ],
+                  ),
+                ),
               ),
             if (ocrText.isNotEmpty)
               ExpansionTile(
