@@ -39,7 +39,6 @@ ScannedReceipt parseScannedReceipt(RecognizedText recognized) {
     row.sort((a, b) => a.boundingBox.left.compareTo(b.boundingBox.left));
   }
   final result = <String>[];
-  final seen = <String>{};
   // Only identify explicitly marked N/E pairs. Do not shift values
   // from adjacent tickets or rows to force five numbers.
   for (var i = 0; i + 1 < rows.length; i++) {
@@ -52,7 +51,7 @@ ScannedReceipt parseScannedReceipt(RecognizedText recognized) {
     final stars = _values(starRow.replaceFirst(RegExp(r'\bE\b'), ''));
     if (_valid(numbers, 5, 50) && _valid(stars, 2, 12)) {
       final value = '${numbers.join(' ')} + ${stars.join(' ')}';
-      if (seen.add(value)) result.add(value);
+      result.add(value);
     }
   }
   return ScannedReceipt(lines: result, code: code, amount: amount);
