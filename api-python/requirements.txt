@@ -1,1 +1,1 @@
-Flask>=3.0,<4.0
+# Python 3.12 standard library only. Passenger supplies the production WSGI host.

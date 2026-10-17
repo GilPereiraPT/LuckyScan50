@@ -1,32 +1,31 @@
-"""Importar resultados previamente verificados por um operador; CLI não pública."""
+"""Administrative CLI only. Never exposed over HTTP."""
+import argparse
 import json
 import os
-import sys
-import tempfile
 from pathlib import Path
-from app import DATA_FILE, validate_result, load_results
+from store import Store
 
-def main(path):
-    result = json.loads(Path(path).read_text(encoding="utf-8"))
-    validate_result(result)
-    current = [item for item in load_results()
-               if (item["game"], item["drawId"]) != (result["game"], result["drawId"])]
-    current.append(result)
-    current.sort(key=lambda x: (x["date"], x["game"], x["drawId"]))
-    DATA_FILE.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp = tempfile.mkstemp(prefix=".luckyscan-", suffix=".tmp", dir=DATA_FILE.parent)
+
+def main(argv=None):
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('path',type=Path)
+    parser.add_argument('--database',default=os.environ.get('LUCKYSCAN_DATABASE'))
+    parser.add_argument('--legacy',action='store_true',help='Back up and migrate a legacy JSON array')
+    args=parser.parse_args(argv)
+    if not args.database:
+        parser.error('Set LUCKYSCAN_DATABASE or --database to an absolute private path')
+    if not Path(args.database).is_absolute():
+        parser.error('Database path must be absolute')
+    store=Store(args.database)
     try:
-        with os.fdopen(fd, "w", encoding="utf-8") as out:
-            json.dump(current, out, ensure_ascii=False, indent=2)
-            out.write("\n")
-        os.chmod(tmp, 0o600)
-        os.replace(tmp, DATA_FILE)
-    finally:
-        if os.path.exists(tmp):
-            os.unlink(tmp)
-    print(f"Importado: {result['game']} {result['drawId']}")
+        if args.legacy:
+            result=store.import_legacy(args.path)
+        else:
+            payload=json.loads(args.path.read_text(encoding='utf-8'))
+            result=store.import_rows(payload if isinstance(payload,list) else [payload])
+        print(json.dumps(result))
+    except (ValueError,OSError) as exc:
+        parser.exit(1,f'Import failed: {exc}\n')
 
-if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        raise SystemExit("Uso: python import_result.py ficheiro.json")
-    main(sys.argv[1])
+if __name__=='__main__':
+    main()

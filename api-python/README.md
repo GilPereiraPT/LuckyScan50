@@ -1,37 +1,51 @@
-# LuckyScan50 API — Python/Passenger
+# API Python LuckyScan50
 
-Compatível com o cPanel Python 3.12.15, com aplicação WSGI/Passenger.
+Produção: **Python 3.12, Passenger/WSGI nativo**, biblioteca padrão apenas. O ponto de entrada continua a ser `passenger_wsgi.py:application`. Não requer Flask, ASGI nem processo permanente. O backend TypeScript permanece como referência e regressão.
 
-## No cPanel
-- Application root: `api-luckyscan50`
-- Application URL: `luckyscan50-api.policlinicosdesantoandre.com`
-- Startup file: `passenger_wsgi.py`
-- Entry point: `application`
-- Python: `3.12.15`
+## Desenvolvimento
 
-Enviar os ficheiros desta pasta para `/home3/policli1/api-luckyscan50/`, **fora da pasta pública do website**. Nunca copiar a pasta `backend/` inteira para o domínio.
-
-Instalar as dependências com o comando do ambiente virtual indicado pelo cPanel:
-```bash
-pip install -r requirements.txt
-```
-Reiniciar a aplicação no cPanel e testar:
-```
-https://luckyscan50-api.policlinicosdesantoandre.com/health
+```sh
+cd api-python
+python3 -m unittest discover -v
+PORT=3001 python3 app.py
 ```
 
-O resultado esperado é JSON `{"ok":true,"service":"luckyscan50-results","version":"0.1.0"}`.
+`app.py` serve apenas desenvolvimento. Em Passenger configurar application root fora da pasta pública, startup `passenger_wsgi.py`, entry point `application`. Copiar **todos os módulos Python e a pasta migrations**. Não alterar o WordPress nem outras aplicações. A alteração do repositório não faz deploy.
 
-Sem dados importados, `/v1/draws/latest` devolve 404: é **correto e seguro**.
-A aplicação é só de leitura HTTP; a importação é exclusivamente por CLI local:
-```bash
-python import_result.py caminho/resultado-validado.json
+## Dados e migração
+
+Sem `LUCKYSCAN_DATABASE`, continua a ler `LUCKYSCAN_RESULTS_FILE` (por omissão `data/results.json`). Assim, a atualização do código não migra nem substitui dados implicitamente.
+
+Antes da mudança, guardar uma cópia externa do diretório de dados. Escolher um caminho privado absoluto e dar acesso de leitura/escrita apenas ao utilizador Passenger. Testar numa cópia:
+
+```sh
+python3 import_result.py /caminho/privado/results.json --legacy --database /caminho/privado/results.sqlite3
 ```
 
-Definir a variável de ambiente `LUCKYSCAN_RESULTS_FILE` para um caminho absoluto fora da pasta pública, se possível. Não enviar ao servidor exemplos não verificados nem fotografias com informações pessoais.
+A migração valida todo o JSON, rejeita duplicados, guarda uma cópia `.HASH.bak` dos bytes originais e importa numa transação. Não altera o JSON. A repetição é idempotente. Só depois de verificar os resultados configurar `LUCKYSCAN_DATABASE=/caminho/privado/results.sqlite3` e reiniciar Passenger no painel. As leituras nunca criam bases vazias silenciosamente; uma base ausente devolve 503 nos endpoints de dados. `/health` verifica o processo, não a integridade da base.
 
-## Limitações
-- Ainda não inclui recolha automática de resultados da Santa Casa.
-- Ainda não inclui autenticação de administradores ou notificações push.
-- Persistência em JSON serve testes e baixa concorrência; migrar para base transacional na produção.
-- O envio por SFTP/File Manager e a instalação no cPanel são operações a realizar pelo proprietário do alojamento.
+Importação administrativa de um objeto ou lista JSON previamente conferida:
+
+```sh
+python3 import_result.py /caminho/validado.json --database /caminho/privado/results.sqlite3
+```
+
+Cada correção preserva a versão anterior em `revisions`. A atualização de `retrievedAt` isolada não cria revisão. Um resultado completo não pode regredir para parcial. Registos M1lhão legados sem `amountCents` continuam legíveis; o prémio permanece desconhecido e nunca é inferido.
+
+## Cron, sem ativação automática
+
+`collect_results.py` é um adaptador de **caixa de entrada administrativa local**, não um scraper. Não foi identificada documentação suficiente que autorize recolha automática. Não acede a contas de jogadores ou endpoints internos.
+
+```sh
+python3 collect_results.py --database /caminho/privado/results.sqlite3 --inbox /caminho/privado/inbox
+```
+
+O diretório deve existir. `flock` impede execuções simultâneas; cada ficheiro é transacional, fica retido e pode ser corrigido e repetido. Erros produzem código de saída 1. Não regista conteúdos de bilhetes nem credenciais. Um JSON parcial permanece `numbers_confirmed`; um novo ficheiro completo cria revisão. Não há retries HTTP porque não há fornecedor remoto autorizado.
+
+Depois de validar caminhos, permissões e execução manual no cPanel, o proprietário pode configurar Cron para terça/sexta após publicação, tendo em conta o fuso horário do alojamento. Não ativar Cron nesta tarefa. Alternativa: workflow manual `validate-results.yml` valida um ficheiro previamente revisto no GitHub e produz uma base como artefacto, sem deploy nem acesso ao alojamento.
+
+## Recuperação
+
+Desativar importações antes de restaurar. Guardar a base atual e usar a API SQLite backup para uma cópia consistente (não copiar uma base durante escrita). Restaurar a cópia privada com permissões adequadas, executar `PRAGMA integrity_check`, testar endpoints e só então reativar importações. Para rollback de migração, remover a variável `LUCKYSCAN_DATABASE` e apontar para o JSON original preservado; isso não reverte correções posteriores da base. Esquemas futuros desconhecidos são rejeitados pelo importador.
+
+Os contratos e limitações estão em `../docs/results-api.md`.
