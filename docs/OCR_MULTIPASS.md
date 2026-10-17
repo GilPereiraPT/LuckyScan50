@@ -1,6 +1,6 @@
 # Recuperação OCR por múltiplas passagens — estado de engenharia
 
-17/10/2026. **Não validado nas fotografias reais; distribuição de novos APKs suspensa.**
+17/10/2026. **Não validado nas fotografias reais.** O pedido seguinte autorizou um APK de diagnóstico com exportação, sem certificar o OCR. Ver [DEPENDENCY_APK_AUDIT.md](DEPENDENCY_APK_AUDIT.md); os números debug abaixo são históricos.
 
 ## Diagnóstico de entrada e evidência
 
@@ -36,7 +36,7 @@ Os ficheiros temporários ficam no cache privado, são eliminados no `finally` e
 | `app/lib/data/receipt_scanner.dart` | Primeira passagem, orientações e recuperação |
 | `app/lib/main.dart` | Diagnósticos iniciais, passagens e valores por aposta; preenchimento protegido |
 | `app/test/receipt_multipass_test.dart` | 13 regressões controladas do diagnóstico e casos-limite |
-| `app/integration_test/receipt_real_images_test.dart` | Aceitação nativa e do formulário com as duas fotos reais |
+| `qa/android/integration_test/receipt_real_images_test.dart` | Aceitação nativa e do formulário com as duas fotos reais |
 | `tools/compare_receipt_regions.py` | Protótipo Tesseract desktop limitado a regiões N/E |
 
 ## Resultados antes/depois: separar medições de simulação
@@ -73,21 +73,18 @@ Estado estruturado: `docs/validation/2026-10-17-multipass-status.json`.
 
 Usar um dispositivo Android e as **duas fotografias originais autorizadas**, sem reconstruções artificiais:
 
-1. Colocar localmente `vertical.jpg` e `rotated.jpg` em `app/assets/private_receipts/`. São ignoradas pelo Git. Não incluir esses ficheiros em commits ou builds distribuídos.
-2. Executar em `app/`:
+1. Manter `vertical.jpg` e `rotated.jpg` numa pasta privada fora da aplicação.
+2. Executar na raiz do repositório (cópia QA temporária, dependências isoladas):
 
 ```sh
-flutter pub get --enforce-lockfile
-flutter drive -d DEVICE_ID \
-  --driver=test_driver/receipt_driver.dart \
-  --target=integration_test/receipt_real_images_test.dart \
-  --dart-define=LUCKYSCAN_BUILD_SHA="$(git rev-parse HEAD)"
+python3 tools/run_flutter_qa.py android --device DEVICE_ID \
+  --photos /private/receipts --evidence /private/receipt-real-evidence.json
 ```
 
 3. O teste chama o ML Kit e os recortes nativos reais, compara os cinco grupos e as dez estrelas com a verdade de referência **apenas para avaliação**, e transfere a saída real para o formulário. O seletor de ficheiros é substituído para selecionar o ficheiro de teste, mas o reconhecimento/recortes não são simulados.
-4. O driver guarda `build/receipt-real-evidence.json`: acertos por número/estrela/aposta, orientação, identificação do build e tempos. Falta de imagens ou falha de qualquer aposta/orientação reprova a execução; não há fallback sintético para declarar sucesso.
+4. O driver produz evidência copiada para o destino `--evidence`: acertos por número/estrela/aposta, orientação, identificação do build e tempos. Falta de imagens ou falha de qualquer aposta/orientação reprova a execução; não há fallback sintético para declarar sucesso.
 5. Validar também no aparelho a seleção pela câmara/galeria, as margens visíveis, consumo de memória, edição manual, reentrada e eventuais avisos de O/0. Comparar o diagnóstico inicial com o recuperado.
-6. Eliminar as fotos de `assets/private_receipts/` depois do ensaio. O workflow recusa ficheiros privados nessa pasta e **não contém upload de novos APKs**. A distribuição só deve ser reaberta após revisão da evidência real, não por um booleano manual que substitua a demonstração.
+6. O runner elimina a cópia temporária e os assets privados no fim. O APK distribuído não declara esses assets e o verificador rejeita fotografias de teste. A nova autorização permite distribuir o diagnóstico; a validação funcional continua a exigir a evidência real.
 
 Atenção: o APK de integração local contém as fotos usadas no teste. Não o enviar, publicar ou partilhar. A produção cPanel e os dados de utilizadores não são necessários para este ensaio.
 

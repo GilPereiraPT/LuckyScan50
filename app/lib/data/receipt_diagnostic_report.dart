@@ -38,7 +38,6 @@ Map<String, Object?> receiptDiagnosticReport(
   Map<String, Object?> frame(OcrFrame f) => {
     'rawText': f.text,
     'rows': f.rows,
-    'ocrMs': f.elapsedMs,
     'tokens': f.tokens.map(token).toList(),
     'parsed': parsed(f.parse()),
   };
@@ -104,6 +103,7 @@ Map<String, Object?> receiptDiagnosticReport(
           'printedIndex': p.crop.printedIndex,
           'scale': p.scale,
           'elapsedMs': p.elapsedMs,
+          'recognitionMs': p.frame?.elapsedMs,
           'error': p.error,
           'result': p.frame == null ? null : frame(p.frame!),
         },
