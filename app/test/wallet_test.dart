@@ -133,4 +133,14 @@ void main() {
     expect(await File(restored.single.imagePath!).readAsBytes(), [1, 2, 3, 4]);
     expect(restored.single.imagePath, isNot(image.path));
   });
+  test('duplicate Milhao codes cannot double-count a prize', () {
+    expect(
+      () => Receipt.fromJson({
+        ...receipt().toJson(),
+        'milhaoDrawIds': ['001/2026'],
+        'milhaoCodes': ['ABC 12345', 'ABC12345'],
+      }),
+      throwsFormatException,
+    );
+  });
 }

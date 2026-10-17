@@ -196,3 +196,12 @@ Map<String, int> finances(
     'cashBalance': received - spent,
   };
 }
+
+String receiptStatus(Receipt receipt, Verification verification) {
+  if (verification.complete &&
+      verification.knownCents > 0 &&
+      receipt.receivedCents >= verification.knownCents) {
+    return 'Recebido';
+  }
+  return verification.label;
+}

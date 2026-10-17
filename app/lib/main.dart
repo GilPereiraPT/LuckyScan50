@@ -312,7 +312,8 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
             (r) =>
                 (r.code.toLowerCase().contains(search.toLowerCase()) ||
                     r.drawIds.join(' ').contains(search)) &&
-                (filter == 'Todos' || verify(r, draws).label == filter),
+                (filter == 'Todos' ||
+                    receiptStatus(r, verify(r, draws)) == filter),
           )
           .toList();
       return [
@@ -333,6 +334,7 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
                     'Premiado',
                     'Sem prémio',
                     'Prémio por confirmar',
+                    'Recebido',
                   ]
                   .map(
                     (s) => ChoiceChip(
@@ -522,7 +524,7 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
               : receipt.code,
         ),
         subtitle: Text(
-          '${receipt.drawIds.join(', ')}\n${check.label} · ${euro(receipt.costCents)}',
+          '${receipt.drawIds.join(', ')}\n${receiptStatus(receipt, check)} · ${euro(receipt.costCents)}',
         ),
         isThreeLine: true,
         trailing: const Icon(Icons.chevron_right),
@@ -986,7 +988,7 @@ class ReceiptPage extends ConsumerWidget {
             r.code.isEmpty ? 'Recibo local' : r.code,
             style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
           ),
-          Text('${verification.label} · ${r.source}'),
+          Text('${receiptStatus(r, verification)} · ${r.source}'),
           const SizedBox(height: 16),
           metric('Valor pago', r.costCents),
           metric('Prémios identificados', verification.knownCents),
