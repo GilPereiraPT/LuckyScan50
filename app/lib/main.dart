@@ -14,6 +14,7 @@ import 'data/backup.dart';
 import 'data/results_client.dart';
 import 'data/wallet_store.dart';
 import 'domain/wallet.dart';
+import 'domain/receipt_ocr.dart';
 
 final storeProvider = Provider<WalletStore>(
   (ref) => throw UnimplementedError(),
@@ -54,6 +55,7 @@ final router = GoRouter(
   routes: [
     GoRoute(path: '/', builder: (_, __) => const Home()),
     GoRoute(path: '/add', builder: (_, __) => const AddReceipt()),
+    GoRoute(path: '/about', builder: (_, __) => const AboutPage()),
     GoRoute(
       path: '/receipt/:id',
       builder: (_, state) => ReceiptPage(state.pathParameters['id']!),
@@ -502,6 +504,14 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
         onTap: erase,
       ),
       const Divider(),
+      ListTile(
+        leading: const Icon(Icons.info_outline),
+        title: const Text('Sobre o LuckyScan50'),
+        subtitle: const Text('Conheça a aplicação, privacidade e limitações'),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => context.push('/about'),
+      ),
+      const Divider(),
       const Text(
         'Disponível: carteira manual, OCR com confirmação, resultados offline, verificação e exportação. Alertas automáticos, prazos regulamentares e bloqueio biométrico ainda não estão disponíveis.',
       ),
@@ -730,6 +740,8 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
   String source = 'manual', ocrText = '';
   File? image;
   bool busy = false;
+  bool milhaoDetected = false;
+  int? expectedBets;
   @override
   void dispose() {
     for (final c in [code, cost, draws, milhaoDraws, milhaoCodes, lines]) {
@@ -751,12 +763,30 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
         final text = await recognizer.processImage(
           InputImage.fromFilePath(picked.path),
         );
+        final extracted = parseScannedReceipt(text);
         if (mounted) {
           setState(() {
             image = File(picked.path);
             ocrText = text.text;
             source = 'physical';
+            milhaoDetected = text.text.toUpperCase().contains('M1LH');
+            expectedBets = extracted.expectedLines;
+            if (extracted.lines.isNotEmpty) {
+              lines.text = extracted.lines.join('\n');
+            }
+            if (extracted.code != null && code.text.trim().isEmpty) {
+              code.text = extracted.code!;
+            }
+            if (extracted.amount != null && cost.text.trim().isEmpty) {
+              cost.text = extracted.amount!;
+            }
           });
+          final expected = extracted.expectedLines;
+          message(context, extracted.lines.isEmpty
+              ? 'OCR concluído, mas nenhuma chave completa foi validada. Tente outra fotografia ou introduza as chaves manualmente.'
+              : '${extracted.lines.length} chave(s) reconhecida(s)'
+                '${expected == null ? '' : ' de $expected esperadas'}. '
+                'Confirme e complete as restantes antes de guardar.');
         }
       } finally {
         await recognizer.close();
@@ -773,6 +803,24 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
     }
   }
 
+  Future<void> scanMilhao(ImageSource selected) async {
+    final picked = await ImagePicker().pickImage(source: selected, maxWidth: 3000);
+    if (picked == null || !mounted) return;
+    setState(() => busy = true);
+    final recognizer = TextRecognizer(script: TextRecognitionScript.latin);
+    try {
+      final result = await recognizer.processImage(InputImage.fromFilePath(picked.path));
+      if (!mounted) return;
+      // Do not guess a code from arbitrary OCR tokens.
+      message(context, 'Fotografia M1lhão lida. Confirme e introduza o código no campo M1lhão.');
+      setState(() => ocrText = '$ocrText\n--- M1LHÃO ---\n${result.text}');
+    } catch (_) {
+      if (mounted) message(context, 'Não foi possível ler o M1lhão. Introduza o código manualmente.');
+    } finally {
+      await recognizer.close();
+      if (mounted) setState(() => busy = false);
+    }
+  }
   Future<void> save() async {
     try {
       final parsed = lines.text
@@ -897,9 +945,41 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Image.file(image!, height: 180),
               ),
+            if (expectedBets != null && ocrText.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Text(
+                  'Apostas reconhecidas: ${lines.text.trim().isEmpty ? 0 : lines.text.trim().split(String.fromCharCode(10)).length} / $expectedBets',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            if (milhaoDetected)
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('M1lhão detetado — fotografe o boletim do M1lhão',
+                          style: TextStyle(fontWeight: FontWeight.bold)),
+                      const Text('O código M1lhão não é o identificador do recibo. Confirme o código antes de guardar.'),
+                      Wrap(spacing: 8, children: [
+                        OutlinedButton.icon(
+                          onPressed: busy ? null : () => scanMilhao(ImageSource.camera),
+                          icon: const Icon(Icons.camera_alt), label: const Text('Fotografar M1lhão'),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: busy ? null : () => scanMilhao(ImageSource.gallery),
+                          icon: const Icon(Icons.image), label: const Text('Importar M1lhão'),
+                        ),
+                      ]),
+                    ],
+                  ),
+                ),
+              ),
             if (ocrText.isNotEmpty)
               ExpansionTile(
-                title: const Text('Texto OCR local — confirmar manualmente'),
+                title: const Text('Texto OCR local — consultar transcrição'),
                 children: [SelectableText(ocrText)],
               ),
             const SizedBox(height: 16),
@@ -933,7 +1013,7 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
               maxLines: 3,
             ),
             const Text(
-              'O OCR transcreve o texto para consulta; o preenchimento dos campos é manual nesta versão. Nunca são enviadas imagens ao servidor.',
+              'O OCR tenta importar apenas chaves completas e válidas. Confirme sempre todas as chaves, estrelas e valores antes de guardar. Imagens não são enviadas ao servidor.',
             ),
             const SizedBox(height: 20),
             FilledButton.icon(
@@ -959,6 +1039,78 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
       decoration: InputDecoration(labelText: label, hintText: hint),
     ),
   );
+}
+
+
+/// Página informativa. Os ficheiros de identidade visual originais
+/// serão incluídos como assets apenas após confirmação dos binários.
+class AboutPage extends StatelessWidget {
+  const AboutPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Scaffold(
+      appBar: AppBar(title: const Text('Sobre o LuckyScan50')),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 760),
+          child: ListView(
+            padding: const EdgeInsets.all(24),
+            children: [
+              Semantics(
+                label: 'Identidade LuckyScan50',
+                child: Container(
+                  height: 200,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: const Color(0xff172841),
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.document_scanner_outlined,
+                          size: 62, color: theme.colorScheme.primary),
+                      const SizedBox(height: 12),
+                      const Text('LUCKYSCAN50',
+                        style: TextStyle(fontSize: 25,
+                          letterSpacing: 2.5, fontWeight: FontWeight.bold,
+                          color: Color(0xffe7c77f))),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text('As suas apostas, organizadas.',
+                  style: theme.textTheme.headlineSmall),
+              const SizedBox(height: 12),
+              const Text(
+                'O LuckyScan50 permite guardar recibos e apostas do '
+                'Euromilhões e M1lhão no dispositivo, consultar resultados '
+                'disponíveis e acompanhar os valores apostados e recebidos.'),
+              const SizedBox(height: 16),
+              const Text(
+                'As fotografias e apostas são guardadas localmente. '
+                'O reconhecimento de texto exige confirmação antes '
+                'de guardar os dados.'),
+              const SizedBox(height: 24),
+              Text('Projeto independente',
+                  style: theme.textTheme.titleLarge),
+              const SizedBox(height: 8),
+              const Text(
+                'Aplicação não oficial, sem ligação ou associação aos '
+                'Jogos Santa Casa. A verificação e atribuição oficial '
+                'de prémios competem exclusivamente ao operador autorizado.'),
+              const SizedBox(height: 24),
+              Text('Versão de desenvolvimento 0.2.0',
+                  style: theme.textTheme.bodySmall),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class ReceiptPage extends ConsumerWidget {
