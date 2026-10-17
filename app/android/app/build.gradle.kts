@@ -28,6 +28,15 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // Flutter's target flag filters its engine; also filter native plugin ABIs.
+        // Other requested targets keep the existing Flutter defaults.
+        if (providers.gradleProperty("target-platform").orNull == "android-arm64") {
+            ndk {
+                abiFilters.clear()
+                abiFilters.add("arm64-v8a")
+            }
+        }
+
     }
 
     buildTypes {
