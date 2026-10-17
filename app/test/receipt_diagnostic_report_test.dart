@@ -30,6 +30,9 @@ void main() {
         6,
         'O6',
         'row-2',
+        betIndex: 2,
+        bounds: CropBox(0, 20, 600, 80),
+        validation: 'conflict',
         correction: 'O→0',
         conflict: true,
       );
@@ -59,6 +62,7 @@ void main() {
         multiPass: result,
         ocrMs: 10,
         parseMs: 30,
+        phaseTimings: {'cleanup': 2, 'total': 44},
       );
       final report = receiptDiagnosticReport(
         scan,
@@ -69,8 +73,15 @@ void main() {
       expect(encoded, isNot(contains('/private/user')));
       expect(encoded, isNot(contains('photo.jpg')));
       expect(report['photographsIncluded'], false);
+      expect(report['schemaVersion'], 2);
+      expect(encoded, contains('"validation":"conflict"'));
+      expect(encoded, contains('"betIndex":2'));
+      expect((report['timingsMs'] as Map)['phases'], {
+        'cleanup': 2,
+        'total': 44,
+      });
       expect((report['initialPass'] as Map)['rawText'], 'FIRST PASS');
-      expect((report['timingsMs'] as Map)['totalProcessing'], 40);
+      expect((report['timingsMs'] as Map)['totalProcessing'], 44);
       final passes = report['cropPasses'] as List;
       expect((passes.first['result'] as Map)['rawText'], 'N O6 E');
       expect(passes.last['error'], 'PlatformException');

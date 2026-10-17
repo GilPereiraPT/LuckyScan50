@@ -2,6 +2,12 @@ package com.gilpereira.luckyscan50
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.BitmapRegionDecoder
+import android.graphics.Rect
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.ColorMatrix
+import android.graphics.ColorMatrixColorFilter
 import android.graphics.Matrix
 import androidx.exifinterface.media.ExifInterface
 import io.flutter.embedding.android.FlutterActivity
@@ -16,6 +22,7 @@ import kotlin.math.floor
 class MainActivity : FlutterActivity() {
     private val worker = Executors.newSingleThreadExecutor()
     private val sessions = mutableMapOf<String, File>()
+    private val decoders = mutableMapOf<String, BitmapRegionDecoder>()
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "luckyscan50/receipt_crops")
@@ -30,14 +37,18 @@ class MainActivity : FlutterActivity() {
                                 requireNotNull(call.argument<Number>("top")).toDouble(),
                                 requireNotNull(call.argument<Number>("right")).toDouble(),
                                 requireNotNull(call.argument<Number>("bottom")).toDouble(),
-                                requireNotNull(call.argument<Number>("scale")).toDouble()
+                                requireNotNull(call.argument<Number>("scale")).toDouble(),
+                                call.argument<Number>("deskewDegrees")?.toDouble() ?: 0.0,
+                                call.argument<Boolean>("contrast") ?: false
                             )
                             "rotate" -> rotate(
                                 requireNotNull(call.argument<String>("session")),
                                 requireNotNull(call.argument<Number>("turns")).toInt()
                             )
                             "dispose" -> {
-                                sessions.remove(call.argument<String>("session"))?.deleteRecursively()
+                                val id = call.argument<String>("session")
+                                decoders.remove(id)?.recycle()
+                                sessions.remove(id)?.deleteRecursively()
                                 null
                             }
                             else -> throw IllegalArgumentException("Unsupported crop operation")
@@ -116,35 +127,62 @@ class MainActivity : FlutterActivity() {
         }
     }
 
-    private fun crop(session: String, left: Double, top: Double, right: Double, bottom: Double, scale: Double): String {
-        require(listOf(left, top, right, bottom, scale).all { it.isFinite() })
+    @Suppress("DEPRECATION")
+    private fun crop(session: String, left: Double, top: Double, right: Double, bottom: Double,
+                     scale: Double, deskewDegrees: Double, contrast: Boolean): String {
+        require(listOf(left, top, right, bottom, scale, deskewDegrees).all { it.isFinite() })
         require(scale == 1.0 || scale == 2.0)
+        require(kotlin.math.abs(deskewDegrees) <= 15.0)
         val directory = requireNotNull(sessions[session]) { "Unknown crop session" }
-        val source = requireNotNull(BitmapFactory.decodeFile(File(directory, "upright.png").path))
-        var part: Bitmap? = null
-        var resized: Bitmap? = null
+        val decoder = decoders.getOrPut(session) {
+            requireNotNull(BitmapRegionDecoder.newInstance(File(directory, "upright.png").path, false))
+        }
+        val bitmaps = mutableListOf<Bitmap>()
         try {
-            val x = floor(left).toInt().coerceIn(0, source.width - 1)
-            val y = floor(top).toInt().coerceIn(0, source.height - 1)
-            val endX = ceil(right).toInt().coerceIn(x + 1, source.width)
-            val endY = ceil(bottom).toInt().coerceIn(y + 1, source.height)
+            val x = floor(left).toInt().coerceIn(0, decoder.width - 1)
+            val y = floor(top).toInt().coerceIn(0, decoder.height - 1)
+            val endX = ceil(right).toInt().coerceIn(x + 1, decoder.width)
+            val endY = ceil(bottom).toInt().coerceIn(y + 1, decoder.height)
             require((endX - x).toLong() * (endY - y) * scale * scale <= 16000000)
-            part = Bitmap.createBitmap(source, x, y, endX - x, endY - y)
-            val outputBitmap = if (scale == 1.0) part else Bitmap.createScaledBitmap(part,
-                (part.width * scale).toInt(), (part.height * scale).toInt(), true)
-            resized = outputBitmap
-            val output = File(directory, "row-${UUID.randomUUID()}.png")
-            output.outputStream().use { require(outputBitmap.compress(Bitmap.CompressFormat.PNG, 100, it)) }
+            var image = requireNotNull(decoder.decodeRegion(Rect(x, y, endX, endY), null))
+            bitmaps.add(image)
+            if (kotlin.math.abs(deskewDegrees) > 0.05) {
+                val matrix = Matrix().apply { setRotate(-deskewDegrees.toFloat()) }
+                image = Bitmap.createBitmap(image, 0, 0, image.width, image.height, matrix, true)
+                bitmaps.add(image)
+                val opaque = Bitmap.createBitmap(image.width, image.height, Bitmap.Config.ARGB_8888)
+                Canvas(opaque).apply {
+                    drawColor(android.graphics.Color.WHITE)
+                    drawBitmap(image, 0f, 0f, null)
+                }
+                image = opaque
+                bitmaps.add(image)
+            }
+            if (contrast) {
+                val adjusted = Bitmap.createBitmap(image.width, image.height, Bitmap.Config.ARGB_8888)
+                val filter = ColorMatrixColorFilter(ColorMatrix(floatArrayOf(
+                    1.4f,0f,0f,0f,-51f, 0f,1.4f,0f,0f,-51f,
+                    0f,0f,1.4f,0f,-51f, 0f,0f,0f,1f,0f)))
+                Canvas(adjusted).drawBitmap(image, 0f, 0f, Paint().apply { colorFilter = filter })
+                image = adjusted
+                bitmaps.add(image)
+            }
+            if (scale != 1.0) {
+                image = Bitmap.createScaledBitmap(image, (image.width * scale).toInt(), (image.height * scale).toInt(), true)
+                bitmaps.add(image)
+            }
+            val output = File(directory, "cell-${UUID.randomUUID()}.png")
+            output.outputStream().use { require(image.compress(Bitmap.CompressFormat.PNG, 100, it)) }
             return output.path
         } finally {
-            if (resized !== part && resized !== source) resized?.recycle()
-            if (part !== source) part?.recycle()
-            source.recycle()
+            bitmaps.distinct().forEach { it.recycle() }
         }
     }
 
     override fun onDestroy() {
         worker.execute {
+            decoders.values.forEach { it.recycle() }
+            decoders.clear()
             sessions.values.forEach { it.deleteRecursively() }
             sessions.clear()
         }

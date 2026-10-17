@@ -49,6 +49,8 @@ class ReceiptCropBackend {
       'session': image.session,
       ...row.box.toJson(),
       'scale': scale,
+      'deskewDegrees': row.deskewDegrees,
+      'contrast': row.contrast,
     });
     if (response == null) throw StateError('No crop');
     return response;

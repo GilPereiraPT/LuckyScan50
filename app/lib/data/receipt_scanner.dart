@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:image_picker/image_picker.dart';
@@ -20,6 +21,8 @@ class ReceiptScan {
     this.parseMs = 0,
     this.initialParseMs = 0,
     this.totalMs,
+    this.phaseTimings = const {},
+    this.imageGeometry = const {},
     this.multiPass,
     this.recoveryError,
     this.initialReceipt,
@@ -30,7 +33,10 @@ class ReceiptScan {
   final String? imagePath, recoveryError;
   final int ocrMs, parseMs, initialParseMs;
   final int? totalMs;
-  int get totalProcessingMs => totalMs ?? ocrMs + parseMs;
+  final Map<String, int> phaseTimings;
+  final Map<String, num> imageGeometry;
+  int get totalProcessingMs =>
+      phaseTimings['total'] ?? totalMs ?? ocrMs + parseMs;
   final MultiPassResult? multiPass;
   final ScannedReceipt? initialReceipt;
   final List<OrientationPass> orientationPasses;
@@ -57,6 +63,8 @@ Future<ReceiptScan?> scanReceiptImage(ImageSource source) async {
 
 Future<ReceiptScan> scanReceiptFile(String path) async {
   final total = Stopwatch()..start();
+  final phaseTimings = <String, int>{};
+  final imageGeometry = <String, num>{};
   String stage = 'seleção da imagem';
   TextRecognizer? recognizer;
   final preparedImages = <PreparedReceiptImage>[];
@@ -75,20 +83,39 @@ Future<ReceiptScan> scanReceiptFile(String path) async {
     final initialParseMs = timer.elapsedMilliseconds - ocrMs;
     timer.reset();
     final orientationPasses = <OrientationPass>[];
+    if (first.fullyParsed && !initial.tokens.any(verticalReceiptToken)) {
+      return ReceiptScan(
+        first,
+        initial.text,
+        imagePath: path,
+        ocrMs: ocrMs,
+        initialParseMs: initialParseMs,
+        initialReceipt: first,
+        phaseTimings: phaseTimings,
+        imageGeometry: imageGeometry,
+      );
+    }
     try {
       stage = 'normalização EXIF e preparação dos recortes';
+      final preparationClock = Stopwatch()..start();
       final prepared = await backend.prepare(path);
+      imageGeometry.addAll({
+        'preparedWidth': prepared.width,
+        'preparedHeight': prepared.height,
+        'workingQuarterTurns': 0,
+      });
+      phaseTimings['imagePreparation'] = preparationClock.elapsedMilliseconds;
       preparedImages.add(prepared);
       // ML Kit fromFilePath and the native crop backend both apply EXIF.
       // Native prepare writes lossless upright pixels without changing input.
       var normalized = prepared;
       var workingFrame = initial;
+      final orientationClock = Stopwatch()..start();
       if (planBetCrops(
-                initial.tokens,
-                normalized.width,
-                normalized.height,
-              ).rows.length <
-              2 &&
+            initial.tokens,
+            normalized.width,
+            normalized.height,
+          ).rows.isEmpty &&
           initial.tokens.any(verticalReceiptToken)) {
         for (final turns in [1, 3, 2]) {
           final rotated = await backend.rotate(prepared, turns);
@@ -105,31 +132,54 @@ Future<ReceiptScan> scanReceiptFile(String path) async {
           orientationPasses.add(
             OrientationPass(turns, frame, watch.elapsedMilliseconds, rowCount),
           );
-          if (rowCount >= 2) {
+          if (rowCount >= 1) {
+            imageGeometry['workingQuarterTurns'] = turns;
             normalized = rotated;
             workingFrame = frame;
             break;
           }
         }
       }
-      stage = 'reconhecimento das linhas recortadas';
+      phaseTimings['orientation'] = orientationClock.elapsedMilliseconds;
+      imageGeometry.addAll({
+        'workingWidth': normalized.width,
+        'workingHeight': normalized.height,
+      });
+      stage = 'reconhecimento das regiões numéricas';
       final recovered = await recoverReceiptRows(
         initial: workingFrame,
         metadata: first,
         width: normalized.width,
         height: normalized.height,
         recognizeCrop: (row, scale) async {
-          final path = await backend.crop(normalized, row, scale);
+          final preparationClock = Stopwatch()..start();
+          final croppedPath = await backend.crop(normalized, row, scale);
+          phaseTimings['cropPreparation'] =
+              (phaseTimings['cropPreparation'] ?? 0) +
+              preparationClock.elapsedMilliseconds;
           final clock = Stopwatch()..start();
-          final frame = receiptFrame(
-            await engine.processImage(InputImage.fromFilePath(path)),
-          );
-          return OcrFrame(
-            frame.text,
-            frame.tokens,
-            rows: frame.rows,
-            elapsedMs: clock.elapsedMilliseconds,
-          );
+          try {
+            final frame = receiptFrame(
+              await engine.processImage(InputImage.fromFilePath(croppedPath)),
+            );
+            return OcrFrame(
+              frame.text,
+              frame.tokens,
+              rows: frame.rows,
+              elapsedMs: clock.elapsedMilliseconds,
+            );
+          } finally {
+            phaseTimings['cropRecognition'] =
+                (phaseTimings['cropRecognition'] ?? 0) +
+                clock.elapsedMilliseconds;
+            try {
+              await File(croppedPath).delete();
+            } catch (_) {
+              debugPrint(
+                'Receipt crop file cleanup deferred to session disposal',
+              );
+            }
+          }
         },
       );
       return ReceiptScan(
@@ -140,6 +190,8 @@ Future<ReceiptScan> scanReceiptFile(String path) async {
         parseMs: timer.elapsedMilliseconds,
         initialParseMs: initialParseMs,
         totalMs: total.elapsedMilliseconds,
+        phaseTimings: phaseTimings,
+        imageGeometry: imageGeometry,
         multiPass: recovered,
         initialReceipt: first,
         orientationPasses: orientationPasses,
@@ -153,6 +205,8 @@ Future<ReceiptScan> scanReceiptFile(String path) async {
         parseMs: timer.elapsedMilliseconds,
         initialParseMs: initialParseMs,
         totalMs: total.elapsedMilliseconds,
+        phaseTimings: phaseTimings,
+        imageGeometry: imageGeometry,
         initialReceipt: first,
         orientationPasses: orientationPasses,
         recoveryError: '$stage: ${error.runtimeType}',
@@ -161,6 +215,7 @@ Future<ReceiptScan> scanReceiptFile(String path) async {
   } catch (error) {
     throw ReceiptScanFailure(stage, error.runtimeType.toString());
   } finally {
+    final cleanupClock = Stopwatch()..start();
     try {
       await recognizer?.close();
     } catch (_) {
@@ -173,5 +228,7 @@ Future<ReceiptScan> scanReceiptFile(String path) async {
         debugPrint('Receipt crop cleanup failed');
       }
     }
+    phaseTimings['cleanup'] = cleanupClock.elapsedMilliseconds;
+    phaseTimings['total'] = total.elapsedMilliseconds;
   }
 }

@@ -42,6 +42,11 @@ Map<String, Object?> receiptDiagnosticReport(
     'parsed': parsed(f.parse()),
   };
   Map<String, Object?> value(ValueEvidence v) => {
+    'betIndex': v.betIndex,
+    'bounds': v.bounds?.toJson(),
+    'coordinateFrame': v.bounds == null ? 'unknown' : 'working-image',
+    'validation': v.validation,
+    'requiresConfirmation': v.requiresConfirmation,
     'kind': v.kind,
     'position': v.position,
     'value': v.value,
@@ -52,16 +57,23 @@ Map<String, Object?> receiptDiagnosticReport(
   };
   final first = scan.initialReceipt;
   return {
-    'schemaVersion': 1,
+    'schemaVersion': 2,
     'build': build,
     'appVersion': version,
     'engine': 'Google ML Kit Latin',
+    'imageGeometry': scan.imageGeometry,
+    'workingFramePass': (scan.imageGeometry['workingQuarterTurns'] ?? 0) == 0
+        ? 'initialPass'
+        : 'orientation:${scan.imageGeometry['workingQuarterTurns']}',
     'purpose': 'diagnostic',
     'realPhotoOcrValidated': false,
     'photographsIncluded': false,
     'privacy':
         'Contains recognized receipt text; no photographs or file paths.',
     'timingsMs': {
+      'phases': scan.phaseTimings,
+      'geometry': recovery?.geometryMs,
+      'cellPasses': recovery?.cellMs,
       'initialOcr': scan.ocrMs,
       'interpretationAndRecovery': scan.parseMs,
       'rowRecovery': recovery?.elapsedMs,
@@ -94,10 +106,15 @@ Map<String, Object?> receiptDiagnosticReport(
                 .map(token)
                 .toList(),
           },
+    'skippedKnownCells': recovery?.skippedKnownCells,
     'cropPasses': [
       for (final p in recovery?.passes ?? <CropPass>[])
         {
           'id': p.id,
+          'kind': p.crop.kind ?? 'row',
+          'position': p.crop.position,
+          'deskewDegrees': p.crop.deskewDegrees,
+          'contrast': p.crop.contrast,
           'betIndex': p.crop.index,
           'bounds': p.crop.box.toJson(),
           'printedIndex': p.crop.printedIndex,
