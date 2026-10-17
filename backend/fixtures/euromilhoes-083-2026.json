@@ -1,0 +1,125 @@
+{
+  "game": "euromilhoes",
+  "drawId": "083/2026",
+  "date": "2026-10-16",
+  "numbers": [
+    7,
+    15,
+    16,
+    22,
+    35
+  ],
+  "stars": [
+    4,
+    6
+  ],
+  "status": "complete",
+  "sourceUrl": "https://www.jogossantacasa.pt/web/SCCartazResult/euroMilhoes",
+  "retrievedAt": "2026-10-17T09:00:00Z",
+  "tiers": [
+    {
+      "tier": 1,
+      "main": 5,
+      "stars": 2,
+      "amountCents": null,
+      "winnersPortugal": 0,
+      "winnersTotal": 0
+    },
+    {
+      "tier": 2,
+      "main": 5,
+      "stars": 1,
+      "amountCents": null,
+      "winnersPortugal": 0,
+      "winnersTotal": 0
+    },
+    {
+      "tier": 3,
+      "main": 5,
+      "stars": 0,
+      "amountCents": 15453308,
+      "winnersPortugal": 0,
+      "winnersTotal": 5
+    },
+    {
+      "tier": 4,
+      "main": 4,
+      "stars": 2,
+      "amountCents": 93045,
+      "winnersPortugal": 1,
+      "winnersTotal": 49
+    },
+    {
+      "tier": 5,
+      "main": 4,
+      "stars": 1,
+      "amountCents": 10106,
+      "winnersPortugal": 61,
+      "winnersTotal": 831
+    },
+    {
+      "tier": 6,
+      "main": 3,
+      "stars": 2,
+      "amountCents": 4555,
+      "winnersPortugal": 166,
+      "winnersTotal": 1949
+    },
+    {
+      "tier": 7,
+      "main": 4,
+      "stars": 0,
+      "amountCents": 3363,
+      "winnersPortugal": 162,
+      "winnersTotal": 1855
+    },
+    {
+      "tier": 8,
+      "main": 2,
+      "stars": 2,
+      "amountCents": 1178,
+      "winnersPortugal": 2439,
+      "winnersTotal": 26470
+    },
+    {
+      "tier": 9,
+      "main": 3,
+      "stars": 1,
+      "amountCents": 992,
+      "winnersPortugal": 3079,
+      "winnersTotal": 35052
+    },
+    {
+      "tier": 10,
+      "main": 3,
+      "stars": 0,
+      "amountCents": 0,
+      "winnersPortugal": 0,
+      "winnersTotal": 0
+    },
+    {
+      "tier": 11,
+      "main": 1,
+      "stars": 2,
+      "amountCents": 0,
+      "winnersPortugal": 0,
+      "winnersTotal": 0
+    },
+    {
+      "tier": 12,
+      "main": 2,
+      "stars": 1,
+      "amountCents": 0,
+      "winnersPortugal": 0,
+      "winnersTotal": 0
+    },
+    {
+      "tier": 13,
+      "main": 2,
+      "stars": 0,
+      "amountCents": 0,
+      "winnersPortugal": 0,
+      "winnersTotal": 0
+    }
+  ]
+}

@@ -4,9 +4,11 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "start": "node dist/src/index.js",
     "build": "tsc",
     "lint": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "import:result": "tsx src/jobs/importResults.ts"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
