@@ -36,7 +36,7 @@ ScannedReceipt parseScannedReceipt(RecognizedText recognized) {
   final expectedLines = expected == null ? null : int.tryParse(expected.group(1)!);
 
   fragments.sort((a, b) => a.y.compareTo(b.y));
-  final labels = fragments.where((f) => RegExp(r'^[1-9][.]?\s*N[.:]?
+  final labels = fragments.where((f) => RegExp(r'^[1-9][.]?\s*N[.:]?$').hasMatch(f.text)).toList();
   if (labels.isEmpty) {
     return ScannedReceipt(lines: const [], code: code, amount: amount, expectedLines: expectedLines);
   }
@@ -47,7 +47,7 @@ ScannedReceipt parseScannedReceipt(RecognizedText recognized) {
     final stars = fragments.where((f) =>
       f.y > n.y + n.height * 0.4 &&
       f.y < math.min(boundary, n.y + n.height * 3.3) &&
-      RegExp(r'^E[.:]?
+      RegExp(r'^E[.:]?$').hasMatch(f.text)
     ).toList();
     if (stars.isEmpty) continue;
     final e = stars.first;
@@ -75,7 +75,8 @@ List<int> _numbers(List<_Fragment> elements) {
         .replaceAll('S', '5').replaceAll('B', '8');
     for (final token in normalized.split(RegExp(r'\s+'))) {
       if (token.isEmpty) continue;
-      if (!RegExp(r'^\d{1,2}
+      if (!RegExp(r'^\d{1,2}$').hasMatch(token)) return const [];
+      values.add(int.parse(token));
   }
   return values;
 }
