@@ -1,36 +1,52 @@
-# LuckyScan 50
+# LuckyScan50
 
-Aplicação Android independente para registar e verificar apostas portuguesas do Euromilhões e M1lhão, acompanhar prémios e prazos e analisar estatísticas financeiras e históricas.
+Carteira Android independente para registar apostas portuguesas do Euromilhões e M1lhão, guardar comprovativos localmente e consultar resultados importados administrativamente.
 
-> Projeto não oficial, sem associação aos Jogos Santa Casa. Os resultados apresentados são informativos: prevalece a validação pelo operador autorizado.
+**Projeto não oficial, sem associação aos Jogos Santa Casa.** Os resultados e prémios apresentados são informativos; prevalece a validação do operador autorizado. As estatísticas não preveem sorteios.
 
-## Objetivos
-- Importar fotografias de recibos físicos e capturas de ecrã de apostas online, com confirmação manual dos campos.
-- Arquivar localmente chaves, sorteios, códigos M1lhão e comprovativos.
-- Verificar os resultados oficiais após a publicação, com identificação dos 13 escalões.
-- Avisar de prémios, sorteios sem prémio e prazos de reclamação.
-- Acompanhar valores apostados, prémios apurados/recebidos e frequências dos números.
-- Permitir cópias de segurança encriptadas opcionais.
+## Estado real: primeira versão de desenvolvimento 0.2.0
 
-## Estrutura
-- `app/`: app Flutter Android e domínio Dart.
-- `backend/`: API Node.js/TypeScript e ingestão de resultados (a implementar).
-- `shared/`: regras e modelos partilhados.
-- `docs/`: requisitos, arquitetura, decisões e limitações.
+- Aplicação Flutter Android navegável, português de Portugal, temas claro/escuro.
+- Entrada manual de várias chaves e concursos por recibo; Euromilhões e M1lhão associados, com uma única despesa.
+- Carteira SQLite privada, pesquisa por identificador/concurso, filtros, registo de recebimentos e histórico de alterações.
+- Consulta da API existente, cache offline, sincronização manual e ao regressar à aplicação, cálculo local dos 13 escalões e códigos M1lhão.
+- Captura/galeria e OCR local com ML Kit. A transcrição é apresentada para consulta; **o preenchimento dos campos é manual**, sempre confirmado.
+- Totais financeiros, frequências dos números em cache e pessoais, exportação CSV, backup AES-GCM de recibos e imagens e restauro por ID.
+- API de produção Python 3.12 Passenger/WSGI nativo, sem dependências externas, SQLite transacional, migração JSON com cópia, revisões, estatísticas e consulta pública somente de leitura.
+- Adaptador administrativo de importação manual/caixa de entrada para execução manual ou futura configuração Cron pelo proprietário.
 
-## Estado
-**Fundação do projeto**. Os leitores OCR, a interface, o armazenamento local, as notificações e a recolha oficial de resultados **ainda não estão implementados**. Não utilizar para validar prémios reais.
+**Ainda não concluído:** extração estruturada automática dos comprovativos, notificações Android, agendamento em segundo plano, prazos com versões regulamentares, bloqueio biométrico, estatísticas pessoais completas por período, exportação XLSX e distribuição assinada. Não existe scraper autorizado nem Cron remoto ativo. A aplicação ainda requer testes num dispositivo Android real para câmara/OCR, seletor de ficheiros, partilha e restauro. Não usar como única prova de direito a prémios.
+
+## Repositório
+
+| Pasta | Função |
+| --- | --- |
+| `app/` | Aplicação Flutter Android (`com.gilpereira.luckyscan50`) |
+| `api-python/` | Backend de produção, Passenger WSGI e SQLite |
+| `backend/` | Implementação TypeScript conservada como referência/regressão |
+| `shared/` | Escalões partilhados |
+| `docs/` | Contratos, auditoria e decisões |
 
 ## Desenvolvimento
-```bash
-cd app
-flutter create --org com.gilpereira --project-name luckyscan50 .
-flutter pub get
-flutter test
 
-cd ../backend
-npm install
-npm test
+Flutter **3.35.7**, Dart 3.9.2, Android API 36, minSdk 23, JDK 17 ou 21. Compilação de testes:
+
+```sh
+cd app
+flutter pub get --enforce-lockfile
+flutter analyze
+flutter test
+flutter build apk --debug --target-platform android-arm64
 ```
 
-A fonte oficial de dados e a viabilidade de publicação nas lojas necessitam de validação antes da distribuição.
+Os testes SQLite de desktop necessitam de `libsqlite3.so` (`libsqlite3-dev` em Debian/Ubuntu). A aplicação Android usa SQLite do sistema. O APK fica em `app/build/app/outputs/flutter-apk/app-debug.apk`. Instalar com `adb install -r <apk>` num dispositivo de testes. Não há assinatura de produção configurada.
+
+```sh
+cd api-python
+python3 -m unittest discover -v
+PORT=3001 python3 app.py
+```
+
+O backend de referência continua a suportar `npm install`, `npm run lint`, `npm test -- --maxWorkers=2 --minWorkers=1` e `npm run build` em `backend/`, com Node 22.
+
+Consulte [instalação Android](app/README.md), [Passenger e migrações](api-python/README.md), [contratos HTTP](docs/results-api.md) e [auditoria e limitações](docs/development-audit.md). Nenhum comando faz deploy para o cPanel ou altera o WordPress.
