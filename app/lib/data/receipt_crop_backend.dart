@@ -1,4 +1,5 @@
 import 'package:flutter/services.dart';
+import '../domain/receipt_rules.dart';
 import '../domain/receipt_multipass.dart';
 
 class PreparedReceiptImage {
@@ -37,6 +38,19 @@ class ReceiptCropBackend {
       (response['width'] as num).toDouble(),
       (response['height'] as num).toDouble(),
       response['session'] as String,
+    );
+  }
+
+  Future<ReceiptRaster> luminance(PreparedReceiptImage image) async {
+    final response = await channel.invokeMapMethod<String, dynamic>(
+      'luminance',
+      {'session': image.session},
+    );
+    if (response == null) throw StateError('No receipt luminance');
+    return ReceiptRaster(
+      response['width'] as int,
+      response['height'] as int,
+      response['pixels'] as Uint8List,
     );
   }
 

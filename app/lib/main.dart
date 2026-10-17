@@ -855,6 +855,11 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
       scan(selected, additionalMilhao: true);
   Future<void> save() async {
     try {
+      if (lines.text.contains('?')) {
+        throw const FormatException(
+          'Há apostas pendentes: complete ou corrija o formulário antes de guardar.',
+        );
+      }
       final parsed = lines.text
           .trim()
           .split('\n')

@@ -95,12 +95,13 @@ void main() {
     expect(p.bets.single.issues.join(' '), contains('O6'));
     expect(p.bets.single.stars, [4, 6]);
   });
-  test('administrative text terminates a partial bet', () {
+  test('administrative footer terminates the entire betting zone', () {
     final p = parseReceiptObservations(
       text:
           '1.N 06 20 29 32 48\nTOTAL 11,00 €\nE 04 06\n2.N 05 17 36 47 49 E 05 11',
     );
-    expect(p.lines, [referenceBets[1]]);
+    expect(p.lines, isEmpty);
+    expect(p.bets.length, 1);
     expect(p.bets.first.complete, isFalse);
   });
   test('same numbers on different bets allowed, repeated index uncertain', () {

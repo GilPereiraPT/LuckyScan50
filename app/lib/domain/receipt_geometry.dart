@@ -40,11 +40,22 @@ class BetCrop {
 }
 
 class CropPlan {
-  const CropPlan(this.rows, this.verticalElements, this.warnings, {this.zone});
+  const CropPlan(
+    this.rows,
+    this.verticalElements,
+    this.warnings, {
+    this.zone,
+    this.expectedLines,
+    this.missingIndices = const [],
+    this.headerRule,
+    this.footerRule,
+  });
   final List<BetCrop> rows;
   final List<ReceiptToken> verticalElements;
   final List<String> warnings;
-  final CropBox? zone;
+  final CropBox? zone, headerRule, footerRule;
+  final int? expectedLines;
+  final List<int> missingIndices;
 }
 
 double horizontalReceiptAngle(double angle) =>
@@ -69,13 +80,20 @@ double _median(Iterable<double> values) {
 
 /// Uses observed row anchors and tall intersecting elements, NEVER expected bet
 /// counts, known winning numbers or reference-ticket values to create crops.
-CropPlan planBetCrops(List<ReceiptToken> tokens, double width, double height) {
+CropPlan planBetCrops(
+  List<ReceiptToken> tokens,
+  double width,
+  double height, {
+  List<CropBox> rules = const [],
+}) {
   final horizontal = tokens
       .where(
         (t) =>
             !verticalReceiptToken(t) &&
             t.height > 0 &&
             t.height < height / 8 &&
+            t.x.isFinite &&
+            t.y.isFinite &&
             horizontalReceiptAngle(t.angle).abs() <= 20 &&
             t.x >= 0 &&
             t.x <= width &&
@@ -98,155 +116,189 @@ CropPlan planBetCrops(List<ReceiptToken> tokens, double width, double height) {
       ? 0.0
       : math.tan(_median(angles) * math.pi / 180);
   double rowY(ReceiptToken t) => t.y - slope * t.x;
+  double ruleY(CropBox r) =>
+      (r.top + r.bottom) / 2 - slope * (r.left + r.right) / 2;
   final sorted = [...horizontal]..sort((a, b) => rowY(a).compareTo(rowY(b)));
   final groups = <List<ReceiptToken>>[];
-  for (final token in sorted) {
+  for (final t in sorted) {
     if (groups.isEmpty ||
-        (rowY(token) - _median(groups.last.map(rowY))).abs() > h * .55) {
-      groups.add([token]);
+        (rowY(t) - _median(groups.last.map(rowY))).abs() > h * .55) {
+      groups.add([t]);
     } else {
-      groups.last.add(token);
+      groups.last.add(t);
     }
   }
-  final anchors = <({List<ReceiptToken> tokens, int? index})>[];
-  for (final group in groups) {
-    group.sort((a, b) => a.x.compareTo(b.x));
-    final text = group.map((t) => t.text.toUpperCase()).join(' ');
-    final marker = RegExp(r'^\s*(?:(\d{1,2})\s*[.)]?\s*)?N\b').firstMatch(text);
-    if (marker != null) {
-      anchors.add((tokens: group, index: int.tryParse(marker[1] ?? '')));
+  String text(List<ReceiptToken> g) {
+    g.sort((a, b) => a.x.compareTo(b.x));
+    return g.map((t) => t.text.toUpperCase()).join(' ');
+  }
+
+  final anchors = <({List<ReceiptToken> group, int? index, double x})>[];
+  final warnings = <String>[];
+  for (final g in groups) {
+    final m = RegExp(r'^\s*(?:(\d{1,2})\s*[.)]?\s*)?N\b').firstMatch(text(g));
+    if (m == null) continue;
+    final index = int.tryParse(m[1] ?? '');
+    if (index != null && (index < 1 || index > maxReceiptBets)) {
+      warnings.add(
+        'Identificador $index fora do limite de $maxReceiptBets apostas; confirmar formato.',
+      );
+      continue;
     }
+    anchors.add((group: g, index: index, x: g.first.x - g.first.width / 2));
   }
   if (anchors.isEmpty) {
     return CropPlan([], vertical, [
+      ...warnings,
       'Zona das apostas não localizada com evidência suficiente.',
     ]);
   }
-  final anchorTop = anchors.first.tokens.map((t) => t.y).reduce(math.min);
-  final anchorBottom = anchors.last.tokens.map((t) => t.y).reduce(math.max);
-  final left = math.max(
-    0.0,
-    anchors
-            .expand((a) => a.tokens)
-            .map((t) => t.x - t.width / 2)
-            .reduce(math.min) -
-        h * 2,
+  // Select the repeated identifier column. A two-digit label may be wider;
+  // allow glyph-sized variation, never an unrelated numeric footer column.
+  final clusters = <List<int>>[];
+  for (var i = 0; i < anchors.length; i++) {
+    final matching = clusters.where(
+      (c) =>
+          (anchors[i].x - _median(c.map((j) => anchors[j].x))).abs() <= h * 2,
+    );
+    if (matching.isEmpty) {
+      clusters.add([i]);
+    } else {
+      matching.first.add(i);
+    }
+  }
+  clusters.sort((a, b) => b.length.compareTo(a.length));
+  final chosen = clusters.first.map((i) => anchors[i]).toList();
+  final firstY = _median(chosen.first.group.map(rowY));
+  final above = rules.where((r) => ruleY(r) < firstY - h * .4).toList()
+    ..sort((a, b) => ruleY(a).compareTo(ruleY(b)));
+  final header = above.isEmpty ? null : above.last;
+  final below = rules.where((r) => ruleY(r) > firstY + h).toList()
+    ..sort((a, b) => ruleY(a).compareTo(ruleY(b)));
+  final footer = below.isEmpty ? null : below.first;
+  final footerText = groups
+      .where(
+        (g) =>
+            _median(g.map(rowY)) > firstY + h &&
+            RegExp(
+              r'^(?:TOTAL\b|EUROMILH[ÕO]ES\s+COM\b|EM TODO\b|VIRN\b|CODIGO\b)',
+            ).hasMatch(text(g)),
+      )
+      .toList();
+  final end = math.min(
+    footer == null ? height : ruleY(footer),
+    footerText.isEmpty ? height : _median(footerText.first.map(rowY)) - h,
   );
-  // Full receipt width preserves stars even if none survived the initial OCR.
-  final seed = CropBox(
+  final selected = chosen
+      .where((a) => _median(a.group.map(rowY)) < end)
+      .toList();
+  if (selected.isEmpty) return CropPlan([], [], ['Zona das apostas ambígua.']);
+  final lastY = _median(selected.last.group.map(rowY));
+  final es = groups
+      .where(
+        (g) =>
+            RegExp(r'^E\b').hasMatch(text(g)) &&
+            _median(g.map(rowY)) > lastY &&
+            _median(g.map(rowY)) < math.min(end, lastY + h * 3),
+      )
+      .toList();
+  final bottomY = math.min(
+    end,
+    es.isEmpty ? lastY + h * 2 : _median(es.last.map(rowY)) + h,
+  );
+  final topY = header == null ? firstY - h * 1.5 : ruleY(header) + h * .2;
+  final left = math.max(0.0, selected.map((a) => a.x).reduce(math.min) - h * 2);
+  final zone = CropBox(
     left,
-    math.max(0, anchorTop - h * 2),
+    math.max(0, topY + math.min(0, slope * width)),
     width,
-    math.min(height, anchorBottom + h * 2),
+    math.min(height, bottomY + math.max(0, slope * width)),
   );
   final relevant = vertical
-      .where((t) => receiptTokenBox(t).intersects(seed))
+      .where((t) => receiptTokenBox(t).intersects(zone))
       .toList();
-  final top = relevant.isEmpty
-      ? seed.top
-      : math.max(
-          0.0,
-          math.min(
-            seed.top,
-            relevant.map((t) => receiptTokenBox(t).top).reduce(math.min),
-          ),
-        );
-  final bottom = relevant.isEmpty
-      ? seed.bottom
-      : math.min(
-          height,
-          math.max(
-            seed.bottom,
-            relevant.map((t) => receiptTokenBox(t).bottom).reduce(math.max),
-          ),
-        );
-  final zone = CropBox(left, top, width, bottom);
-  // Recover other OBSERVED suffix rows within the same column span, not rows
-  // interpolated from a printed count or from a vertical word's character count.
-  final candidateGroups = groups.where((group) {
-    final y = _median(group.map((t) => t.y));
-    if (y < top || y > bottom) return false;
-    if (anchors.any((a) => identical(a.tokens, group))) return true;
-    if (relevant.isEmpty) return false;
-    final text = group.map((t) => t.text.toUpperCase()).join(' ');
-    if (RegExp(r'\b(?:TOTAL|CONCURSO|CONC|EURO|M1LH)\b|^E\b').hasMatch(text)) {
-      return false;
-    }
-    final numeric = group
-        .where(
-          (t) =>
-              RegExp(r'^\d{1,2}$').hasMatch(t.text) &&
-              int.parse(t.text) >= 1 &&
-              int.parse(t.text) <= 50,
-        )
-        .length;
-    return numeric >= 2 &&
-        group.every((t) => RegExp(r'^[\d\s.,]+$').hasMatch(t.text));
-  }).toList();
-  final warnings = <String>[];
-  final rows = <BetCrop>[];
-  final used = <int>{};
-  for (
-    var position = 0;
-    position < candidateGroups.length && position < 20;
-    position++
-  ) {
-    final group = candidateGroups[position];
-    final center = _median(group.map((t) => t.y));
-    final anchored = anchors.where((a) => identical(a.tokens, group));
-    final printed = anchored.isEmpty ? null : anchored.first.index;
-    final index = printed ?? position + 1;
-    if (index < 1 || !used.add(index)) {
-      warnings.add('Índice geométrico ambíguo; linha não associada.');
+  final pitches = <double>[
+    for (var i = 1; i < selected.length; i++)
+      if (selected[i].index != null &&
+          selected[i - 1].index != null &&
+          selected[i].index! > selected[i - 1].index!)
+        (_median(selected[i].group.map(rowY)) -
+                _median(selected[i - 1].group.map(rowY))) /
+            (selected[i].index! - selected[i - 1].index!),
+  ];
+  final pitch = pitches.isEmpty ? null : _median(pitches);
+  final rows = <BetCrop>[], used = <int>{};
+  var previousIndex = 0;
+  for (var pos = 0; pos < selected.length && pos < maxReceiptBets; pos++) {
+    final a = selected[pos];
+    // Unreadable identifiers keep a provisional slot. A later explicit number
+    // is never renumbered to close a gap in the sequence.
+    final index = a.index ?? previousIndex + 1;
+    final laterSmaller =
+        a.index != null &&
+        selected
+            .skip(pos + 1)
+            .any(
+              (next) =>
+                  next.index != null &&
+                  next.index! > previousIndex &&
+                  next.index! < index,
+            );
+    if (used.contains(index) ||
+        index <= previousIndex ||
+        index > maxReceiptBets ||
+        laterSmaller) {
+      warnings.add(
+        'Sequência de identificadores ambígua junto da aposta $index.',
+      );
       continue;
     }
-    final previous = position == 0
-        ? top
-        : _median(candidateGroups[position - 1].map((t) => t.y));
-    final next = position + 1 == candidateGroups.length
-        ? bottom
-        : _median(candidateGroups[position + 1].map((t) => t.y));
-    final cropTop = position == 0
-        ? math.max(top, center - h * 1.5)
-        : math.max(top, (previous + center) / 2);
-    // Extend below the N row to retain a separate E/stars line; stop before
-    // the next observed numeric/N row and leave a small, explicit margin.
-    final cropBottom = position + 1 == candidateGroups.length
-        ? bottom
-        : math.min(bottom, next - h * .65);
-    if (cropBottom - cropTop < h || next <= center) {
-      warnings.add('Margens insuficientes; linha não recortada.');
-      continue;
-    }
+    used.add(index);
+    previousIndex = index;
+    final center = _median(a.group.map(rowY));
+    final next = pos + 1 < selected.length
+        ? _median(selected[pos + 1].group.map(rowY))
+        : bottomY;
+    final cropTop = math.max(topY, center - h * .85);
+    final cropBottom = math.min(
+      bottomY,
+      math.min(next, center + (pitch ?? (next - center))) - h * .5,
+    );
+    if (cropBottom <= cropTop) continue;
     rows.add(
       BetCrop(
         index,
         CropBox(
           left,
-          math.max(
-            0,
-            math.min(
-              cropTop,
-              group.map((t) => t.y - t.height / 2).reduce(math.min) - h * .5,
-            ),
-          ),
+          math.max(0, cropTop + math.min(0, slope * width)),
           width,
-          math.min(
-            height,
-            math.max(
-              cropBottom,
-              group.map((t) => t.y + t.height / 2).reduce(math.max) + h * .5,
-            ),
-          ),
+          math.min(height, cropBottom + math.max(0, slope * width)),
         ),
-        printedIndex: printed != null,
+        printedIndex: a.index != null,
       ),
     );
   }
-  if (candidateGroups.length > 20) {
-    warnings.add('Limite de 20 linhas observado; leitura parcial.');
+  final count = used.isEmpty ? null : used.reduce(math.max);
+  final missing = [
+    if (count != null)
+      for (var i = 1; i <= count; i++)
+        if (!used.contains(i)) i,
+  ];
+  if (missing.isNotEmpty) {
+    warnings.add(
+      'Identificadores não reconhecidos: ${missing.join(', ')}; posições preservadas.',
+    );
   }
-  return CropPlan(rows, relevant, warnings, zone: zone);
+  return CropPlan(
+    rows,
+    relevant,
+    warnings,
+    zone: zone,
+    expectedLines: count,
+    missingIndices: missing,
+    headerRule: header,
+    footerRule: footer,
+  );
 }
 
 class OcrFrame {
@@ -281,6 +333,27 @@ int uprightBetRowCount(List<ReceiptToken> tokens, double width, double height) {
               t.y <= row.box.bottom,
         )
         .toList();
+    if (labels.isEmpty) {
+      // ML Kit may split the printed identifier and N into separate elements,
+      // especially for two-digit labels. Require a nearby identifier on the
+      // left of N; numeric fields to its right cannot satisfy this association.
+      for (final n in tokens.where(
+        (t) =>
+            RegExp(r'^N\.?$', caseSensitive: false).hasMatch(t.text.trim()) &&
+            t.y >= row.box.top &&
+            t.y <= row.box.bottom,
+      )) {
+        final ids = tokens.where(
+          (t) =>
+              t.text.replaceAll(RegExp(r'[.)]'), '').trim() ==
+                  row.index.toString() &&
+              t.x < n.x &&
+              n.x - t.x <= n.height * 2 &&
+              (t.y - n.y).abs() <= n.height * .5,
+        );
+        if (ids.length == 1) labels.add(n);
+      }
+    }
     if (labels.length != 1) continue;
     final n = labels.single;
     final angle = (n.angle % 360 + 360) % 360;

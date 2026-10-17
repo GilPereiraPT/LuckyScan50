@@ -41,6 +41,7 @@ class MainActivity : FlutterActivity() {
                                 call.argument<Number>("deskewDegrees")?.toDouble() ?: 0.0,
                                 call.argument<Boolean>("contrast") ?: false
                             )
+                            "luminance" -> luminance(requireNotNull(call.argument<String>("session")))
                             "rotate" -> rotate(
                                 requireNotNull(call.argument<String>("session")),
                                 requireNotNull(call.argument<Number>("turns")).toInt()
@@ -101,6 +102,26 @@ class MainActivity : FlutterActivity() {
             if (upright !== source) upright?.recycle()
             source?.recycle()
         }
+    }
+
+    private fun luminance(session: String): Map<String, Any> {
+        val input = File(requireNotNull(sessions[session]), "upright.png")
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(input.path, bounds)
+        var sample = 1
+        while (maxOf(bounds.outWidth, bounds.outHeight) / sample > 1024) sample *= 2
+        val bitmap = requireNotNull(BitmapFactory.decodeFile(input.path,
+            BitmapFactory.Options().apply { inSampleSize = sample }))
+        try {
+            val pixels = IntArray(bitmap.width * bitmap.height)
+            bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
+            val gray = ByteArray(pixels.size) { i ->
+                val color = pixels[i]
+                (((color shr 16 and 255) * 77 + (color shr 8 and 255) * 150 +
+                    (color and 255) * 29) shr 8).toByte()
+            }
+            return mapOf("width" to bitmap.width, "height" to bitmap.height, "pixels" to gray)
+        } finally { bitmap.recycle() }
     }
 
     private fun rotate(session: String, turns: Int): Map<String, Any> {

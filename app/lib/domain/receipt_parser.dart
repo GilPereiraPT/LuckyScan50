@@ -1,5 +1,8 @@
 import 'dart:math' as math;
 
+// Existing segmentation safety limit, shared with parsing and recovery.
+const maxReceiptBets = 20;
+
 /// Engine-independent OCR observations. Coordinates remain local to the device.
 class ReceiptToken {
   const ReceiptToken(
@@ -55,6 +58,22 @@ class ScannedReceipt {
   final String strategy;
   List<String> get lines =>
       bets.where((b) => b.complete).map((b) => b.formLine).toList();
+
+  /// Keep every detected position in the editable form. Question marks cannot
+  /// be parsed as a valid key and therefore prevent saving an omitted bet.
+  List<String> get formLines => bets.map((b) {
+    if (b.complete) return b.formLine;
+    final onlyMissing = b.issues.every(
+      (s) => s.contains('em falta') || s.contains('não reconhecida'),
+    );
+    final n = onlyMissing && b.numbers.length == 5
+        ? b.numbers.map(ParsedBet._two).join(' ')
+        : '? ? ? ? ?';
+    final e = onlyMissing && b.stars.length == 2
+        ? b.stars.map(ParsedBet._two).join(' ')
+        : '? ?';
+    return '$n + $e';
+  }).toList();
   bool get fullyParsed =>
       bets.isNotEmpty &&
       bets.every((b) => b.complete) &&
@@ -179,7 +198,25 @@ ScannedReceipt parseReceiptObservations({
   final counts = RegExp(
     r'\b(\d{1,2})\s+(?:AP\.?\s+SIMPLES|APOSTAS?)\b',
   ).allMatches(raw).map((m) => int.parse(m[1]!)).where((n) => n > 0).toSet();
-  final expected = counts.length == 1 ? counts.single : null;
+  final validBets = bets
+      .where((b) => b.index >= 1 && b.index <= maxReceiptBets)
+      .toList();
+  if (validBets.length != bets.length ||
+      counts.any((n) => n > maxReceiptBets)) {
+    warnings.add(
+      'Limite de $maxReceiptBets apostas; confirmar o formato do talão.',
+    );
+  }
+  bets = validBets;
+  final observed = bets.isEmpty
+      ? null
+      : bets.map((b) => b.index).reduce(math.max);
+  final printed = counts.length == 1 && counts.single <= maxReceiptBets
+      ? counts.single
+      : null;
+  final expected = observed == null
+      ? printed
+      : math.max(observed, printed ?? observed);
   if (counts.length > 1) warnings.add('Número de apostas ambíguo.');
   final dates = <String>{};
   for (final m in RegExp(r'\b(\d{2})/(\d{2})/(\d{4})\b').allMatches(raw)) {
@@ -291,14 +328,24 @@ List<ParsedBet> _parseBets(List<String> rows) {
 
   for (final original in rows) {
     final row = _label(original.trim());
+    if (bets.isNotEmpty || index != null) {
+      if (RegExp(
+        r'^(?:TOTAL\b|EUROMILHOES\s+COM\b|EM TODO\b|VIRN\b|CODIGO\b)',
+      ).hasMatch(row)) {
+        flush();
+        break;
+      }
+    }
     // Require N/E anchors, never mine phone numbers, totals or receipt IDs.
     final n = RegExp(
-      r'^\s*(?:(\d{1,2})\s*[.)]?\s*)?N\s*[:.]?\s*(.*)$',
+      r'^\s*(?:(\d{1,2})\s*[.)]?\s*)?N\b\s*[:.]?\s*(.*)$',
     ).firstMatch(row);
     final e = RegExp(r'^\s*E\s*[:.]?\s*(.*)$').firstMatch(row);
     if (n != null) {
       flush();
-      index = n[1] == null ? bets.length + 1 : int.parse(n[1]!);
+      index = n[1] == null
+          ? (bets.isEmpty ? 1 : bets.last.index + 1)
+          : int.parse(n[1]!);
       final tail = n[2]!;
       final marker = RegExp(r'E\s*[:.]?\s*(?=[0-9])').firstMatch(tail);
       numbers = numeric(
@@ -334,4 +381,50 @@ List<ParsedBet> _parseBets(List<String> rows) {
             : b,
       )
       .toList();
+}
+
+/// Apply the observed image layout without changing metadata or manual edits.
+ScannedReceipt withBetLayout(
+  ScannedReceipt scan,
+  int? count, {
+  List<String> warnings = const [],
+  Set<int> unconfirmed = const {},
+}) {
+  if (count == null) return scan;
+  final indexed = {
+    for (final b in scan.bets.where((b) => b.index <= count)) b.index: b,
+  };
+  return ScannedReceipt(
+    bets: [
+      for (var i = 1; i <= count; i++)
+        unconfirmed.contains(i) && indexed.containsKey(i)
+            ? ParsedBet(i, indexed[i]!.numbers, indexed[i]!.stars, [
+                ...indexed[i]!.issues,
+                'Índice geométrico por confirmar',
+              ])
+            : indexed[i] ??
+                  ParsedBet(i, const [], const [], const [
+                    'Aposta não reconhecida',
+                  ]),
+    ],
+    rows: scan.rows,
+    warnings: [
+      ...scan.warnings.where((w) => !w.startsWith('Leitura incompleta:')),
+      ...warnings,
+      if (scan.expectedLines != null && scan.expectedLines != count)
+        'Contagem visual $count difere da leitura textual ${scan.expectedLines}; confirmar.',
+    ],
+    code: scan.code,
+    amount: scan.amount,
+    expectedLines: count,
+    game: scan.game,
+    drawDate: scan.drawDate,
+    drawId: scan.drawId,
+    hasMilhao: scan.hasMilhao,
+    milhaoCodes: scan.milhaoCodes,
+    tokenCount: scan.tokenCount,
+    skewDegrees: scan.skewDegrees,
+    strategy: scan.strategy,
+    observations: scan.observations,
+  );
 }

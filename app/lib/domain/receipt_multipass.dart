@@ -109,18 +109,74 @@ export 'receipt_geometry.dart';
   );
 }
 
+ScannedReceipt _boundedInitial(OcrFrame frame, CropPlan plan) {
+  final scan = withBetLayout(
+    frame.parse(),
+    plan.expectedLines,
+    unconfirmed: plan.rows
+        .where((r) => !r.printedIndex)
+        .map((r) => r.index)
+        .toSet(),
+  );
+  final checked = <ParsedBet>[];
+  for (final bet in scan.bets) {
+    final rows = plan.rows.where((r) => r.index == bet.index);
+    if (rows.isEmpty) {
+      checked.add(bet);
+      continue;
+    }
+    final row = rows.single;
+    bool inside(ReceiptToken t) => t.y >= row.box.top && t.y <= row.box.bottom;
+    final es = frame.tokens.where((t) => t.text.trim().toUpperCase() == 'E');
+    final foreignStars =
+        bet.stars.isNotEmpty && es.isNotEmpty && !es.any(inside);
+    final local = parseReceiptObservations(
+      text: '',
+      tokens: frame.tokens.where(inside).toList(),
+    );
+    final same = local.bets.where((b) => b.index == bet.index);
+    final numbers = bet.numbers.length > 5 && same.length == 1
+        ? same.single.numbers
+        : bet.numbers;
+    checked.add(
+      ParsedBet(bet.index, numbers, foreignStars ? const [] : bet.stars, [
+        ...bet.issues,
+        if (foreignStars) 'Linha E fora da aposta; estrelas pendentes',
+      ]),
+    );
+  }
+  return ScannedReceipt(
+    bets: checked,
+    rows: scan.rows,
+    warnings: scan.warnings,
+    code: scan.code,
+    amount: scan.amount,
+    expectedLines: scan.expectedLines,
+    game: scan.game,
+    drawDate: scan.drawDate,
+    drawId: scan.drawId,
+    hasMilhao: scan.hasMilhao,
+    milhaoCodes: scan.milhaoCodes,
+    tokenCount: scan.tokenCount,
+    skewDegrees: scan.skewDegrees,
+    strategy: scan.strategy,
+    observations: scan.observations,
+  );
+}
+
 Future<MultiPassResult> recoverReceiptRows({
   required OcrFrame initial,
   required double width,
   required double height,
   required RecognizeBetCrop recognizeCrop,
   ScannedReceipt? metadata,
+  List<CropBox> rules = const [],
 }) async {
   final clock = Stopwatch()..start();
-  final first = initial.parse();
-  final meta = metadata ?? first;
   final geometryClock = Stopwatch()..start();
-  final plan = planBetCrops(initial.tokens, width, height);
+  final plan = planBetCrops(initial.tokens, width, height, rules: rules);
+  final first = _boundedInitial(initial, plan);
+  final meta = withBetLayout(metadata ?? first, plan.expectedLines);
   final grid = planBetCells(initial.tokens, plan, width, height);
   final projected = projectCellObservations(initial, grid.cells, 'full-frame');
   bool covered(ParsedBet bet, String kind, List<int> values) => values.every(

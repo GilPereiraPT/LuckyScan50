@@ -11,17 +11,23 @@ Future<MultiPassResult> recoverReceiptCells({
   required double width,
   required double height,
   required RecognizeBetCrop recognizeCrop,
-  int maxPasses = 40,
+  int? maxPasses,
   CellGrid? initialGrid,
 }) async {
+  // Each observed bet has seven fields and may need a marker probe and retries.
+  // Scale the budget with the actual layout instead of starving bets after #5.
+  final passBudget =
+      maxPasses ?? (plan.rows.length * 15).clamp(15, maxReceiptBets * 15);
   final total = Stopwatch()..start(), geometry = Stopwatch()..start();
   var grid = initialGrid ?? planBetCells(initial.tokens, plan, width, height);
   var geometryMs = geometry.elapsedMilliseconds;
-  final first = initial.parse(), passes = <CropPass>[], errors = <String>[];
+  final first = withBetLayout(initial.parse(), plan.expectedLines),
+      passes = <CropPass>[],
+      errors = <String>[];
   final observations = <ValueEvidence>[], augmented = [...initial.tokens];
   var budgetExhausted = false;
   Future<OcrFrame?> read(BetCrop crop, double scale, String id) async {
-    if (passes.length >= maxPasses) {
+    if (passes.length >= passBudget) {
       budgetExhausted = true;
       return null;
     }
@@ -164,7 +170,7 @@ Future<MultiPassResult> recoverReceiptCells({
     ...grid.warnings,
     ...errors,
     if (budgetExhausted)
-      'Limite de $maxPasses passagens atingido; leitura parcial.',
+      'Limite de $passBudget passagens atingido; leitura parcial.',
   ];
   if (bets.any((b) => !b.complete) ||
       (metadata.expectedLines != null &&

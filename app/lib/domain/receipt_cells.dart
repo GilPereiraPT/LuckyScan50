@@ -44,7 +44,8 @@ CellGrid planBetCells(
   final h = _median(anchors.values.map((t) => t.height).toList());
   final pitches = [
     for (var i = 1; i < ordered.length; i++)
-      ordered[i].value.y - ordered[i - 1].value.y,
+      (ordered[i].value.y - ordered[i - 1].value.y) /
+          (ordered[i].key - ordered[i - 1].key),
   ];
   final pitch = pitches.isEmpty ? null : _median(pitches);
   final eAnchors = <int, ReceiptToken>{};
@@ -61,27 +62,29 @@ CellGrid planBetCells(
     final next = i + 1 < ordered.length
         ? ordered[i + 1].value.y
         : n.y + (pitch ?? h * 3);
+    final row = plan.rows.firstWhere((r) => r.index == index);
+    final end = math.min(
+      next,
+      math.min(row.box.bottom, n.y + (pitch ?? h * 3)),
+    );
     final found = tokens
         .where(
           (t) =>
               t.text.trim().toUpperCase() == 'E' &&
               !verticalReceiptToken(t) &&
               t.y - slope(n) * (t.x - n.x) >= n.y - h * .5 &&
-              t.y < next - h * .3 &&
+              t.y < end - h * .3 &&
               t.x >= n.x - n.width / 2,
         )
         .toList();
     if (found.length == 1) {
       eAnchors[index] = found.single;
-    } else if (found.isEmpty && next - n.y > h * 1.5) {
+    } else if (found.isEmpty && end - n.y > h * 1.5) {
       final box = CropBox(
         math.max(0, n.x - n.width / 2 - h * .15),
         n.y + n.height / 2,
         math.min(width, n.x + n.width / 2 + h * .3),
-        math.min(
-          height,
-          next - (i + 1 < ordered.length ? ordered[i + 1].value.height : h) / 2,
-        ),
+        math.min(height, end),
       );
       if (box.height >= h * .7) {
         markers.add(BetCrop(index, box, printedIndex: true, kind: 'marker'));

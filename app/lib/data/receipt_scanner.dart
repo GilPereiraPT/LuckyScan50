@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:image_picker/image_picker.dart';
 import '../domain/receipt_ocr.dart';
+import '../domain/receipt_rules.dart';
 import '../domain/receipt_multipass.dart';
 import 'receipt_crop_backend.dart';
 
@@ -83,18 +84,6 @@ Future<ReceiptScan> scanReceiptFile(String path) async {
     final initialParseMs = timer.elapsedMilliseconds - ocrMs;
     timer.reset();
     final orientationPasses = <OrientationPass>[];
-    if (first.fullyParsed && !initial.tokens.any(verticalReceiptToken)) {
-      return ReceiptScan(
-        first,
-        initial.text,
-        imagePath: path,
-        ocrMs: ocrMs,
-        initialParseMs: initialParseMs,
-        initialReceipt: first,
-        phaseTimings: phaseTimings,
-        imageGeometry: imageGeometry,
-      );
-    }
     try {
       stage = 'normalização EXIF e preparação dos recortes';
       final preparationClock = Stopwatch()..start();
@@ -146,10 +135,27 @@ Future<ReceiptScan> scanReceiptFile(String path) async {
         'workingWidth': normalized.width,
         'workingHeight': normalized.height,
       });
+      final ruleClock = Stopwatch()..start();
+      var rules = <CropBox>[];
+      try {
+        final raster = await backend.luminance(normalized);
+        rules = detectReceiptRules(
+          raster,
+          workingFrame.tokens,
+          normalized.width,
+          normalized.height,
+        );
+      } catch (_) {
+        // Keep the OCR anchors when raster preparation is unavailable.
+        phaseTimings['ruleDetectionUnavailable'] = 1;
+      }
+      phaseTimings['ruleDetection'] = ruleClock.elapsedMilliseconds;
+      imageGeometry['horizontalRuleCount'] = rules.length;
       stage = 'reconhecimento das regiões numéricas';
       final recovered = await recoverReceiptRows(
         initial: workingFrame,
         metadata: first,
+        rules: rules,
         width: normalized.width,
         height: normalized.height,
         recognizeCrop: (row, scale) async {

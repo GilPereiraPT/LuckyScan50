@@ -101,6 +101,18 @@ Map<String, Object?> receiptDiagnosticReport(
         ? null
         : {
             'zone': recovery.plan.zone?.toJson(),
+            'detectedBetCount': recovery.plan.expectedLines,
+            'missingIdentifiers': recovery.plan.missingIndices,
+            'headerRule': recovery.plan.headerRule?.toJson(),
+            'footerRule': recovery.plan.footerRule?.toJson(),
+            'rows': [
+              for (final row in recovery.plan.rows)
+                {
+                  'index': row.index,
+                  'printedIndex': row.printedIndex,
+                  'bounds': row.box.toJson(),
+                },
+            ],
             'warnings': recovery.plan.warnings,
             'verticalElements': recovery.plan.verticalElements
                 .map(token)

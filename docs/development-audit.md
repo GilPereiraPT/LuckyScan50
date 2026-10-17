@@ -186,3 +186,28 @@ Não executados Flutter/análise/compilação Android nesta tarefa exclusivament
 backend; não se usa a suíte Python para declarar OCR validado. Não foram gerados
 ou publicados APK, Release, versão de produção ou Cron. A integração está preparada
 para revisão e validação local; a ativação no cPanel continua fora desta entrega.
+
+## 2026-10-17 — Contagem dinâmica OCR e posições pendentes
+
+Base preservada `7a251f96192ca942e3dbacc38c423a274259903a`, branch de desenvolvimento
+existente. Implementada análise de separadores por luminância reduzida no dispositivo,
+coluna sequencial N, pares N/E com limites por aposta, total variável e lacunas sem
+renumeração. Rodapés deixam de poder prolongar a zona de apostas. Identificadores
+incompatíveis com a sequência geram aviso. Recortes e orçamento de células adaptados
+a 1–20 apostas (limite de segurança OCR já existente), incluindo índices de dois
+algarismos. O formulário conserva posições pendentes com `?`, impede a gravação até
+à sua correção e preserva edições manuais. Diagnóstico inclui contagem, lacunas,
+separadores e recortes; não inclui pixels de luminância nem fotografias.
+
+Validação executada: `flutter analyze --no-pub` sem problemas; suíte Flutter completa
+com **83 testes a passar**; Kotlin Android ARM64 `:app:compileReleaseKotlin --offline`
+com **BUILD SUCCESSFUL** em 52 s. Testes novos cobrem 1/2/5/12/20 apostas, lacunas
+2/10, identificadores mal lidos, N/E parcialmente ilegíveis, orçamento acima de 40
+passagens, separadores sintéticos inclinados e rodapés/códigos. Mantidas regressões
+do diagnóstico geométrico real e testes de proteção das edições. `git diff --check`
+sem erros. Não foi repetida a suíte Python: não há alteração da API nesta tarefa.
+
+Não alterados API, dependências/lock, modelos OCR, versão ou workflow de publicação.
+Não executado empacotamento/publicação de APK nem OCR real num Android. Fotografias
+reais e tempo adicional no dispositivo continuam por validar; não se declara OCR
+integralmente validado. Relatório: `docs/OCR_DYNAMIC_BETS.md`.
