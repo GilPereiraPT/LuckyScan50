@@ -55,6 +55,7 @@ final router = GoRouter(
   routes: [
     GoRoute(path: '/', builder: (_, __) => const Home()),
     GoRoute(path: '/add', builder: (_, __) => const AddReceipt()),
+    GoRoute(path: '/about', builder: (_, __) => const AboutPage()),
     GoRoute(
       path: '/receipt/:id',
       builder: (_, state) => ReceiptPage(state.pathParameters['id']!),
@@ -499,6 +500,14 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
         leading: const Icon(Icons.delete_forever),
         title: const Text('Eliminar todos os dados locais'),
         onTap: erase,
+      ),
+      const Divider(),
+      ListTile(
+        leading: const Icon(Icons.info_outline),
+        title: const Text('Sobre o LuckyScan50'),
+        subtitle: const Text('Conheça a aplicação, privacidade e limitações'),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => context.push('/about'),
       ),
       const Divider(),
       const Text(
@@ -971,6 +980,78 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
       decoration: InputDecoration(labelText: label, hintText: hint),
     ),
   );
+}
+
+
+/// Página informativa. Os ficheiros de identidade visual originais
+/// serão incluídos como assets apenas após confirmação dos binários.
+class AboutPage extends StatelessWidget {
+  const AboutPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Scaffold(
+      appBar: AppBar(title: const Text('Sobre o LuckyScan50')),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 760),
+          child: ListView(
+            padding: const EdgeInsets.all(24),
+            children: [
+              Semantics(
+                label: 'Identidade LuckyScan50',
+                child: Container(
+                  height: 200,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: const Color(0xff172841),
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.document_scanner_outlined,
+                          size: 62, color: theme.colorScheme.primary),
+                      const SizedBox(height: 12),
+                      const Text('LUCKYSCAN50',
+                        style: TextStyle(fontSize: 25,
+                          letterSpacing: 2.5, fontWeight: FontWeight.bold,
+                          color: Color(0xffe7c77f))),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text('As suas apostas, organizadas.',
+                  style: theme.textTheme.headlineSmall),
+              const SizedBox(height: 12),
+              const Text(
+                'O LuckyScan50 permite guardar recibos e apostas do '
+                'Euromilhões e M1lhão no dispositivo, consultar resultados '
+                'disponíveis e acompanhar os valores apostados e recebidos.'),
+              const SizedBox(height: 16),
+              const Text(
+                'As fotografias e apostas são guardadas localmente. '
+                'O reconhecimento de texto exige confirmação antes '
+                'de guardar os dados.'),
+              const SizedBox(height: 24),
+              Text('Projeto independente',
+                  style: theme.textTheme.titleLarge),
+              const SizedBox(height: 8),
+              const Text(
+                'Aplicação não oficial, sem ligação ou associação aos '
+                'Jogos Santa Casa. A verificação e atribuição oficial '
+                'de prémios competem exclusivamente ao operador autorizado.'),
+              const SizedBox(height: 24),
+              Text('Versão de desenvolvimento 0.2.0',
+                  style: theme.textTheme.bodySmall),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class ReceiptPage extends ConsumerWidget {
