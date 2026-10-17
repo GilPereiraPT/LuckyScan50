@@ -61,7 +61,7 @@ ScannedReceipt parseScannedReceipt(RecognizedText recognized) {
     final numbers = _numbers(numberElements);
     final starNumbers = _numbers(starElements);
     if (_valid(numbers, 5, 50) && _valid(starNumbers, 2, 12)) {
-      rows.add(numbers.join(' ') + ' + ' + starNumbers.join(' '));
+      rows.add("${numbers.join(' ')} + ${starNumbers.join(' ')}");
     }
   }
   return ScannedReceipt(lines: rows, code: code, amount: amount, expectedLines: expectedLines);
