@@ -104,7 +104,9 @@ void main() {
       );
     },
   );
-  test('E belongs below N, not to a distant text column', () {
+  test(
+    'E belongs below N, not to a distant text column',
+    () {
     final tokens = <ReceiptToken>[
       const ReceiptToken('1.N', 50, 100, 20, width: 30),
       const ReceiptToken('E', 250, 135, 20, width: 15),
@@ -119,6 +121,7 @@ void main() {
     );
     expect(grid.markers.length, 1);
     expect(grid.cells.where((c) => c.kind == 'E'), isEmpty);
-  });
+    },
+  );
 
 }
