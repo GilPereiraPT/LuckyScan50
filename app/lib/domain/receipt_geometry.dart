@@ -263,3 +263,59 @@ class OcrFrame {
   ScannedReceipt parse() =>
       parseReceiptObservations(text: text, tokens: tokens, textRows: rows);
 }
+
+/// A rotated photograph can expose readable N labels while still being upside
+/// down. Do not select that frame merely because it contains numbered anchors.
+int uprightBetRowCount(List<ReceiptToken> tokens, double width, double height) {
+  final plan = planBetCrops(tokens, width, height);
+  var count = 0;
+  for (final row in plan.rows) {
+    final labels = tokens
+        .where(
+          (t) =>
+              RegExp(
+                '^\\s*${row.index}\\s*[.)]?\\s*N\\b',
+                caseSensitive: false,
+              ).hasMatch(t.text) &&
+              t.y >= row.box.top &&
+              t.y <= row.box.bottom,
+        )
+        .toList();
+    if (labels.length != 1) continue;
+    final n = labels.single;
+    final angle = (n.angle % 360 + 360) % 360;
+    if (angle > 45 && angle < 315) continue;
+    final sameRow = tokens.where(
+      (t) =>
+          !verticalReceiptToken(t) &&
+          (t.y - n.y).abs() <= n.height * .75 &&
+          RegExp(r'^\d{1,2}$').hasMatch(t.text),
+    );
+    if (sameRow.where((t) => t.x < n.x - n.width / 2).length >= 2 &&
+        !sameRow.any((t) => t.x > n.x + n.width / 2)) {
+      continue;
+    }
+    count++;
+  }
+  return count;
+}
+
+List<int> preferredReceiptTurns(List<ReceiptToken> tokens) {
+  final counts = <int, int>{};
+  for (final token in tokens) {
+    if (!token.angle.isFinite ||
+        !RegExp(
+          r'^\s*\d{1,2}\s*[.)]?\s*N\b',
+          caseSensitive: false,
+        ).hasMatch(token.text)) {
+      continue;
+    }
+    final quadrant = (((token.angle % 360 + 360) % 360) / 90).round() % 4;
+    counts[quadrant] = (counts[quadrant] ?? 0) + 1;
+  }
+  if (counts.isEmpty) return [1, 3, 2];
+  final ordered = counts.keys.toList()
+    ..sort((a, b) => counts[b]!.compareTo(counts[a]!));
+  final first = ordered.first == 0 ? 2 : (4 - ordered.first) % 4;
+  return {first, 1, 3, 2}.toList();
+}

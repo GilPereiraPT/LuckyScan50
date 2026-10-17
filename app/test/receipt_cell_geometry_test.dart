@@ -56,4 +56,52 @@ void main() {
       expect(grid.markers, isEmpty);
     },
   );
+  test(
+    'upside-down anchors cannot win orientation selection, including unreliable zero angles',
+    () {
+      final tokens = [
+        const ReceiptToken('1.N', 50, 100, 20, width: 30),
+        const ReceiptToken('29', 240, 100, 20, width: 25),
+        const ReceiptToken('32', 300, 100, 20, width: 25),
+      ];
+      expect(uprightBetRowCount(tokens, 600, 400), 1);
+      for (final angle in [0.0, 180.0]) {
+        final rotated = [
+          for (final t in tokens)
+            ReceiptToken(
+              t.text,
+              600 - t.x,
+              400 - t.y,
+              t.height,
+              width: t.width,
+              angle: angle,
+            ),
+        ];
+        expect(uprightBetRowCount(rotated, 600, 400), 0);
+      }
+    },
+  );
+  test(
+    'N anchor angles prioritize the corrective rotation instead of three blind full-frame passes',
+    () {
+      expect(
+        preferredReceiptTurns([
+          const ReceiptToken('1.N', 50, 100, 20, angle: 90),
+        ]).first,
+        3,
+      );
+      expect(
+        preferredReceiptTurns([
+          const ReceiptToken('1.N', 50, 100, 20, angle: 180),
+        ]).first,
+        2,
+      );
+      expect(
+        preferredReceiptTurns([
+          const ReceiptToken('1.N', 50, 100, 20, angle: 270),
+        ]).first,
+        1,
+      );
+    },
+  );
 }

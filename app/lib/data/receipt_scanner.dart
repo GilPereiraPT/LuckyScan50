@@ -111,24 +111,25 @@ Future<ReceiptScan> scanReceiptFile(String path) async {
       var normalized = prepared;
       var workingFrame = initial;
       final orientationClock = Stopwatch()..start();
-      if (planBetCrops(
-            initial.tokens,
-            normalized.width,
-            normalized.height,
-          ).rows.isEmpty &&
+      if (uprightBetRowCount(
+                initial.tokens,
+                normalized.width,
+                normalized.height,
+              ) ==
+              0 &&
           initial.tokens.any(verticalReceiptToken)) {
-        for (final turns in [1, 3, 2]) {
+        for (final turns in preferredReceiptTurns(initial.tokens)) {
           final rotated = await backend.rotate(prepared, turns);
           preparedImages.add(rotated);
           final watch = Stopwatch()..start();
           final frame = receiptFrame(
             await engine.processImage(InputImage.fromFilePath(rotated.path)),
           );
-          final rowCount = planBetCrops(
+          final rowCount = uprightBetRowCount(
             frame.tokens,
             rotated.width,
             rotated.height,
-          ).rows.length;
+          );
           orientationPasses.add(
             OrientationPass(turns, frame, watch.elapsedMilliseconds, rowCount),
           );
