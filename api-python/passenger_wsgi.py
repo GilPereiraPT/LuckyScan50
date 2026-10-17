@@ -16,6 +16,7 @@ if str(ROOT) not in sys.path:
 from domain import validate_result
 from store import Store, read_json
 from result_statistics import frequencies, summary
+from rss_import import overview as rss_overview
 
 DATA_FILE=Path(os.environ.get('LUCKYSCAN_RESULTS_FILE',str(ROOT/'data'/'results.json')))
 DATABASE_FILE=os.environ.get('LUCKYSCAN_DATABASE')
@@ -31,7 +32,8 @@ def application(environ,start_response):
         body=json.dumps(data,ensure_ascii=False,separators=(',',':')).encode('utf-8')
         statuses={200:'OK',400:'Bad Request',404:'Not Found',405:'Method Not Allowed',503:'Service Unavailable'}
         headers=[('Content-Type','application/json; charset=utf-8'),('Content-Length',str(len(body))),
-                 ('Cache-Control','public, max-age=120' if code==200 else 'no-store'),
+                 ('Cache-Control', 'no-cache' if code==200 and (path.startswith('/v1/statistics/') or path=='/v1/rss/overview')
+                  else 'public, max-age=120' if code==200 else 'no-store'),
                  ('X-Content-Type-Options','nosniff')]
         if code==405:
             headers.append(('Allow','GET'))
@@ -46,6 +48,11 @@ def application(environ,start_response):
     params={k:v[0] for k,v in query.items()}
     if path in ('/','/health'):
         return reply(200,{'ok':True,'service':'luckyscan50-results','version':'0.2.0','runtime':'native_wsgi'})
+    if path=='/v1/rss/overview':
+        try:
+            return reply(200, rss_overview(Store(DATABASE_FILE)) if DATABASE_FILE else {'data': [], 'conflicts': 0})
+        except (ValueError,OSError,sqlite3.Error):
+            return reply(503,{'error':'results_unavailable'})
     detail=re.fullmatch(r'/v1/draws/(euromilhoes|milhao)/(\d{3})/(\d{4})',path)
     milhao=re.fullmatch(r'/v1/milhao/(\d{3})/(\d{4})',path)
     allowed=('/v1/draws','/v1/draws/latest','/v1/milhao/latest','/v1/statistics/numbers',

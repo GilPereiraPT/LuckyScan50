@@ -3,7 +3,8 @@ from collections import Counter
 
 
 def frequencies(rows, field):
-    draws=[r for r in rows if r['game']=='euromilhoes' and r['status']=='complete']
+    # Key confirmation does not require publication of all monetary prize tiers.
+    draws=[r for r in rows if r['game']=='euromilhoes' and r['status'] in ('complete','numbers_confirmed')]
     maximum=50 if field=='numbers' else 12
     result=[]
     for number in range(1,maximum+1):
@@ -13,7 +14,7 @@ def frequencies(rows, field):
         result.append({'value':number,'count':len(occurrences),'eligibleDraws':len(eligible),
                        'lastDate':last[1]['date'] if last else None,
                        'drawsSinceLast':len(eligible)-1-last[0] if last else None})
-    return {'data':result,'drawCount':len(draws),'scope':'stored_complete_draws','prediction':False}
+    return {'data':result,'drawCount':len(draws),'scope':'stored_confirmed_keys','prediction':False}
 
 
 def star_limit(day):
@@ -21,7 +22,7 @@ def star_limit(day):
 
 
 def summary(rows):
-    draws=[r for r in rows if r['game']=='euromilhoes' and r['status']=='complete']
+    draws=[r for r in rows if r['game']=='euromilhoes' and r['status'] in ('complete','numbers_confirmed')]
     monthly=Counter(r['date'][:7] for r in draws)
     combinations=Counter(tuple(sorted(r['numbers']))+tuple(sorted(r['stars'])) for r in draws)
     return {'drawCount':len(draws),'firstDate':draws[0]['date'] if draws else None,
@@ -31,4 +32,4 @@ def summary(rows):
             'evenNumbers':sum(n%2==0 for r in draws for n in r['numbers']),
             'byDecade':{str(start):sum(start<=n<=start+9 for r in draws for n in r['numbers']) for start in (1,11,21,31,41)},
             'repeatedCombinations':[{'numbers':list(k[:5]),'stars':list(k[5:]),'count':v} for k,v in sorted(combinations.items()) if v>1],
-            'scope':'stored_complete_draws','prediction':False}
+            'scope':'stored_confirmed_keys','prediction':False}

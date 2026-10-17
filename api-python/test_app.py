@@ -92,17 +92,18 @@ class APITests(unittest.TestCase):
         self.assertEqual(second['data'][0]['result'],changed)
         self.assertFalse(second['hasMore'])
 
-    def test_statistics_only_complete(self):
+    def test_statistics_confirmed_keys_independent_of_prize_tiers(self):
         self.store.import_rows([result()])
         partial={**result(),'drawId':'002/2026','date':'2026-01-06','status':'numbers_confirmed'}
         self.store.import_rows([partial])
         numbers=self.request('/v1/statistics/numbers')[1]
         self.assertEqual(len(numbers['data']),50)
-        self.assertEqual(numbers['drawCount'],1)
-        self.assertEqual(numbers['data'][0]['count'],1)
+        self.assertEqual(numbers['drawCount'],2)
+        self.assertEqual(numbers['scope'],'stored_confirmed_keys')
+        self.assertEqual(numbers['data'][0]['count'],2)
         self.assertEqual(numbers['data'][-1]['lastDate'],None)
         self.assertEqual(len(self.request('/v1/statistics/stars')[1]['data']),12)
-        self.assertEqual(self.request('/v1/statistics/summary')[1]['drawCount'],1)
+        self.assertEqual(self.request('/v1/statistics/summary')[1]['drawCount'],2)
 
     def test_json_fallback_and_duplicate_detection(self):
         path=self.root/'results.json'

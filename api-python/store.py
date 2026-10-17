@@ -1,5 +1,5 @@
 """Transactional SQLite imports and immutable revision history; JSON fallback."""
-from contextlib import closing
+from contextlib import closing, nullcontext
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -63,7 +63,7 @@ class Store:
                 'r.payload FROM revisions r JOIN draws d ON d.id=r.draw_id '
                 'WHERE sequence>? ORDER BY sequence LIMIT ?', (after,limit))]
 
-    def import_rows(self, rows, source='manual'):
+    def import_rows(self, rows, source='manual', _connection=None):
         if not isinstance(rows,list) or not rows:
             raise ValueError('Expected a non-empty array')
         seen = set()
@@ -79,8 +79,10 @@ class Store:
         self.migrate()
         now=datetime.now(timezone.utc).isoformat()
         changed=unchanged=0
-        with closing(self.connect()) as connection, connection:
-            connection.execute('BEGIN IMMEDIATE')
+        with (closing(self.connect()) if _connection is None else nullcontext(_connection)) as connection, \
+                (connection if _connection is None else nullcontext()):
+            if _connection is None:
+                connection.execute('BEGIN IMMEDIATE')
             for row in rows:
                 payload=json.dumps(row,sort_keys=True,ensure_ascii=False,separators=(',',':'))
                 # Polling timestamps alone must not create a new revision.

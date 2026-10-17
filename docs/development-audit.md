@@ -135,3 +135,54 @@ alterado. Commits pequenos `1fa87c9`, `8a6a946`, `8c4f85d`, `3d15819`, `b01c12a`
 `47cbc3b`, `444336e`, `a459865`; relatório em [OCR_CELL_RECOVERY.md](OCR_CELL_RECOVERY.md).
 Sem merge para main, mudanças em cPanel, migração de dados ou publicação Play.
 Aceitação com as duas orientações num Android continua obrigatória e pendente.
+
+## 2026-10-17 — RSS oficiais e auditoria de prémios
+
+Base preservada: `1bc1b822ac0a1e6d9caffaca2c328461710ce815`, branch
+`codex/luckyscan50-android-wallet`. Sem alterações Android/OCR, dependências,
+versão, APK ou produção. Os bundles anteriores não foram alterados.
+
+Implementado `api-python/rss_import.py`: três fontes HTTPS fixas, XML/HTML,
+validação estrita, montantes em cêntimos, concursos separados por jogo, datas
+normalizadas, auditoria/proveniência e quarentena de conflitos. Transação comum
+com o Store existente, idempotência, preservação de concursos já guardados e
+resistência a falhas. O novo GET `/v1/rss/overview` devolve resultados observados,
+previsões e indicadores `portal_only`, separados das categorias oficiais.
+Sem data de sorteio confirmada separadamente, não cria concurso no histórico.
+As estatísticas usam o histórico completo de chaves confirmadas, com
+`scope=stored_confirmed_keys` e revalidação HTTP; não há cache interna a invalidar.
+A carteira continua a exigir `complete` para cálculo de prémios.
+
+Verificação real por leituras HTTPS: os três feeds `/web/SCRss/` responderam 200
+sem redirects. XML ISO-8859-1 originais guardados em `api-python/fixtures/rss/`,
+com hashes no manifest. Resultados: Euromilhões 083/2026, 7/15/16/22/35 + 4/6;
+M1lhão 009/2026, PTM 09893. Próximos: 084/2026 em 20/10, 59 milhões previstos;
+010/2026 em 30/10, 1 milhão anunciado. Portal mantém valores do último sorteio
+separados dos históricos e não transforma SEM DADOS em ausência de vencedor.
+
+A API instalada reportou versão 0.1.1. A página oficial do Euromilhões e a resposta
+da API para 083/2026 coincidem nas **13 categorias**, valores unitários e contagens
+de vencedores. Categoria 5: 101,06 €, distinta dos 224,64 € do Portal.
+O código de origem é importação administrativa JSON, sem coletor de categorias;
+a cadeia histórica dessa importação não pode ser provada apenas pelo `sourceUrl`.
+Evidência pública de leitura: `docs/validation/rss-source-audit-20261017.json`.
+Relatório e instruções: `docs/rss-integration.md`.
+
+Validação efetivamente executada nesta tarefa:
+
+- `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -v`: **38 testes passam**,
+  incluindo os 13 testes anteriores, XML reais, seis codificações, entidades,
+  referências monetárias, intervalos, identidade/data, conflitos, falhas parciais,
+  replay, quatro importações concorrentes, rollback e estatísticas do histórico.
+- CLI sobre `/tmp/luckyscan50-rss-final-check.sqlite3`: três feeds importados;
+  Euromilhões com data confirmada inserido uma vez, M1lhão pendente de data;
+  repetição não cria revisão nem concurso duplicado.
+- Coletor `run_remote` real sobre `/tmp/luckyscan50-rss-live-validation.sqlite3`:
+  seis observações aceites, zero conflitos; zero concursos criados sem datas
+  confirmadas. Nenhuma escrita ou migração de base remota.
+- `git diff --check`: sem erros.
+
+Não executados Flutter/análise/compilação Android nesta tarefa exclusivamente
+backend; não se usa a suíte Python para declarar OCR validado. Não foram gerados
+ou publicados APK, Release, versão de produção ou Cron. A integração está preparada
+para revisão e validação local; a ativação no cPanel continua fora desta entrega.

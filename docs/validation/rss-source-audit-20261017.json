@@ -1,0 +1,123 @@
+{
+  "checkedAt": "2026-10-17T20:55:10.354991+00:00",
+  "method": "read-only HTTPS GET; no production changes",
+  "apiVersion": "0.1.1",
+  "game": "euromilhoes",
+  "drawId": "083/2026",
+  "date": "2026-10-16",
+  "officialPageUrl": "https://www.jogossantacasa.pt/web/SCCartazResult/euroMilhoes",
+  "officialPageSha256": "cf020543fd4ece599dafcebc86298f3f34fdb747f5bbe46e40f9f7a5dfe1950c",
+  "apiUrl": "https://luckyscan50-api.policlinicosdesantoandre.com/v1/draws/euromilhoes/083/2026",
+  "apiResponseSha256": "8dfcfb3dae45dc0c620340d09d146e2faa08579aa480fe614e09b26584dac0e8",
+  "officialTiersEqualApi": true,
+  "rssKeyEqualApi": true,
+  "tiers": [
+    {
+      "tier": 1,
+      "main": 5,
+      "stars": 2,
+      "winnersPortugal": 0,
+      "winnersTotal": 0,
+      "amountCents": null
+    },
+    {
+      "tier": 2,
+      "main": 5,
+      "stars": 1,
+      "winnersPortugal": 0,
+      "winnersTotal": 0,
+      "amountCents": null
+    },
+    {
+      "tier": 3,
+      "main": 5,
+      "stars": 0,
+      "winnersPortugal": 0,
+      "winnersTotal": 5,
+      "amountCents": 15453308
+    },
+    {
+      "tier": 4,
+      "main": 4,
+      "stars": 2,
+      "winnersPortugal": 1,
+      "winnersTotal": 49,
+      "amountCents": 93045
+    },
+    {
+      "tier": 5,
+      "main": 4,
+      "stars": 1,
+      "winnersPortugal": 61,
+      "winnersTotal": 831,
+      "amountCents": 10106
+    },
+    {
+      "tier": 6,
+      "main": 3,
+      "stars": 2,
+      "winnersPortugal": 166,
+      "winnersTotal": 1949,
+      "amountCents": 4555
+    },
+    {
+      "tier": 7,
+      "main": 4,
+      "stars": 0,
+      "winnersPortugal": 162,
+      "winnersTotal": 1855,
+      "amountCents": 3363
+    },
+    {
+      "tier": 8,
+      "main": 2,
+      "stars": 2,
+      "winnersPortugal": 2439,
+      "winnersTotal": 26470,
+      "amountCents": 1178
+    },
+    {
+      "tier": 9,
+      "main": 3,
+      "stars": 1,
+      "winnersPortugal": 3079,
+      "winnersTotal": 35052,
+      "amountCents": 992
+    },
+    {
+      "tier": 10,
+      "main": 3,
+      "stars": 0,
+      "winnersPortugal": 7470,
+      "winnersTotal": 79495,
+      "amountCents": 815
+    },
+    {
+      "tier": 11,
+      "main": 1,
+      "stars": 2,
+      "winnersPortugal": 12123,
+      "winnersTotal": 132769,
+      "amountCents": 590
+    },
+    {
+      "tier": 12,
+      "main": 2,
+      "stars": 1,
+      "winnersPortugal": 44061,
+      "winnersTotal": 486902,
+      "amountCents": 507
+    },
+    {
+      "tier": 13,
+      "main": 2,
+      "stars": 0,
+      "winnersPortugal": 105333,
+      "winnersTotal": 1084418,
+      "amountCents": 367
+    }
+  ],
+  "portalLargestPrizeCents": 22464,
+  "officialTier5Cents": 10106,
+  "limitation": "Source URL and matching values do not establish the original administrative import chain."
+}

@@ -51,3 +51,15 @@ Depois de validar caminhos, permissões e execução manual no cPanel, o proprie
 Desativar importações antes de restaurar. Guardar a base atual e usar a API SQLite backup para uma cópia consistente (não copiar uma base durante escrita). Restaurar a cópia privada com permissões adequadas, executar `PRAGMA integrity_check`, testar endpoints e só então reativar importações. Para rollback de migração, remover a variável `LUCKYSCAN_DATABASE` e apontar para o JSON original preservado; isso não reverte correções posteriores da base. Esquemas futuros desconhecidos são rejeitados pelo importador.
 
 Os contratos e limitações estão em `../docs/results-api.md`.
+
+## RSS oficiais (validação local)
+
+`rss_import.py` importa resultados, previsões e indicadores do Portal em tabelas
+separadas. Não altera concursos existentes; conflitos ficam em quarentena.
+Não atribui prémios com base no Portal ou no jackpot. A data do sorteio anterior
+exige confirmação explícita; não é inferida da publicação RSS.
+
+Ver [integração, auditoria de prémios e comandos locais](../docs/rss-integration.md).
+GET `/v1/rss/overview` é uma extensão JSON de leitura. Não há Cron ou deployment
+automático. Estatísticas usam o histórico completo de chaves confirmadas e
+`scope=stored_confirmed_keys`, com revalidação HTTP em cada pedido.

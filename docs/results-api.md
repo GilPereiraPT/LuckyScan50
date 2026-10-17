@@ -2,7 +2,7 @@
 
 A implementação de produção é Python nativo WSGI em `api-python/`. Só distribui resultados importados administrativamente; não valida comprovativos ou credenciais de jogadores. Não existe escrita HTTP.
 
-Todos os endpoints devolvem JSON UTF-8, `X-Content-Type-Options: nosniff` e cache de 120 segundos para 200; erros usam `no-store`. Métodos diferentes de GET devolvem 405 e `Allow: GET`. Falhas de dados devolvem 503 `results_unavailable`, sem detalhes internos.
+Todos os endpoints devolvem JSON UTF-8, `X-Content-Type-Options: nosniff` e cache de 120 segundos para 200; RSS e estatísticas usam `no-cache` para revalidação; erros usam `no-store`. Métodos diferentes de GET devolvem 405 e `Allow: GET`. Falhas de dados devolvem 503 `results_unavailable`, sem detalhes internos.
 
 | Endpoint GET | Resposta 200 |
 | --- | --- |
@@ -16,9 +16,10 @@ Todos os endpoints devolvem JSON UTF-8, `X-Content-Type-Options: nosniff` e cach
 | `/v1/statistics/numbers` | 50 entradas com `value,count,eligibleDraws,lastDate,drawsSinceLast` |
 | `/v1/statistics/stars` | 12 entradas, com elegibilidade histórica de 9/11/12 estrelas |
 | `/v1/statistics/summary` | Contagens, datas extremas, meses, pares/ímpares, dezenas e combinações repetidas |
+| `/v1/rss/overview` | Observações RSS validadas, previsões e indicadores Portal separados; ver [integração RSS](rss-integration.md) |
 | `/v1/sync?after=0&limit=30` | Revisões ordenadas por sequência global, cursor e `hasMore` |
 
-Filtros `from` e `to` são datas ISO inclusivas. `limit`: 1–100; `offset` e `after`: inteiros não negativos. A paginação da lista é por ordem decrescente de data; `total` respeita filtros. As estatísticas usam apenas resultados `complete` armazenados, identificam `scope=stored_complete_draws`, não afirmam cobrir todo o histórico e não fazem previsões. As dezenas são 1–10, 11–20, 21–30, 31–40 e 41–50.
+Filtros `from` e `to` são datas ISO inclusivas. `limit`: 1–100; `offset` e `after`: inteiros não negativos. A paginação da lista é por ordem decrescente de data; `total` respeita filtros. As estatísticas usam chaves `complete` e `numbers_confirmed` armazenadas, identificam `scope=stored_confirmed_keys`, não afirmam cobrir todo o histórico e não fazem previsões. As dezenas são 1–10, 11–20, 21–30, 31–40 e 41–50.
 
 Erros 400 incluem `invalid_game`, `invalid_pagination`, `invalid_date`, `invalid_date_range`, `duplicate_parameter`. Resultados inexistentes: 404 `no_validated_results` ou `draw_not_found`; rotas inexistentes: `not_found`. Uma base vazia é uma situação válida, não é preenchida com fixtures.
 
@@ -37,3 +38,5 @@ Em modo JSON não há histórico: `/v1/sync` devolve `mode=snapshot`, todos os r
 ## Fontes
 
 Em 17/10/2026 foi possível consultar por GET as páginas públicas de referência e confirmar `/health` e o concurso 083/2026 da API existente. Isso não comprova autorização para recolha nem verificação independente do concurso. Não foi encontrado contrato documentado/autorizado de integração nesta auditoria. A versão inicial usa importação administrativa; não ativa scraping, endpoints internos, login ou Cron remoto. Fixtures sintéticas de testes usam `example.org` e nunca são importadas em produção.
+
+A integração posterior dos três RSS oficiais está documentada em [rss-integration.md](rss-integration.md), com XML reais e verificação HTTPS. As observações RSS não fornecem valores oficiais por categoria. A importação automática não foi ativada em produção.
