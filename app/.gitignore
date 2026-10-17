@@ -43,3 +43,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Real gambling receipts: private, local integration testing only.
+/assets/private_receipts/*
+!/assets/private_receipts/README.txt

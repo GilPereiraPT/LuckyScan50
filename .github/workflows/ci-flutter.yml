@@ -30,8 +30,14 @@ jobs:
           channel: stable
           cache: true
       - run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
+      - name: Reject private receipt photographs in distributable builds
+        run: |
+          if find assets/private_receipts -type f ! -name README.txt | grep -q .; then
+            echo "Private receipt photographs must not enter CI artifacts."
+            exit 1
+          fi
       - run: flutter pub get --enforce-lockfile
-      - run: dart format --output=none --set-exit-if-changed lib test
+      - run: dart format --output=none --set-exit-if-changed lib test integration_test test_driver
       - run: flutter analyze
       - run: flutter test --reporter expanded
       - name: Build ARM64 debug APK (not a production release)
@@ -43,12 +49,6 @@ jobs:
           SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
           BUILD_TOOLS=$(find "$SDK_ROOT/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)
           python3 ../tools/verify_apk.py build/app/outputs/flutter-apk/app-debug.apk --build-tools "$BUILD_TOOLS"
-      - uses: actions/upload-artifact@v4
-        with:
-          name: LuckyScan50-debug-arm64-${{ github.sha }}
-          path: |
-            app/build/app/outputs/flutter-apk/app-debug.apk
-            app/build/app/outputs/flutter-apk/app-debug.apk.sha256
-            app/build/app/outputs/flutter-apk/app-debug.verification.json
-          if-no-files-found: error
-          retention-days: 14
+      - name: Distribution blocked pending real Android OCR evidence
+        run: |
+          echo "No APK is uploaded: both real receipt orientations and Android autofill must be demonstrated first."
