@@ -1040,6 +1040,54 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
                   ),
                 ),
               ),
+            if (lastScan?.recoveryError != null)
+              Text(
+                'Recuperação indisponível; leitura inicial preservada: ${lastScan!.recoveryError}',
+              ),
+            if (lastScan?.multiPass != null)
+              ExpansionTile(
+                title: const Text(
+                  'Passagens de recuperação e origem dos valores',
+                ),
+                children: [
+                  SelectableText(
+                    'Antes: ${(lastScan!.initialReceipt ?? lastScan!.multiPass!.initial).lines.length} apostas completas; '
+                    'depois: ${lastScan!.receipt.lines.length}. OCR inicial ${lastScan!.ocrMs} ms; recuperação ${lastScan!.multiPass!.elapsedMs} ms.\n'
+                    'Zona das apostas: ${lastScan!.multiPass!.plan.zone?.toJson()}\n'
+                    'Elementos verticais intersectantes: ${lastScan!.multiPass!.plan.verticalElements.map((v) => '${v.text} (${v.height.toStringAsFixed(1)} px, ${v.angle.toStringAsFixed(1)}°)').join('; ')}',
+                  ),
+                  if (lastScan!.initialReceipt != null)
+                    ExpansionTile(
+                      title: const Text(
+                        'Primeira passagem preservada — coordenadas e texto',
+                      ),
+                      children: [
+                        SelectableText(
+                          '${lastScan!.rawText}\n'
+                          '${lastScan!.initialReceipt!.observations.map((t) => '${t.text} @ x=${t.x}, y=${t.y}, w=${t.width}, h=${t.height}, a=${t.angle}').join('\n')}',
+                        ),
+                      ],
+                    ),
+                  for (final pass in lastScan!.orientationPasses)
+                    SelectableText(
+                      'Orientação ${pass.turns * 90}°: ${pass.rows} linhas observadas, ${pass.elapsedMs} ms\n${pass.frame.text}',
+                    ),
+                  for (final pass in lastScan!.multiPass!.passes)
+                    SelectableText(
+                      '${pass.id}: recorte ${pass.crop.box.toJson()}, ${pass.elapsedMs} ms totais; '
+                      'motor ${pass.frame?.elapsedMs ?? 0} ms; erro ${pass.error ?? 'nenhum'}\n${pass.frame?.text ?? ''}',
+                    ),
+                  for (final bet in lastScan!.multiPass!.evidence)
+                    ListTile(
+                      title: Text('Aposta ${bet.index} — proveniência'),
+                      subtitle: SelectableText(
+                        'Valores aceites: ${bet.acceptedValues.map((v) => v.description).join('; ')}\n'
+                        'Observações de todas as passagens: ${bet.candidates.map((v) => v.description).join('; ')}\n'
+                        'Incertezas: ${bet.issues.join('; ')}',
+                      ),
+                    ),
+                ],
+              ),
             if (lastScan != null) ...[
               Text(
                 'Jogo: ${lastScan!.receipt.game ?? 'não identificado'} · ${lastScan!.receipt.lines.length} apostas completas',
@@ -1056,10 +1104,10 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
                 title: const Text('Diagnóstico local da leitura'),
                 children: [
                   SelectableText(
-                    'Imagem → InputImage nativo (EXIF delegado ao SDK; sem correção de perspetiva)\n'
+                    'Imagem → InputImage nativo + recortes PNG com EXIF normalizado; sem correção de perspetiva\n'
                     'ML Kit: ${lastScan!.rawText.length} caracteres, ${lastScan!.receipt.tokenCount} elementos, ${lastScan!.ocrMs} ms\n'
                     'Reconstrução: ${lastScan!.receipt.strategy}, inclinação ${lastScan!.receipt.skewDegrees.toStringAsFixed(1)}°\n'
-                    'Parser: ${lastScan!.receipt.lines.length} apostas completas, ${lastScan!.parseMs} ms\n'
+                    'Interpretação e recuperação: ${lastScan!.receipt.lines.length} apostas completas, ${lastScan!.parseMs} ms\n'
                     'Elementos (x,y,altura,ângulo):\n${lastScan!.receipt.observations.map((t) => '${t.text} @ ${t.x.toStringAsFixed(1)},${t.y.toStringAsFixed(1)},${t.height.toStringAsFixed(1)},${t.angle.toStringAsFixed(1)}').join('\n')}\n'
                     'Linhas reconstruídas:\n${lastScan!.receipt.rows.join('\n')}',
                   ),

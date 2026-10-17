@@ -56,3 +56,7 @@ android {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    implementation("androidx.exifinterface:exifinterface:1.3.7")
+}
