@@ -69,6 +69,9 @@ class Store:
         seen = set()
         for row in rows:
             validate_result(row)
+            if (source != 'legacy-json' and row['game'] == 'milhao'
+                    and row['status'] == 'complete' and row.get('amountCents') is None):
+                raise ValueError('Complete Milhao imports require an official prize amount')
             key=(row['game'],row['drawId'])
             if key in seen:
                 raise ValueError('Duplicate draw in batch')
@@ -128,4 +131,7 @@ class Store:
         except FileExistsError:
             if hashlib.sha256(backup.read_bytes()).hexdigest()!=digest:
                 raise ValueError('Backup integrity mismatch')
-        return self.import_rows(rows,source='legacy-json') if rows else {'changed':0,'unchanged':0}
+        if not rows:
+            self.migrate()
+            return {'changed':0,'unchanged':0}
+        return self.import_rows(rows,source='legacy-json')

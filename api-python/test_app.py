@@ -13,6 +13,7 @@ import passenger_wsgi as api
 from domain import TIERS, validate_result, check_line
 from store import Store, read_json
 from collect_results import run
+from import_result import import_json
 
 
 def result(game='euromilhoes'):
@@ -126,6 +127,17 @@ class APITests(unittest.TestCase):
         timestamp_only={**result(),'retrievedAt':'2026-01-04T09:00:00Z'}
         self.assertEqual(self.store.import_rows([timestamp_only])['unchanged'],1)
         self.assertEqual(len(self.store.changes()),1)
+
+    def test_legacy_cli_writer_preserves_previous_versions(self):
+        path=self.root/'old.json'
+        self.assertEqual(import_json(path,[result()])['changed'],1)
+        self.assertEqual(import_json(path,[result()])['unchanged'],1)
+        corrected=result()
+        corrected['tiers'][1]['amountCents']=1500
+        import_json(path,[corrected])
+        self.assertEqual(read_json(path),[corrected])
+        self.assertEqual(json.loads(next(self.root.glob('old.json.*.bak')).read_text()),[result()])
+
 
     def test_atomic_rollback_on_downgrade(self):
         self.store.import_rows([result()])

@@ -24,6 +24,8 @@ python3 import_result.py /caminho/privado/results.json --legacy --database /cami
 
 A migração valida todo o JSON, rejeita duplicados, guarda uma cópia `.HASH.bak` dos bytes originais e importa numa transação. Não altera o JSON. A repetição é idempotente. Só depois de verificar os resultados configurar `LUCKYSCAN_DATABASE=/caminho/privado/results.sqlite3` e reiniciar Passenger no painel. As leituras nunca criam bases vazias silenciosamente; uma base ausente devolve 503 nos endpoints de dados. `/health` verifica o processo, não a integridade da base.
 
+O comando legado `python3 import_result.py ficheiro.json`, sem configuração SQLite, continua a atualizar `LUCKYSCAN_RESULTS_FILE` com bloqueio, substituição atómica e cópia de cada versão anterior. SQLite é recomendado para produção.
+
 Importação administrativa de um objeto ou lista JSON previamente conferida:
 
 ```sh
