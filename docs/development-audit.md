@@ -247,3 +247,32 @@ os caminhos convencionais do virtualenv cPanel e deve ser conferido no painel;
 nenhum Cron, deployment ou migração remota foi executado.
 
 Documentação: `docs/rss-cron-cpanel.md` e `docs/historical-results-sources.md`.
+
+## 2026-10-17 — APK 0.2.3+5 autorizado para teste OCR
+
+A pedido explícito do utilizador, gerado APK de diagnóstico ARM64 com contagem
+variável e posições pendentes do commit `0ea62c9`. Código compilado `a2abf69`,
+versão exibida e Android `0.2.3+5`; identificador do commit confirmado no binário.
+API e dependências inalteradas nesta entrega. Não há publicação Google Play ou
+ativação de workflow de distribuição automática.
+
+Executados `flutter analyze --no-pub` (sem problemas), `flutter test --no-pub`
+(**83 testes passam**) e `flutter build apk --release --target-platform android-arm64
+--no-pub --dart-define=LUCKYSCAN_BUILD_SHA=a2abf69` (sucesso, 144,4 s).
+`tools/verify_apk.py` confirmou CRC, assinatura, exclusivamente ARM64/AArch64,
+quatro bibliotecas nativas e alinhamento ELF/ZIP de 16 KB; nenhum modelo Tesseract
+ou imagem de teste privada. Certificado igual ao APK 0.2.2 anterior, permitindo
+atualização com o mesmo applicationId e versionCode aumentado para 5.
+
+Artefacto `/workspace/artifacts/LuckyScan50-diagnostic-0.2.3-arm64.apk`,
+31 860 984 bytes (31,86 MB), SHA-256
+`bcfa5ccffc2ed3fde0db200052e00982085bb1b61ab606179ca27f21143ef01e`.
+Comparação com a compilação release anterior 0.2.2: +131 072 bytes (+0,4131%).
+Relatório: `docs/validation/2026-10-17-dynamic-ocr-apk.json`.
+
+`adb devices -l` não encontrou dispositivos. Instalação, leitura da fotografia
+nas duas orientações e preenchimento automático real continuam por testar no
+Android do utilizador. O APK é entregue para permitir esse teste; não se declara
+OCR real validado por passar nos testes automatizados. O relatório exportado pela
+aplicação identifica `0.2.3+5` e `a2abf69`, preservando a primeira passagem e a
+análise dinâmica de recortes/identificadores, sem fotos incluídas por defeito.

@@ -1,0 +1,32 @@
+{
+  "apk": "LuckyScan50-diagnostic-0.2.3-arm64.apk",
+  "bytes": 31860984,
+  "sha256": "bcfa5ccffc2ed3fde0db200052e00982085bb1b61ab606179ca27f21143ef01e",
+  "versionName": "0.2.3",
+  "abi": "arm64-v8a",
+  "signatureVerified": true,
+  "certificateSha256": "0695a638827b0ffa1725698204080edd8b76d65971cbe30ff2d5219d2d0ee860",
+  "nativeLibraries": 4,
+  "elf16KbAligned": true,
+  "zip16KbAligned": true,
+  "realPhotoOcrValidated": false,
+  "sourceCommit": "a2abf69",
+  "ocrImplementationCommit": "0ea62c9",
+  "versionCode": 5,
+  "displayVersion": "0.2.3+5",
+  "buildConfiguration": "release; debug signing key for internal testing",
+  "buildSeconds": 144.4,
+  "flutterAnalyze": "passed; no issues",
+  "flutterTestsPassed": 83,
+  "sameCertificateAsPreviousDiagnostic": true,
+  "deviceInstallationTested": false,
+  "comparison": {
+    "previousApk": "LuckyScan50-diagnostic-0.2.2-arm64.apk",
+    "previousBytes": 31729912,
+    "differenceBytes": 131072,
+    "differencePercent": 0.41308655378558884,
+    "sameReleaseConfiguration": true
+  },
+  "dependenciesAdded": 0,
+  "apiChanged": false
+}
