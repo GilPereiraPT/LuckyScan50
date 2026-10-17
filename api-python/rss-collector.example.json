@@ -1,0 +1,5 @@
+{
+  "enabled": false,
+  "database": "/home/CPANEL_USER/private/luckyscan50/results.sqlite3",
+  "datesFile": "/home/CPANEL_USER/private/luckyscan50/verified-draw-dates.json"
+}

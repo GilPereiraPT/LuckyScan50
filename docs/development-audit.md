@@ -211,3 +211,39 @@ Não alterados API, dependências/lock, modelos OCR, versão ou workflow de publ
 Não executado empacotamento/publicação de APK nem OCR real num Android. Fotografias
 reais e tempo adicional no dispositivo continuam por validar; não se declara OCR
 integralmente validado. Relatório: `docs/OCR_DYNAMIC_BETS.md`.
+
+## 2026-10-17 — Coletor RSS periódico e pacote cPanel
+
+Base preservada `0ea62c9c6ca504fb52cc4d9938bee5920c3c7bb3`. Auditados
+`rss_import.py`, `store.py`, `collect_results.py` e `app.py`. Store e o ponto de
+entrada de desenvolvimento mantidos; nenhuma alteração Android, de dependências
+ou de produção. O coletor agora tem `--rss` com configuração explícita, HTTPS
+direto aos três feeds, bloqueio não bloqueante partilhado com inbox, tratamento
+independente de erros, staging antes de promover concursos, datas anunciadas em
+snapshots anteriores ou confirmadas administrativamente e quarentena de conflitos.
+Recusa base inexistente para impedir uma base vazia desligada da API. O modo
+`--inbox` continua compatível e não faz HTTP. Exemplo de configuração vem desativado.
+
+Estatísticas acrescentam `coverage`: amostra, período disponível e histórico
+integral não auditado. Não se apresenta `drawCount: 1` como cobertura desde 2004.
+Investigação histórica limitada ao material já preservado: página oficial SC
+com 30 concursos recentes e três RSS sem arquivo; identificado o arquivo oficial
+FDJ como candidato ainda por consultar/validar. Não houve download ou carga
+histórica, nem se declarou validado um arquivo não consultado.
+
+Validação: **55 testes Python passam**, com os três XML reais preservados,
+transportes simulados/bloqueados, idempotência, lock inbox/RSS, falhas parciais,
+conflitos de chave/data, promoção de concurso com data anunciada diferente da
+publicação, backup consistente e aviso de cobertura. Nenhum pedido de recolha
+remota foi executado nesta tarefa. O teste HTTP usa mocks; não comprova acesso
+atual ao fornecedor a partir do cPanel. Não foram repetidos testes Flutter ou
+compilação: o Android não foi alterado.
+
+Preparados `backup_results.py`, exemplos privados de configuração e datas,
+`tools/package_cpanel_api.py`, instruções de instalação, Cron a cada 30 minutos e
+rollback. ZIP tem módulos na raiz para extrair dentro de `api-luckyscan50`,
+validação separada e hashes, sem dados/configuração de produção. O Cron assume
+os caminhos convencionais do virtualenv cPanel e deve ser conferido no painel;
+nenhum Cron, deployment ou migração remota foi executado.
+
+Documentação: `docs/rss-cron-cpanel.md` e `docs/historical-results-sources.md`.

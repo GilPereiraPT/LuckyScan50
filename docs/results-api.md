@@ -40,3 +40,14 @@ Em modo JSON não há histórico: `/v1/sync` devolve `mode=snapshot`, todos os r
 Em 17/10/2026 foi possível consultar por GET as páginas públicas de referência e confirmar `/health` e o concurso 083/2026 da API existente. Isso não comprova autorização para recolha nem verificação independente do concurso. Não foi encontrado contrato documentado/autorizado de integração nesta auditoria. A versão inicial usa importação administrativa; não ativa scraping, endpoints internos, login ou Cron remoto. Fixtures sintéticas de testes usam `example.org` e nunca são importadas em produção.
 
 A integração posterior dos três RSS oficiais está documentada em [rss-integration.md](rss-integration.md), com XML reais e verificação HTTPS. As observações RSS não fornecem valores oficiais por categoria. A importação automática não foi ativada em produção.
+
+## Cobertura histórica
+
+Estatísticas de números, estrelas e resumo acrescentam `coverage`, com
+`historyStart=2004-02-13`, `storedFrom`, `storedTo`, `storedDrawCount`,
+`isCompleteHistory=false`, `verification=not_audited` e aviso de amostra.
+Os campos anteriores mantêm a forma. Um único concurso não é apresentado como
+histórico integral; não há carga histórica nesta entrega.
+
+A preparação de Cron e os limites de promoção RSS estão em
+[rss-cron-cpanel.md](rss-cron-cpanel.md).

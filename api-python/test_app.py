@@ -100,6 +100,8 @@ class APITests(unittest.TestCase):
         self.assertEqual(len(numbers['data']),50)
         self.assertEqual(numbers['drawCount'],2)
         self.assertEqual(numbers['scope'],'stored_confirmed_keys')
+        self.assertFalse(numbers['coverage']['isCompleteHistory'])
+        self.assertEqual(numbers['coverage']['storedDrawCount'],2)
         self.assertEqual(numbers['data'][0]['count'],2)
         self.assertEqual(numbers['data'][-1]['lastDate'],None)
         self.assertEqual(len(self.request('/v1/statistics/stars')[1]['data']),12)

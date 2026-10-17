@@ -287,6 +287,10 @@ def ingest(store, payload, kind, draw_dates=None):
             old = connection.execute('SELECT payload FROM draws WHERE game=? AND draw_id=?', (game, identity)).fetchone()
             conflicts = []
             if kind != 'portal':
+                if connection.execute("SELECT 1 FROM rss_observations WHERE game=? AND draw_id=? "
+                                      "AND status='conflict' AND detail LIKE '%announced_draw_date%' LIMIT 1",
+                                      (game, identity)).fetchone():
+                    conflicts.append('announced_draw_date_conflict')
                 if old and key(json.loads(old[0])) != key(record):
                     conflicts.append('existing_draw')
                 if old and (draw_dates or {}).get((game, identity), json.loads(old[0])['date']) != json.loads(old[0])['date']:
@@ -312,6 +316,8 @@ def ingest(store, payload, kind, draw_dates=None):
                 report['pendingDate'] += 1
                 continue
             # Explicit date only: RSS publication dates are not draw dates.
+            if date.fromisoformat(day) > datetime.fromisoformat(record['publishedAt']).date():
+                raise FeedError('Draw date is after result publication')
             row = {'game': game, 'drawId': identity, 'date': day, 'status': 'numbers_confirmed',
                    'sourceUrl': FEEDS[kind], 'retrievedAt': now}
             if game == 'milhao':
@@ -370,8 +376,11 @@ def run_remote(store, kinds):
             outcomes[kind] = ingest(store, fetch(kind), kind)
         except (OSError, ValueError, sqlite3.Error) as exc:
             # Network failures also leave an audit record; no result deletion.
-            record_failure(store, kind, exc)
             outcomes[kind] = {'error': type(exc).__name__}
+            try:
+                record_failure(store, kind, exc)
+            except (OSError, ValueError, sqlite3.Error):
+                outcomes[kind]['auditError'] = 'storage_unavailable'
     return outcomes
 
 

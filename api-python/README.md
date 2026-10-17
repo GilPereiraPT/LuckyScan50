@@ -34,15 +34,15 @@ python3 import_result.py /caminho/validado.json --database /caminho/privado/resu
 
 Cada correção preserva a versão anterior em `revisions`. A atualização de `retrievedAt` isolada não cria revisão. Um resultado completo não pode regredir para parcial. Registos M1lhão legados sem `amountCents` continuam legíveis; o prémio permanece desconhecido e nunca é inferido.
 
-## Cron, sem ativação automática
+## Cron: inbox e RSS, sem ativação automática
 
-`collect_results.py` é um adaptador de **caixa de entrada administrativa local**, não um scraper. Não foi identificada documentação suficiente que autorize recolha automática. Não acede a contas de jogadores ou endpoints internos.
+O modo `collect_results.py --inbox` é um adaptador de **caixa de entrada administrativa local**, sem HTTP. O modo `--rss`, descrito abaixo, usa os três RSS públicos oficiais. Nenhum modo acede a contas de jogadores ou endpoints internos.
 
 ```sh
 python3 collect_results.py --database /caminho/privado/results.sqlite3 --inbox /caminho/privado/inbox
 ```
 
-O diretório deve existir. `flock` impede execuções simultâneas; cada ficheiro é transacional, fica retido e pode ser corrigido e repetido. Erros produzem código de saída 1. Não regista conteúdos de bilhetes nem credenciais. Um JSON parcial permanece `numbers_confirmed`; um novo ficheiro completo cria revisão. Não há retries HTTP porque não há fornecedor remoto autorizado.
+O diretório deve existir. `flock` impede execuções simultâneas; cada ficheiro é transacional, fica retido e pode ser corrigido e repetido. Erros produzem código de saída 1. Não regista conteúdos de bilhetes nem credenciais. Um JSON parcial permanece `numbers_confirmed`; um novo ficheiro completo cria revisão. O modo inbox não faz pedidos HTTP; o modo RSS usa uma tentativa limitada por fonte em cada ciclo.
 
 Depois de validar caminhos, permissões e execução manual no cPanel, o proprietário pode configurar Cron para terça/sexta após publicação, tendo em conta o fuso horário do alojamento. Não ativar Cron nesta tarefa. Alternativa: workflow manual `validate-results.yml` valida um ficheiro previamente revisto no GitHub e produz uma base como artefacto, sem deploy nem acesso ao alojamento.
 
@@ -63,3 +63,16 @@ Ver [integração, auditoria de prémios e comandos locais](../docs/rss-integrat
 GET `/v1/rss/overview` é uma extensão JSON de leitura. Não há Cron ou deployment
 automático. Estatísticas usam o histórico completo de chaves confirmadas e
 `scope=stored_confirmed_keys`, com revalidação HTTP em cada pedido.
+
+### Coletor periódico RSS
+
+`collect_results.py --inbox` mantém o comportamento JSON. O novo modo `--rss`
+usa os três feeds oficiais com HTTPS e o bloqueio da mesma base. Requer SQLite
+existente e configuração explícita; `rss-collector.example.json` vem desativado.
+O modo `--fixtures` executa a recolha offline sem HTTP. Não ativa Cron ou migra JSON.
+
+Ver [instalação, comando Cron e rollback](../docs/rss-cron-cpanel.md) e
+[investigação do histórico desde 2004](../docs/historical-results-sources.md).
+`backup_results.py` cria backups SQLite consistentes sem sobrescrever ficheiros.
+Estatísticas acrescentam `coverage` para distinguir a amostra guardada de um
+histórico integral não auditado.
