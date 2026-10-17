@@ -1,0 +1,13 @@
+{
+  "apk": "LuckyScan50-audit-0.2.1-arm64.apk",
+  "bytes": 96951732,
+  "sha256": "bdbc2bbf32d9485f7069c347bd9772802cbbb947e9cdb82ef678f00be5591176",
+  "versionName": "0.2.1",
+  "abi": "arm64-v8a",
+  "signatureVerified": true,
+  "certificateSha256": "0695a638827b0ffa1725698204080edd8b76d65971cbe30ff2d5219d2d0ee860",
+  "nativeLibraries": 4,
+  "elf16KbAligned": true,
+  "zip16KbAligned": true,
+  "realPhotoOcrValidated": false
+}

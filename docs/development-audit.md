@@ -33,3 +33,16 @@ Não há credenciais de produção configuradas; não são necessárias para tes
 - Os commits iniciais, até `c04dd72`, foram publicados na branch `codex/luckyscan50-android-wallet` antes da falha de transporte. Os ajustes posteriores estão guardados em commits locais; é necessário repetir o push quando a rede regressar. A execução de CI remota não foi confirmada.
 
 Próxima sequência: recuperar o transporte de rede, publicar os commits locais, concluir o APK e testar em Android real; depois implementar extração estruturada dos comprovativos, notificações e regras regulamentares versionadas. Não ativar recolha automática sem autorização nem fazer deploy cPanel sem validação e autorização próprias.
+
+
+## Continuação da auditoria técnica — 17/10/2026
+
+O acesso ao executor foi recuperado. O bundle original foi novamente verificado e criado `/workspace/LuckyScan50-pre-audit.bundle` antes de conciliar o remoto `41daded` com os três commits locais. O merge `b015a0a` preservou `8c9b80f`, `2575399` e `cb6a011` e foi publicado por push normal, sem force.
+
+Foram demonstradas três falhas do parser recebido (cabeçalho com M1lhão interrompia leitura; N/E na mesma linha; euro posterior ao total). O commit `5a842b5` separa scanner, parser e política de preenchimento, preserva leituras parciais e edições manuais. `293e897` acrescenta gates do APK e `75e248f` completa coordenadas locais e filtros de ABI no build type.
+
+Executado nesta continuação: 13 testes Python, 31 Flutter e 10 TypeScript aprovados; `flutter analyze`, tipos TypeScript e build TypeScript aprovados. As três regressões OCR falharam antes da correção e passaram depois. Os três testes novos de widgets exercitam o formulário real com reconhecimento substituído por transcrição; não são OCR nativo de fotografias.
+
+APK debug 0.2.1+3 ARM64 produzido com código `75e248f`, assinatura/CRC/SHA-256/ABI/alinhamento ELF e ZIP de 16 KB verificados; chave debug local inalterada. O artefacto local está em `/workspace/artifacts/LuckyScan50-audit-0.2.1-arm64.apk`; checksum e manifesto estão ao lado. A consulta de runs GitHub devolveu Forbidden, pelo que não se confirma execução/artefacto remoto. A produção cPanel não foi alterada ou migrada.
+
+As fotografias reais vertical/90° e os binários originais de identidade visual não estão disponíveis. Não se declara o objetivo OCR real concluído. O relatório integral, matriz, comparação fundamentada com Tesseract, riscos e plano estão em [AUDITORIA_TECNICA_LUCKYSCAN50.md](AUDITORIA_TECNICA_LUCKYSCAN50.md).

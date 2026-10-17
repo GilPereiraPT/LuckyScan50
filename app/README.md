@@ -16,7 +16,7 @@ adb install -r build/app/outputs/flutter-apk/app-debug.apk
 
 A CI `ci-flutter.yml` prepara JDK/Flutter, executa os testes e gera o APK de testes ARM64 como artefacto. Não se confirma a execução da CI apenas por guardar o workflow.
 
-Não há keystore, senha, alias ou assinatura de produção no repositório. Configurar assinatura segura numa tarefa posterior, antes de gerar e distribuir um AAB. Um build release sem assinatura não é um produto pronto para a loja. Não usar o APK debug para distribuição pública.
+Não há keystore, senha, alias ou assinatura de produção no repositório. Configurar assinatura segura numa tarefa posterior, antes de gerar e distribuir um AAB. A configuração release de testes recebida usa assinatura debug; não é um produto assinado para a loja. Não usar o APK debug para distribuição pública.
 
 ## Utilização
 
@@ -27,7 +27,7 @@ Não há keystore, senha, alias ou assinatura de produção no repositório. Con
 5. Sincronizar resultados. Os concursos que ainda não foram descarregados ou estão parciais mantêm o recibo pendente; prémios desconhecidos nunca são tratados como zero.
 6. Registar o montante efetivamente recebido no detalhe. Não se presume levantamento físico para apostas online.
 
-A câmara/galeria e ML Kit funcionam localmente. A transcrição OCR é consultável no ecrã de confirmação; a atribuição automática de números, datas e valores a campos **ainda não foi implementada**. Não há envio de fotografias, apostas ou códigos para a API.
+A câmara/galeria e ML Kit funcionam localmente. O parser interpreta âncoras N/E, metadados explícitos e coordenadas, preenchendo os campos que não foram editados manualmente. Mostra apostas incompletas, conflitos e diagnóstico local por etapa. As regressões usam transcrição/observações controladas: falta executar e validar o motor nas fotografias reais vertical e rodada. Não há envio de fotografias, apostas ou códigos para a API.
 
 A sincronização pública consulta ambos os jogos, pagina quando a API o suporta e guarda resultados numa transação. A API publicada 0.1.1 só fornece até 100 concursos por jogo sem metadados de paginação; a aplicação não inventa o histórico em falta. A versão 0.2.0 acrescenta paginação no servidor. Um erro de rede conserva os dados anteriores. Atualização ao regressar à aplicação não equivale a sincronização Android em segundo plano.
 
@@ -44,3 +44,7 @@ A preferência de tema é guardada na base local. Bloqueio biométrico, notifica
 ## Validação necessária em Android real
 
 Testar captura/galeria, permissões, qualidade OCR em comprovativos anonimizados, disposição em ecrãs pequenos e fontes grandes, partilha/restauro entre dispositivos, encerramento e reabertura da app e modo avião. Os testes de widgets e unitários não comprovam os plugins nativos. Usar apenas comprovativos de testes/anonimizados e não importar fixtures de concursos como resultados atuais.
+
+## APK de auditoria 0.2.1+3
+
+A página Sobre identifica a versão e o SHA compilado. Antes de substituir um APK instalado, compare o certificado de assinatura; chaves debug de runners diferentes podem ser incompatíveis. Não desinstale nem elimine dados sem backup. O workflow de desenvolvimento exige testes, assinatura válida, ZIP íntegro, apenas ARM64 e alinhamento ELF/ZIP de 16 KB, e publica APK, checksum SHA-256 e manifesto de verificação. Não existe aprovação de OCR real enquanto faltarem as fotos de referência.
