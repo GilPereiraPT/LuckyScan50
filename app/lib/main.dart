@@ -4,17 +4,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'data/backup.dart';
+import 'data/receipt_scanner.dart';
+import 'domain/receipt_autofill.dart';
 import 'data/results_client.dart';
 import 'data/wallet_store.dart';
 import 'domain/wallet.dart';
-import 'domain/receipt_ocr.dart';
+
+const buildSha = String.fromEnvironment(
+  'LUCKYSCAN_BUILD_SHA',
+  defaultValue: 'local',
+);
+const appVersion = '0.2.1+3';
+
+final receiptScannerProvider = Provider<ReceiptScanner>(
+  (ref) => scanReceiptImage,
+);
 
 final storeProvider = Provider<WalletStore>(
   (ref) => throw UnimplementedError(),
@@ -517,7 +527,7 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
       ),
       const SizedBox(height: 20),
       const Text(
-        'LuckyScan50 · versão 0.2.0\nAplicação não oficial. Nunca utilize estatísticas como previsão de prémios.',
+        'LuckyScan50 · versão $appVersion · $buildSha\nAplicação não oficial. Nunca utilize estatísticas como previsão de prémios.',
       ),
     ];
   }
@@ -736,66 +746,102 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
       draws = TextEditingController(),
       milhaoDraws = TextEditingController(),
       milhaoCodes = TextEditingController(),
-      lines = TextEditingController();
+      lines = TextEditingController(),
+      receiptDate = TextEditingController(),
+      expectedCount = TextEditingController();
   String source = 'manual', ocrText = '';
   File? image;
   bool busy = false;
   bool milhaoDetected = false;
   int? expectedBets;
+  bool milhaoDeferred = false;
+  ReceiptScan? lastScan;
+  final previousOcr = <String, String>{};
+  Map<String, TextEditingController> get scanFields => {
+    'code': code,
+    'cost': cost,
+    'draws': draws,
+    'lines': lines,
+    'date': receiptDate,
+    'expected': expectedCount,
+    'milhaoCodes': milhaoCodes,
+  };
   @override
   void dispose() {
-    for (final c in [code, cost, draws, milhaoDraws, milhaoCodes, lines]) {
+    for (final c in [
+      code,
+      cost,
+      draws,
+      milhaoDraws,
+      milhaoCodes,
+      lines,
+      receiptDate,
+      expectedCount,
+    ]) {
       c.dispose();
     }
     super.dispose();
   }
 
-  Future<void> scan(ImageSource selected) async {
+  Future<void> scan(
+    ImageSource selected, {
+    bool additionalMilhao = false,
+  }) async {
+    if (busy) return;
+    final atStart = {
+      for (final entry in scanFields.entries) entry.key: entry.value.text,
+    };
+    setState(() => busy = true);
     try {
-      final picked = await ImagePicker().pickImage(
-        source: selected,
-        maxWidth: 3000,
+      final result = await ref.read(receiptScannerProvider)(selected);
+      if (result == null || !mounted) return;
+      final fields = scanFields;
+      final updates = receiptAutofill(
+        result.receipt,
+        current: {
+          for (final entry in fields.entries) entry.key: entry.value.text,
+        },
+        atStart: atStart,
+        previousOcr: previousOcr,
       );
-      if (picked == null || !mounted) return;
-      setState(() => busy = true);
-      final recognizer = TextRecognizer(script: TextRecognitionScript.latin);
-      try {
-        final text = await recognizer.processImage(
-          InputImage.fromFilePath(picked.path),
-        );
-        final extracted = parseScannedReceipt(text);
-        if (mounted) {
-          setState(() {
-            image = File(picked.path);
-            ocrText = text.text;
-            source = 'physical';
-            milhaoDetected = text.text.toUpperCase().contains('M1LH');
-            expectedBets = extracted.expectedLines;
-            if (extracted.lines.isNotEmpty) {
-              lines.text = extracted.lines.join('\n');
-            }
-            if (extracted.code != null && code.text.trim().isEmpty) {
-              code.text = extracted.code!;
-            }
-            if (extracted.amount != null && cost.text.trim().isEmpty) {
-              cost.text = extracted.amount!;
-            }
-          });
-          final expected = extracted.expectedLines;
-          message(context, extracted.lines.isEmpty
-              ? 'OCR concluído, mas nenhuma chave completa foi validada. Tente outra fotografia ou introduza as chaves manualmente.'
-              : '${extracted.lines.length} chave(s) reconhecida(s)'
-                '${expected == null ? '' : ' de $expected esperadas'}. '
-                'Confirme e complete as restantes antes de guardar.');
+      if (additionalMilhao) {
+        updates.removeWhere((key, _) => key != 'milhaoCodes');
+      }
+      setState(() {
+        if (!additionalMilhao) {
+          if (result.imagePath != null) image = File(result.imagePath!);
+          ocrText = result.rawText;
+          source = source == 'manual' ? 'physical' : source;
+          milhaoDetected = result.receipt.hasMilhao;
+          milhaoDeferred = false;
+          expectedBets = result.receipt.expectedLines;
+        } else {
+          ocrText = '$ocrText\n--- M1LHÃO ---\n${result.rawText}';
         }
-      } finally {
-        await recognizer.close();
+        if (!additionalMilhao) lastScan = result;
+        for (final entry in updates.entries) {
+          fields[entry.key]!.text = entry.value;
+          previousOcr[entry.key] = entry.value;
+        }
+      });
+      message(
+        context,
+        additionalMilhao
+            ? 'Boletim M1lhão lido. Confirme o código e o concurso; identificadores do recibo não são códigos de participação.'
+            : '${result.receipt.lines.length} aposta(s) completa(s) reconhecida(s). Confirme todos os campos. Edições manuais foram preservadas.',
+      );
+    } on ReceiptScanFailure catch (error) {
+      if (mounted) {
+        message(
+          context,
+          'Falha em ${error.stage} (${error.errorType}). Pode continuar manualmente.',
+        );
       }
     } catch (_) {
       if (mounted) {
         message(
           context,
-          'Não foi possível ler a imagem. Pode continuar com entrada manual.',
+          'Falha ao preencher o formulário. Os campos anteriores foram preservados.',
         );
       }
     } finally {
@@ -803,24 +849,8 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
     }
   }
 
-  Future<void> scanMilhao(ImageSource selected) async {
-    final picked = await ImagePicker().pickImage(source: selected, maxWidth: 3000);
-    if (picked == null || !mounted) return;
-    setState(() => busy = true);
-    final recognizer = TextRecognizer(script: TextRecognitionScript.latin);
-    try {
-      final result = await recognizer.processImage(InputImage.fromFilePath(picked.path));
-      if (!mounted) return;
-      // Do not guess a code from arbitrary OCR tokens.
-      message(context, 'Fotografia M1lhão lida. Confirme e introduza o código no campo M1lhão.');
-      setState(() => ocrText = '$ocrText\n--- M1LHÃO ---\n${result.text}');
-    } catch (_) {
-      if (mounted) message(context, 'Não foi possível ler o M1lhão. Introduza o código manualmente.');
-    } finally {
-      await recognizer.close();
-      if (mounted) setState(() => busy = false);
-    }
-  }
+  Future<void> scanMilhao(ImageSource selected) =>
+      scan(selected, additionalMilhao: true);
   Future<void> save() async {
     try {
       final parsed = lines.text
@@ -840,6 +870,18 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
             );
           })
           .toList();
+      final expected = expectedCount.text.trim().isEmpty
+          ? null
+          : int.tryParse(expectedCount.text);
+      if (expectedCount.text.trim().isNotEmpty &&
+          (expected == null || expected < 1)) {
+        throw const FormatException('Número esperado de apostas inválido');
+      }
+      if (expected != null && parsed.length != expected) {
+        throw FormatException(
+          'Reconhecidas $expected apostas esperadas: complete ou corrija o formulário antes de guardar.',
+        );
+      }
       List<String> ids(String text) =>
           text.split(RegExp(r'[,;\s]+')).where((s) => s.isNotEmpty).toList();
       final id = DateTime.now().microsecondsSinceEpoch.toRadixString(36);
@@ -849,6 +891,9 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
         source: source,
         code: code.text.trim(),
         costCents: cents(cost.text),
+        drawDate: receiptDate.text.trim().isEmpty
+            ? null
+            : receiptDate.text.trim(),
         lines: parsed,
         drawIds: ids(draws.text),
         milhaoDrawIds: ids(milhaoDraws.text),
@@ -953,30 +998,73 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
-            if (milhaoDetected)
+            if (milhaoDetected && !milhaoDeferred)
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('M1lhão detetado — fotografe o boletim do M1lhão',
-                          style: TextStyle(fontWeight: FontWeight.bold)),
-                      const Text('O código M1lhão não é o identificador do recibo. Confirme o código antes de guardar.'),
-                      Wrap(spacing: 8, children: [
-                        OutlinedButton.icon(
-                          onPressed: busy ? null : () => scanMilhao(ImageSource.camera),
-                          icon: const Icon(Icons.camera_alt), label: const Text('Fotografar M1lhão'),
-                        ),
-                        OutlinedButton.icon(
-                          onPressed: busy ? null : () => scanMilhao(ImageSource.gallery),
-                          icon: const Icon(Icons.image), label: const Text('Importar M1lhão'),
-                        ),
-                      ]),
+                      const Text(
+                        'Fotografe o boletim do M1lhão',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const Text(
+                        'O código M1lhão não é o identificador do recibo. Confirme o código antes de guardar.',
+                      ),
+                      Wrap(
+                        spacing: 8,
+                        children: [
+                          OutlinedButton.icon(
+                            onPressed: busy
+                                ? null
+                                : () => scanMilhao(ImageSource.camera),
+                            icon: const Icon(Icons.camera_alt),
+                            label: const Text('Fotografar M1lhão'),
+                          ),
+                          OutlinedButton.icon(
+                            onPressed: busy
+                                ? null
+                                : () => scanMilhao(ImageSource.gallery),
+                            icon: const Icon(Icons.image),
+                            label: const Text('Importar M1lhão'),
+                          ),
+                          TextButton(
+                            onPressed: () =>
+                                setState(() => milhaoDeferred = true),
+                            child: const Text('Adiar'),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
               ),
+            if (lastScan != null) ...[
+              Text(
+                'Jogo: ${lastScan!.receipt.game ?? 'não identificado'} · ${lastScan!.receipt.lines.length} apostas completas',
+              ),
+              for (final bet in lastScan!.receipt.bets.where(
+                (b) => !b.complete,
+              ))
+                ListTile(
+                  title: Text('Aposta ${bet.index} incompleta — confirmar'),
+                  subtitle: Text('${bet.formLine}\n${bet.issues.join('; ')}'),
+                ),
+              for (final warning in lastScan!.receipt.warnings) Text(warning),
+              ExpansionTile(
+                title: const Text('Diagnóstico local da leitura'),
+                children: [
+                  SelectableText(
+                    'Imagem → InputImage nativo (EXIF delegado ao SDK; sem correção de perspetiva)\n'
+                    'ML Kit: ${lastScan!.rawText.length} caracteres, ${lastScan!.receipt.tokenCount} elementos, ${lastScan!.ocrMs} ms\n'
+                    'Reconstrução: ${lastScan!.receipt.strategy}, inclinação ${lastScan!.receipt.skewDegrees.toStringAsFixed(1)}°\n'
+                    'Parser: ${lastScan!.receipt.lines.length} apostas completas, ${lastScan!.parseMs} ms\n'
+                    'Linhas reconstruídas:\n${lastScan!.receipt.rows.join('\n')}',
+                  ),
+                ],
+              ),
+            ],
             if (ocrText.isNotEmpty)
               ExpansionTile(
                 title: const Text('Texto OCR local — consultar transcrição'),
@@ -999,6 +1087,8 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
             field(code, 'Identificador do recibo (opcional)'),
             field(cost, 'Valor total pago (€)', hint: '2,50'),
             field(draws, 'Concursos Euromilhões', hint: '083/2026, 084/2026'),
+            field(receiptDate, 'Data do sorteio (AAAA-MM-DD)'),
+            field(expectedCount, 'Número esperado de apostas (confirmar)'),
             field(
               lines,
               'Chaves — uma por linha',
@@ -1041,7 +1131,6 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
   );
 }
 
-
 /// Página informativa. Os ficheiros de identidade visual originais
 /// serão incluídos como assets apenas após confirmação dos binários.
 class AboutPage extends StatelessWidget {
@@ -1070,41 +1159,55 @@ class AboutPage extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.document_scanner_outlined,
-                          size: 62, color: theme.colorScheme.primary),
+                      Icon(
+                        Icons.document_scanner_outlined,
+                        size: 62,
+                        color: theme.colorScheme.primary,
+                      ),
                       const SizedBox(height: 12),
-                      const Text('LUCKYSCAN50',
-                        style: TextStyle(fontSize: 25,
-                          letterSpacing: 2.5, fontWeight: FontWeight.bold,
-                          color: Color(0xffe7c77f))),
+                      const Text(
+                        'LUCKYSCAN50',
+                        style: TextStyle(
+                          fontSize: 25,
+                          letterSpacing: 2.5,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xffe7c77f),
+                        ),
+                      ),
                     ],
                   ),
                 ),
               ),
               const SizedBox(height: 24),
-              Text('As suas apostas, organizadas.',
-                  style: theme.textTheme.headlineSmall),
+              Text(
+                'As suas apostas, organizadas.',
+                style: theme.textTheme.headlineSmall,
+              ),
               const SizedBox(height: 12),
               const Text(
                 'O LuckyScan50 permite guardar recibos e apostas do '
                 'Euromilhões e M1lhão no dispositivo, consultar resultados '
-                'disponíveis e acompanhar os valores apostados e recebidos.'),
+                'disponíveis e acompanhar os valores apostados e recebidos.',
+              ),
               const SizedBox(height: 16),
               const Text(
                 'As fotografias e apostas são guardadas localmente. '
                 'O reconhecimento de texto exige confirmação antes '
-                'de guardar os dados.'),
+                'de guardar os dados.',
+              ),
               const SizedBox(height: 24),
-              Text('Projeto independente',
-                  style: theme.textTheme.titleLarge),
+              Text('Projeto independente', style: theme.textTheme.titleLarge),
               const SizedBox(height: 8),
               const Text(
                 'Aplicação não oficial, sem ligação ou associação aos '
                 'Jogos Santa Casa. A verificação e atribuição oficial '
-                'de prémios competem exclusivamente ao operador autorizado.'),
+                'de prémios competem exclusivamente ao operador autorizado.',
+              ),
               const SizedBox(height: 24),
-              Text('Versão de desenvolvimento 0.2.0',
-                  style: theme.textTheme.bodySmall),
+              Text(
+                'Versão de auditoria $appVersion · $buildSha',
+                style: theme.textTheme.bodySmall,
+              ),
             ],
           ),
         ),

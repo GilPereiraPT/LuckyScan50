@@ -48,7 +48,14 @@ class Receipt {
     this.milhaoCodes = const [],
     this.receivedCents = 0,
     this.imagePath,
+    this.drawDate,
   }) {
+    if (drawDate != null) {
+      final day = DateTime.tryParse(drawDate!);
+      if (day == null || day.toIso8601String().substring(0, 10) != drawDate) {
+        throw const FormatException('Data de sorteio inválida');
+      }
+    }
     if (!RegExp(r'^[A-Za-z0-9_-]{1,100}$').hasMatch(id) ||
         !['manual', 'physical', 'online'].contains(source) ||
         costCents < 0 ||
@@ -74,7 +81,7 @@ class Receipt {
   final int costCents, receivedCents;
   final List<BetLine> lines;
   final List<String> drawIds, milhaoDrawIds, milhaoCodes;
-  final String? imagePath;
+  final String? imagePath, drawDate;
   Map<String, dynamic> toJson() => {
     'id': id,
     'createdAt': createdAt,
@@ -87,6 +94,7 @@ class Receipt {
     'milhaoDrawIds': milhaoDrawIds,
     'milhaoCodes': milhaoCodes,
     'imagePath': imagePath,
+    'drawDate': drawDate,
   };
   factory Receipt.fromJson(Map<String, dynamic> j) => Receipt(
     id: j['id'] as String,
@@ -102,6 +110,7 @@ class Receipt {
     milhaoDrawIds: List<String>.from(j['milhaoDrawIds'] as List? ?? []),
     milhaoCodes: List<String>.from(j['milhaoCodes'] as List? ?? []),
     imagePath: j['imagePath'] as String?,
+    drawDate: j['drawDate'] as String?,
   );
 }
 
