@@ -77,6 +77,7 @@ List<int> _numbers(List<_Fragment> elements) {
       if (token.isEmpty) continue;
       if (!RegExp(r'^\d{1,2}$').hasMatch(token)) return const [];
       values.add(int.parse(token));
+    }
   }
   return values;
 }
