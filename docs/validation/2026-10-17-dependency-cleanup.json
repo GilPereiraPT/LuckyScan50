@@ -1,0 +1,1203 @@
+{
+  "preMultipassCommit": "4df2127",
+  "baselineCommit": "df260a3",
+  "toolchain": {
+    "flutter": "3.35.7",
+    "jdk": "21.0.12.1",
+    "buildTools": "35.0.0",
+    "mode": "release",
+    "abi": "android-arm64",
+    "signing": "existing local debug key",
+    "minify": true,
+    "shrinkResources": true,
+    "command": "flutter build apk --release --target-platform android-arm64 --dart-define=BUILD_SHA=df260a3"
+  },
+  "addedDartPackagesSincePreMultipass": {
+    "integration_test": "0.0.0",
+    "fuchsia_remote_debug_protocol": "0.0.0",
+    "flutter_driver": "0.0.0",
+    "webdriver": "3.1.0",
+    "process": "5.0.4",
+    "sync_http": "0.3.1"
+  },
+  "removedFromAppDependencyGraph": {
+    "integration_test": "0.0.0",
+    "sqflite_common_ffi": "2.3.7+1",
+    "sqlite3": "2.9.4",
+    "flutter_driver": "0.0.0",
+    "webdriver": "3.1.0",
+    "fuchsia_remote_debug_protocol": "0.0.0",
+    "process": "5.0.4",
+    "sync_http": "0.3.1"
+  },
+  "changedRetainedPackageVersions": {},
+  "retainedDartPackages": {
+    "args": {
+      "version": "2.7.0",
+      "dependency": "transitive"
+    },
+    "async": {
+      "version": "2.13.1",
+      "dependency": "transitive"
+    },
+    "boolean_selector": {
+      "version": "2.1.2",
+      "dependency": "transitive"
+    },
+    "characters": {
+      "version": "1.4.0",
+      "dependency": "transitive"
+    },
+    "clock": {
+      "version": "1.1.2",
+      "dependency": "transitive"
+    },
+    "collection": {
+      "version": "1.19.1",
+      "dependency": "transitive"
+    },
+    "cross_file": {
+      "version": "0.3.5+2",
+      "dependency": "transitive"
+    },
+    "crypto": {
+      "version": "3.0.7",
+      "dependency": "transitive"
+    },
+    "cryptography": {
+      "version": "2.9.0",
+      "dependency": "direct main"
+    },
+    "dbus": {
+      "version": "0.7.15",
+      "dependency": "transitive"
+    },
+    "fake_async": {
+      "version": "1.3.3",
+      "dependency": "transitive"
+    },
+    "ffi": {
+      "version": "2.2.0",
+      "dependency": "transitive"
+    },
+    "file": {
+      "version": "7.0.1",
+      "dependency": "transitive"
+    },
+    "file_picker": {
+      "version": "10.3.10",
+      "dependency": "direct main"
+    },
+    "file_selector_linux": {
+      "version": "0.9.4",
+      "dependency": "transitive"
+    },
+    "file_selector_macos": {
+      "version": "0.9.5",
+      "dependency": "transitive"
+    },
+    "file_selector_platform_interface": {
+      "version": "2.7.0",
+      "dependency": "transitive"
+    },
+    "file_selector_windows": {
+      "version": "0.9.3+5",
+      "dependency": "transitive"
+    },
+    "fixnum": {
+      "version": "1.1.1",
+      "dependency": "transitive"
+    },
+    "flutter": {
+      "version": "0.0.0",
+      "dependency": "direct main"
+    },
+    "flutter_lints": {
+      "version": "5.0.0",
+      "dependency": "direct dev"
+    },
+    "flutter_localizations": {
+      "version": "0.0.0",
+      "dependency": "direct main"
+    },
+    "flutter_plugin_android_lifecycle": {
+      "version": "2.0.34",
+      "dependency": "transitive"
+    },
+    "flutter_riverpod": {
+      "version": "2.6.1",
+      "dependency": "direct main"
+    },
+    "flutter_test": {
+      "version": "0.0.0",
+      "dependency": "direct dev"
+    },
+    "flutter_web_plugins": {
+      "version": "0.0.0",
+      "dependency": "transitive"
+    },
+    "go_router": {
+      "version": "16.3.0",
+      "dependency": "direct main"
+    },
+    "google_mlkit_commons": {
+      "version": "0.11.1",
+      "dependency": "transitive"
+    },
+    "google_mlkit_text_recognition": {
+      "version": "0.15.1",
+      "dependency": "direct main"
+    },
+    "http": {
+      "version": "1.6.0",
+      "dependency": "direct main"
+    },
+    "http_parser": {
+      "version": "4.1.2",
+      "dependency": "transitive"
+    },
+    "image_picker": {
+      "version": "1.2.2",
+      "dependency": "direct main"
+    },
+    "image_picker_android": {
+      "version": "0.8.13+17",
+      "dependency": "transitive"
+    },
+    "image_picker_for_web": {
+      "version": "3.1.1",
+      "dependency": "transitive"
+    },
+    "image_picker_ios": {
+      "version": "0.8.13+3",
+      "dependency": "transitive"
+    },
+    "image_picker_linux": {
+      "version": "0.2.2",
+      "dependency": "transitive"
+    },
+    "image_picker_macos": {
+      "version": "0.2.2+1",
+      "dependency": "transitive"
+    },
+    "image_picker_platform_interface": {
+      "version": "2.11.1",
+      "dependency": "transitive"
+    },
+    "image_picker_windows": {
+      "version": "0.2.2",
+      "dependency": "transitive"
+    },
+    "intl": {
+      "version": "0.20.2",
+      "dependency": "direct main"
+    },
+    "jni": {
+      "version": "1.1.0",
+      "dependency": "transitive"
+    },
+    "jni_flutter": {
+      "version": "1.0.4+1",
+      "dependency": "transitive"
+    },
+    "jni_util": {
+      "version": "1.0.0",
+      "dependency": "transitive"
+    },
+    "leak_tracker": {
+      "version": "11.0.2",
+      "dependency": "transitive"
+    },
+    "leak_tracker_flutter_testing": {
+      "version": "3.0.10",
+      "dependency": "transitive"
+    },
+    "leak_tracker_testing": {
+      "version": "3.0.2",
+      "dependency": "transitive"
+    },
+    "lints": {
+      "version": "5.1.1",
+      "dependency": "transitive"
+    },
+    "logging": {
+      "version": "1.3.0",
+      "dependency": "transitive"
+    },
+    "matcher": {
+      "version": "0.12.17",
+      "dependency": "transitive"
+    },
+    "material_color_utilities": {
+      "version": "0.11.1",
+      "dependency": "transitive"
+    },
+    "meta": {
+      "version": "1.16.0",
+      "dependency": "transitive"
+    },
+    "mime": {
+      "version": "2.1.0",
+      "dependency": "transitive"
+    },
+    "package_config": {
+      "version": "2.2.0",
+      "dependency": "transitive"
+    },
+    "path": {
+      "version": "1.9.1",
+      "dependency": "direct main"
+    },
+    "path_provider": {
+      "version": "2.1.5",
+      "dependency": "direct main"
+    },
+    "path_provider_android": {
+      "version": "2.3.1",
+      "dependency": "transitive"
+    },
+    "path_provider_foundation": {
+      "version": "2.5.1",
+      "dependency": "transitive"
+    },
+    "path_provider_linux": {
+      "version": "2.2.1",
+      "dependency": "transitive"
+    },
+    "path_provider_platform_interface": {
+      "version": "2.1.2",
+      "dependency": "transitive"
+    },
+    "path_provider_windows": {
+      "version": "2.3.0",
+      "dependency": "transitive"
+    },
+    "petitparser": {
+      "version": "7.0.2",
+      "dependency": "transitive"
+    },
+    "platform": {
+      "version": "3.1.6",
+      "dependency": "transitive"
+    },
+    "plugin_platform_interface": {
+      "version": "2.1.8",
+      "dependency": "transitive"
+    },
+    "riverpod": {
+      "version": "2.6.1",
+      "dependency": "transitive"
+    },
+    "share_plus": {
+      "version": "11.1.0",
+      "dependency": "direct main"
+    },
+    "share_plus_platform_interface": {
+      "version": "6.1.0",
+      "dependency": "transitive"
+    },
+    "sky_engine": {
+      "version": "0.0.0",
+      "dependency": "transitive"
+    },
+    "source_span": {
+      "version": "1.10.2",
+      "dependency": "transitive"
+    },
+    "sqflite": {
+      "version": "2.4.2",
+      "dependency": "direct main"
+    },
+    "sqflite_android": {
+      "version": "2.4.2+2",
+      "dependency": "transitive"
+    },
+    "sqflite_common": {
+      "version": "2.5.6",
+      "dependency": "transitive"
+    },
+    "sqflite_darwin": {
+      "version": "2.4.2",
+      "dependency": "transitive"
+    },
+    "sqflite_platform_interface": {
+      "version": "2.4.0",
+      "dependency": "transitive"
+    },
+    "stack_trace": {
+      "version": "1.12.1",
+      "dependency": "transitive"
+    },
+    "state_notifier": {
+      "version": "1.0.0",
+      "dependency": "transitive"
+    },
+    "stream_channel": {
+      "version": "2.1.4",
+      "dependency": "transitive"
+    },
+    "string_scanner": {
+      "version": "1.4.1",
+      "dependency": "transitive"
+    },
+    "synchronized": {
+      "version": "3.4.0",
+      "dependency": "transitive"
+    },
+    "term_glyph": {
+      "version": "1.2.2",
+      "dependency": "transitive"
+    },
+    "test_api": {
+      "version": "0.7.6",
+      "dependency": "transitive"
+    },
+    "typed_data": {
+      "version": "1.4.0",
+      "dependency": "transitive"
+    },
+    "url_launcher_linux": {
+      "version": "3.2.2",
+      "dependency": "transitive"
+    },
+    "url_launcher_platform_interface": {
+      "version": "2.3.2",
+      "dependency": "transitive"
+    },
+    "url_launcher_web": {
+      "version": "2.4.1",
+      "dependency": "transitive"
+    },
+    "url_launcher_windows": {
+      "version": "3.1.5",
+      "dependency": "transitive"
+    },
+    "uuid": {
+      "version": "4.6.0",
+      "dependency": "transitive"
+    },
+    "vector_math": {
+      "version": "2.2.0",
+      "dependency": "transitive"
+    },
+    "vm_service": {
+      "version": "15.4.0",
+      "dependency": "transitive"
+    },
+    "web": {
+      "version": "1.1.1",
+      "dependency": "transitive"
+    },
+    "win32": {
+      "version": "5.15.0",
+      "dependency": "transitive"
+    },
+    "xdg_directories": {
+      "version": "1.1.0",
+      "dependency": "transitive"
+    },
+    "xml": {
+      "version": "6.6.1",
+      "dependency": "transitive"
+    }
+  },
+  "baseline": {
+    "bytes": 31730810,
+    "sha256": "97b46e8ead4e6bfcbbc886c10d952a9af8fac730114e12cf7b704cb82da26512",
+    "files": [
+      {
+        "path": "assets/dexopt/baseline.prof",
+        "bytes": 813,
+        "compressedBytes": 813,
+        "sha256": "3e29f7e52a9f7b3999a95e3fb1c6f496bdb4ca99f890511f84eee5f13521e95b"
+      },
+      {
+        "path": "assets/dexopt/baseline.profm",
+        "bytes": 179,
+        "compressedBytes": 179,
+        "sha256": "8a777eb8f18dc4011506d5fda6669f43cee40105c43eebfd14821199cc0c73e1"
+      },
+      {
+        "path": "lib/arm64-v8a/libapp.so",
+        "bytes": 6554544,
+        "compressedBytes": 6554544,
+        "sha256": "63180562e67900405b57839d6407d9b387219dba2e097a291c28fd36263175e4"
+      },
+      {
+        "path": "lib/arm64-v8a/libdartjni.so",
+        "bytes": 131240,
+        "compressedBytes": 131240,
+        "sha256": "1ae40bd68e03a491c2c34cd915d184862455cbbf76bbc1a24eac3a8960298e9a"
+      },
+      {
+        "path": "lib/arm64-v8a/libflutter.so",
+        "bytes": 11037032,
+        "compressedBytes": 11037032,
+        "sha256": "ee37eb8be8e01a0d840558f75e0a09c4ca135d721c2ca6145c050e4f89785129"
+      },
+      {
+        "path": "lib/arm64-v8a/libmlkit_google_ocr_pipeline.so",
+        "bytes": 11064544,
+        "compressedBytes": 11064544,
+        "sha256": "fa41d509a661e8aa8b3e3ac1a28541f8823f308414fcad733fe26d61feea2646"
+      },
+      {
+        "path": "assets/flutter_assets/AssetManifest.bin",
+        "bytes": 85,
+        "compressedBytes": 49,
+        "sha256": "5af7e6bdb7e6228f4110ed7d4c45a9c5bd37579504ce090aab1e5a0308e48d43"
+      },
+      {
+        "path": "assets/flutter_assets/AssetManifest.json",
+        "bytes": 77,
+        "compressedBytes": 44,
+        "sha256": "489150bd8239cabcd2d9017c39a716f564c5b577db9b0bb08f6805707f6c187f"
+      },
+      {
+        "path": "assets/flutter_assets/FontManifest.json",
+        "bytes": 82,
+        "compressedBytes": 69,
+        "sha256": "28b1eb2b3d2e1ad60b8c8b0f9100b1ccbf492f7fa97f5bebb51ea97e73926e7d"
+      },
+      {
+        "path": "assets/flutter_assets/NOTICES.Z",
+        "bytes": 93066,
+        "compressedBytes": 88160,
+        "sha256": "8c70b85751309f77c28e50155e89b7324ea9830d584a3bc477175bebbbff6263"
+      },
+      {
+        "path": "assets/flutter_assets/NativeAssetsManifest.json",
+        "bytes": 45,
+        "compressedBytes": 47,
+        "sha256": "9548a31e4a048135c1d94f919328bfb62ae2c7bb3cab96557c7941daa97776cb"
+      },
+      {
+        "path": "assets/flutter_assets/assets/private_receipts/README.txt",
+        "bytes": 305,
+        "compressedBytes": 210,
+        "sha256": "64589ebb96426cd8d988bff6b1199989c70de786e97626fa9b4a217817072224"
+      },
+      {
+        "path": "assets/flutter_assets/fonts/MaterialIcons-Regular.otf",
+        "bytes": 4180,
+        "compressedBytes": 2723,
+        "sha256": "069556e158a91c65062d0ac62c79bec075617109157e448ad8510abcadb4427c"
+      },
+      {
+        "path": "assets/flutter_assets/shaders/ink_sparkle.frag",
+        "bytes": 21320,
+        "compressedBytes": 5137,
+        "sha256": "e5e61d50c9549bc35382bbbd1c9548d46c4fb9ddf40c3a698415ac7e005516c8"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/aksara/aksara_page_layout_analysis_rpn_gcn.binarypb",
+        "bytes": 276,
+        "compressedBytes": 208,
+        "sha256": "b2963b78c7e55fdfd5ed82ca60f045aace7a7e373b5d93254e9ac979dcb5bb67"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/aksara/aksara_page_layout_analysis_ti_rpn_gcn.binarypb",
+        "bytes": 278,
+        "compressedBytes": 209,
+        "sha256": "d448c5de8d480d491ac128657926e6253a770baa90afb0e97a67740c93c1e9f3"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/gocr/gocr_models/line_recognition_legacy_mobile/Latn_ctc/optical/assets.extra/LabelMap.pb",
+        "bytes": 3809,
+        "compressedBytes": 1521,
+        "sha256": "c6d345043a561f9dfdb1472cfca7cdda0128b19cb6909c67032c5783077c92b3"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/gocr/gocr_models/line_recognition_legacy_mobile/Latn_ctc/optical/conv_model.fb",
+        "bytes": 40848,
+        "compressedBytes": 30829,
+        "sha256": "64aba719b4ed1ee5b3d4886c5aaf0b1ac051bf5879e9b08e861e0e29e20a08a7"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/gocr/gocr_models/line_recognition_legacy_mobile/Latn_ctc/optical/lstm_model.fb",
+        "bytes": 309568,
+        "compressedBytes": 181609,
+        "sha256": "0ed62e4fbe0fc5c4090aec473b136e188f828590765c028382358daddb3ccb6e"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/gocr/gocr_models/line_recognition_legacy_mobile/Latn_ctc_cpu.binarypb",
+        "bytes": 333,
+        "compressedBytes": 259,
+        "sha256": "a1dce9a376905a597366f6c9a0b3723205486880e176869e1ad65e92d68e068b"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/gocr/gocr_models/line_recognition_legacy_mobile/tflite_langid.tflite",
+        "bytes": 315520,
+        "compressedBytes": 315520,
+        "sha256": "7f931f6f7c1dd0ec591ace7780df91645a450fafc83505f3ff45ce5ef7c8441b"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/gocr/layout/line_clustering_custom_ops/model.tflite",
+        "bytes": 129612,
+        "compressedBytes": 129612,
+        "sha256": "ecda697ed244c5762410e0497878eabcda5f8b0682fb7c3800cd88a7f45dd8e6"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/gocr/layout/line_splitting_custom_ops/model.tflite",
+        "bytes": 114384,
+        "compressedBytes": 114384,
+        "sha256": "f42197e656972c330bb9f092edbe298b4a6c2fcd808ff6d614381311f8dd22a7"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/taser/detector/region_proposal_text_detector_tflite_vertical_mbv2_v1.bincfg",
+        "bytes": 452,
+        "compressedBytes": 381,
+        "sha256": "7ac2d4c04fb2fe0cd5c33e3030d9276c40286c73f97c2daa3ab94ea8c3f314c3"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/taser/detector/rpn_text_detector_mobile_space_to_depth_quantized_mbv2_v1.tflite",
+        "bytes": 340760,
+        "compressedBytes": 340760,
+        "sha256": "eb811a1290738f131e4005d8a1d63ef21770866414b847190a932f0b56c0d18f"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/taser/rpn_text_detection_tflite_mobile_mbv2.binarypb",
+        "bytes": 194,
+        "compressedBytes": 143,
+        "sha256": "86660be29934bdd123a65ea30ec09eaa66481a7ac2def8e8f376e78484f8774a"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/taser/segmenter/tflite_script_detector_0.3.bincfg",
+        "bytes": 1118,
+        "compressedBytes": 487,
+        "sha256": "d4223c23cd8ee3d3d4999d4e10bb16ec0b8119f8812e5e66e64e907c5508f21b"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/taser/segmenter/tflite_script_detector_0.3.conv_model",
+        "bytes": 40808,
+        "compressedBytes": 30535,
+        "sha256": "16be9fc0c0c9429cc3714d5d2e8662c53bd28cf0031375e237db288dc8da8d5f"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/taser/segmenter/tflite_script_detector_0.3.lstm_model",
+        "bytes": 161448,
+        "compressedBytes": 119566,
+        "sha256": "2281a01686f9ff9164f2a12ed743818e2b8e0af6ae7c73240924d70342d3f2cb"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/taser/taser_script_identification_tflite_mobile.binarypb",
+        "bytes": 136,
+        "compressedBytes": 114,
+        "sha256": "a3ebf2720f86e1440e42604f8bd48194111e152fa93886f987655f01a9336d32"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/taser_tflite_gocrlatin_mbv2_scriptid_aksara_layout_gcn_mobile_engine.binarypb",
+        "bytes": 13178,
+        "compressedBytes": 2764,
+        "sha256": "78210a92ad8ff692898e15d37718094c179149c9546a8fd53759b22939d39348"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/taser_tflite_gocrlatin_mbv2_scriptid_aksara_layout_gcn_mobile_engine_ti.binarypb",
+        "bytes": 13183,
+        "compressedBytes": 2769,
+        "sha256": "bfd6e9cb8ed0536d03fc9c06a31bc79de3996bc7dcfbe9f4cc19f819231b7d0a"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/taser_tflite_gocrlatin_mbv2_scriptid_aksara_layout_gcn_mobile_recognizer.binarypb",
+        "bytes": 233,
+        "compressedBytes": 188,
+        "sha256": "e80538539371576a5ad7dd58ed314a4f4d9fd9fca7ad73efdac476a6c3eb1ab4"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/taser_tflite_gocrlatin_mbv2_scriptid_aksara_layout_gcn_mobile_runner.binarypb",
+        "bytes": 331,
+        "compressedBytes": 233,
+        "sha256": "32c2c1b72ba32605c23a96a8b7bf4ebf8f5a916df6cd672724556a17d3d6c59e"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/taser_tflite_gocrlatin_mbv2_scriptid_aksara_layout_gcn_mobile_runner_ti.binarypb",
+        "bytes": 334,
+        "compressedBytes": 234,
+        "sha256": "2c8581869ebb972a2d82403c9cd871a1d4c8d6419ae371fc1d859ad2bce2d5dc"
+      }
+    ]
+  },
+  "cleanupOnly": {
+    "bytes": 31730328,
+    "sha256": "6d957cd29c76cc42233ed48321d3244b63384eca02f49d8752a0d86355612b80",
+    "files": [
+      {
+        "path": "assets/dexopt/baseline.prof",
+        "bytes": 813,
+        "compressedBytes": 813,
+        "sha256": "3e29f7e52a9f7b3999a95e3fb1c6f496bdb4ca99f890511f84eee5f13521e95b"
+      },
+      {
+        "path": "assets/dexopt/baseline.profm",
+        "bytes": 179,
+        "compressedBytes": 179,
+        "sha256": "8a777eb8f18dc4011506d5fda6669f43cee40105c43eebfd14821199cc0c73e1"
+      },
+      {
+        "path": "lib/arm64-v8a/libapp.so",
+        "bytes": 6554544,
+        "compressedBytes": 6554544,
+        "sha256": "63180562e67900405b57839d6407d9b387219dba2e097a291c28fd36263175e4"
+      },
+      {
+        "path": "lib/arm64-v8a/libdartjni.so",
+        "bytes": 131240,
+        "compressedBytes": 131240,
+        "sha256": "1ae40bd68e03a491c2c34cd915d184862455cbbf76bbc1a24eac3a8960298e9a"
+      },
+      {
+        "path": "lib/arm64-v8a/libflutter.so",
+        "bytes": 11037032,
+        "compressedBytes": 11037032,
+        "sha256": "ee37eb8be8e01a0d840558f75e0a09c4ca135d721c2ca6145c050e4f89785129"
+      },
+      {
+        "path": "lib/arm64-v8a/libmlkit_google_ocr_pipeline.so",
+        "bytes": 11064544,
+        "compressedBytes": 11064544,
+        "sha256": "fa41d509a661e8aa8b3e3ac1a28541f8823f308414fcad733fe26d61feea2646"
+      },
+      {
+        "path": "assets/flutter_assets/AssetManifest.bin",
+        "bytes": 2,
+        "compressedBytes": 4,
+        "sha256": "f566cc6fccc657365c0197accf3a7d6f80f85209ff666ff774f4dcbc524aa842"
+      },
+      {
+        "path": "assets/flutter_assets/AssetManifest.json",
+        "bytes": 2,
+        "compressedBytes": 4,
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      },
+      {
+        "path": "assets/flutter_assets/FontManifest.json",
+        "bytes": 82,
+        "compressedBytes": 69,
+        "sha256": "28b1eb2b3d2e1ad60b8c8b0f9100b1ccbf492f7fa97f5bebb51ea97e73926e7d"
+      },
+      {
+        "path": "assets/flutter_assets/NOTICES.Z",
+        "bytes": 93066,
+        "compressedBytes": 88160,
+        "sha256": "8c70b85751309f77c28e50155e89b7324ea9830d584a3bc477175bebbbff6263"
+      },
+      {
+        "path": "assets/flutter_assets/NativeAssetsManifest.json",
+        "bytes": 45,
+        "compressedBytes": 47,
+        "sha256": "9548a31e4a048135c1d94f919328bfb62ae2c7bb3cab96557c7941daa97776cb"
+      },
+      {
+        "path": "assets/flutter_assets/fonts/MaterialIcons-Regular.otf",
+        "bytes": 4180,
+        "compressedBytes": 2723,
+        "sha256": "069556e158a91c65062d0ac62c79bec075617109157e448ad8510abcadb4427c"
+      },
+      {
+        "path": "assets/flutter_assets/shaders/ink_sparkle.frag",
+        "bytes": 21320,
+        "compressedBytes": 5137,
+        "sha256": "e5e61d50c9549bc35382bbbd1c9548d46c4fb9ddf40c3a698415ac7e005516c8"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/aksara/aksara_page_layout_analysis_rpn_gcn.binarypb",
+        "bytes": 276,
+        "compressedBytes": 208,
+        "sha256": "b2963b78c7e55fdfd5ed82ca60f045aace7a7e373b5d93254e9ac979dcb5bb67"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/aksara/aksara_page_layout_analysis_ti_rpn_gcn.binarypb",
+        "bytes": 278,
+        "compressedBytes": 209,
+        "sha256": "d448c5de8d480d491ac128657926e6253a770baa90afb0e97a67740c93c1e9f3"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/gocr/gocr_models/line_recognition_legacy_mobile/Latn_ctc/optical/assets.extra/LabelMap.pb",
+        "bytes": 3809,
+        "compressedBytes": 1521,
+        "sha256": "c6d345043a561f9dfdb1472cfca7cdda0128b19cb6909c67032c5783077c92b3"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/gocr/gocr_models/line_recognition_legacy_mobile/Latn_ctc/optical/conv_model.fb",
+        "bytes": 40848,
+        "compressedBytes": 30829,
+        "sha256": "64aba719b4ed1ee5b3d4886c5aaf0b1ac051bf5879e9b08e861e0e29e20a08a7"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/gocr/gocr_models/line_recognition_legacy_mobile/Latn_ctc/optical/lstm_model.fb",
+        "bytes": 309568,
+        "compressedBytes": 181609,
+        "sha256": "0ed62e4fbe0fc5c4090aec473b136e188f828590765c028382358daddb3ccb6e"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/gocr/gocr_models/line_recognition_legacy_mobile/Latn_ctc_cpu.binarypb",
+        "bytes": 333,
+        "compressedBytes": 259,
+        "sha256": "a1dce9a376905a597366f6c9a0b3723205486880e176869e1ad65e92d68e068b"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/gocr/gocr_models/line_recognition_legacy_mobile/tflite_langid.tflite",
+        "bytes": 315520,
+        "compressedBytes": 315520,
+        "sha256": "7f931f6f7c1dd0ec591ace7780df91645a450fafc83505f3ff45ce5ef7c8441b"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/gocr/layout/line_clustering_custom_ops/model.tflite",
+        "bytes": 129612,
+        "compressedBytes": 129612,
+        "sha256": "ecda697ed244c5762410e0497878eabcda5f8b0682fb7c3800cd88a7f45dd8e6"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/gocr/layout/line_splitting_custom_ops/model.tflite",
+        "bytes": 114384,
+        "compressedBytes": 114384,
+        "sha256": "f42197e656972c330bb9f092edbe298b4a6c2fcd808ff6d614381311f8dd22a7"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/taser/detector/region_proposal_text_detector_tflite_vertical_mbv2_v1.bincfg",
+        "bytes": 452,
+        "compressedBytes": 381,
+        "sha256": "7ac2d4c04fb2fe0cd5c33e3030d9276c40286c73f97c2daa3ab94ea8c3f314c3"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/taser/detector/rpn_text_detector_mobile_space_to_depth_quantized_mbv2_v1.tflite",
+        "bytes": 340760,
+        "compressedBytes": 340760,
+        "sha256": "eb811a1290738f131e4005d8a1d63ef21770866414b847190a932f0b56c0d18f"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/taser/rpn_text_detection_tflite_mobile_mbv2.binarypb",
+        "bytes": 194,
+        "compressedBytes": 143,
+        "sha256": "86660be29934bdd123a65ea30ec09eaa66481a7ac2def8e8f376e78484f8774a"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/taser/segmenter/tflite_script_detector_0.3.bincfg",
+        "bytes": 1118,
+        "compressedBytes": 487,
+        "sha256": "d4223c23cd8ee3d3d4999d4e10bb16ec0b8119f8812e5e66e64e907c5508f21b"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/taser/segmenter/tflite_script_detector_0.3.conv_model",
+        "bytes": 40808,
+        "compressedBytes": 30535,
+        "sha256": "16be9fc0c0c9429cc3714d5d2e8662c53bd28cf0031375e237db288dc8da8d5f"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/taser/segmenter/tflite_script_detector_0.3.lstm_model",
+        "bytes": 161448,
+        "compressedBytes": 119566,
+        "sha256": "2281a01686f9ff9164f2a12ed743818e2b8e0af6ae7c73240924d70342d3f2cb"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/taser/taser_script_identification_tflite_mobile.binarypb",
+        "bytes": 136,
+        "compressedBytes": 114,
+        "sha256": "a3ebf2720f86e1440e42604f8bd48194111e152fa93886f987655f01a9336d32"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/taser_tflite_gocrlatin_mbv2_scriptid_aksara_layout_gcn_mobile_engine.binarypb",
+        "bytes": 13178,
+        "compressedBytes": 2764,
+        "sha256": "78210a92ad8ff692898e15d37718094c179149c9546a8fd53759b22939d39348"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/taser_tflite_gocrlatin_mbv2_scriptid_aksara_layout_gcn_mobile_engine_ti.binarypb",
+        "bytes": 13183,
+        "compressedBytes": 2769,
+        "sha256": "bfd6e9cb8ed0536d03fc9c06a31bc79de3996bc7dcfbe9f4cc19f819231b7d0a"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/taser_tflite_gocrlatin_mbv2_scriptid_aksara_layout_gcn_mobile_recognizer.binarypb",
+        "bytes": 233,
+        "compressedBytes": 188,
+        "sha256": "e80538539371576a5ad7dd58ed314a4f4d9fd9fca7ad73efdac476a6c3eb1ab4"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/taser_tflite_gocrlatin_mbv2_scriptid_aksara_layout_gcn_mobile_runner.binarypb",
+        "bytes": 331,
+        "compressedBytes": 233,
+        "sha256": "32c2c1b72ba32605c23a96a8b7bf4ebf8f5a916df6cd672724556a17d3d6c59e"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/taser_tflite_gocrlatin_mbv2_scriptid_aksara_layout_gcn_mobile_runner_ti.binarypb",
+        "bytes": 334,
+        "compressedBytes": 234,
+        "sha256": "2c8581869ebb972a2d82403c9cd871a1d4c8d6419ae371fc1d859ad2bce2d5dc"
+      }
+    ]
+  },
+  "deltaBytes": -482,
+  "deltaPercent": -0.0015190283513090274,
+  "releaseRuntimeBefore": [
+    "androidx.activity:activity:1.12.4",
+    "androidx.annotation:annotation-experimental:1.4.1",
+    "androidx.annotation:annotation-jvm:1.9.1",
+    "androidx.annotation:annotation:1.9.1",
+    "androidx.appcompat:appcompat-resources:1.6.1",
+    "androidx.appcompat:appcompat:1.6.1",
+    "androidx.arch.core:core-common:2.2.0",
+    "androidx.arch.core:core-runtime:2.2.0",
+    "androidx.collection:collection-jvm:1.4.2",
+    "androidx.collection:collection:1.4.2",
+    "androidx.compose.runtime:runtime-annotation-android:1.9.0",
+    "androidx.compose.runtime:runtime-annotation:1.9.0",
+    "androidx.concurrent:concurrent-futures:1.1.0",
+    "androidx.core:core-ktx:1.18.0",
+    "androidx.core:core-viewtree:1.0.0",
+    "androidx.core:core:1.18.0",
+    "androidx.cursoradapter:cursoradapter:1.0.0",
+    "androidx.customview:customview:1.0.0",
+    "androidx.drawerlayout:drawerlayout:1.0.0",
+    "androidx.emoji2:emoji2-views-helper:1.2.0",
+    "androidx.emoji2:emoji2:1.2.0",
+    "androidx.exifinterface:exifinterface:1.4.2",
+    "androidx.fragment:fragment:1.7.1",
+    "androidx.interpolator:interpolator:1.0.0",
+    "androidx.lifecycle:lifecycle-common-java8:2.8.7",
+    "androidx.lifecycle:lifecycle-common-jvm:2.8.7",
+    "androidx.lifecycle:lifecycle-common:2.8.7",
+    "androidx.lifecycle:lifecycle-livedata-core-ktx:2.8.7",
+    "androidx.lifecycle:lifecycle-livedata-core:2.8.7",
+    "androidx.lifecycle:lifecycle-livedata:2.8.7",
+    "androidx.lifecycle:lifecycle-process:2.8.7",
+    "androidx.lifecycle:lifecycle-runtime-android:2.8.7",
+    "androidx.lifecycle:lifecycle-runtime:2.8.7",
+    "androidx.lifecycle:lifecycle-viewmodel-android:2.8.7",
+    "androidx.lifecycle:lifecycle-viewmodel-savedstate:2.8.7",
+    "androidx.lifecycle:lifecycle-viewmodel:2.8.7",
+    "androidx.loader:loader:1.0.0",
+    "androidx.navigationevent:navigationevent-android:1.0.2",
+    "androidx.navigationevent:navigationevent:1.0.2",
+    "androidx.profileinstaller:profileinstaller:1.4.0",
+    "androidx.resourceinspection:resourceinspection-annotation:1.0.1",
+    "androidx.savedstate:savedstate:1.2.1",
+    "androidx.startup:startup-runtime:1.1.1",
+    "androidx.tracing:tracing:1.2.0",
+    "androidx.vectordrawable:vectordrawable-animated:1.1.0",
+    "androidx.vectordrawable:vectordrawable:1.1.0",
+    "androidx.versionedparcelable:versionedparcelable:1.1.1",
+    "androidx.viewpager:viewpager:1.0.0",
+    "androidx.window.extensions.core:core:1.0.0",
+    "androidx.window:window-java:1.2.0",
+    "androidx.window:window:1.2.0",
+    "com.getkeepsafe.relinker:relinker:1.4.5",
+    "com.google.android.datatransport:transport-api:2.2.1",
+    "com.google.android.datatransport:transport-backend-cct:2.3.3",
+    "com.google.android.datatransport:transport-runtime:2.2.6",
+    "com.google.android.gms:play-services-base:18.5.0",
+    "com.google.android.gms:play-services-basement:18.4.0",
+    "com.google.android.gms:play-services-mlkit-text-recognition-common:19.1.0",
+    "com.google.android.gms:play-services-mlkit-text-recognition:19.0.1",
+    "com.google.android.gms:play-services-tasks:18.2.0",
+    "com.google.android.odml:image:1.0.0-beta1",
+    "com.google.firebase:firebase-annotations:16.0.0",
+    "com.google.firebase:firebase-components:16.1.0",
+    "com.google.firebase:firebase-encoders-json:17.1.0",
+    "com.google.firebase:firebase-encoders:16.1.0",
+    "com.google.guava:listenablefuture:1.0",
+    "com.google.mlkit:common:18.11.0",
+    "com.google.mlkit:text-recognition-bundled-common:17.0.0",
+    "com.google.mlkit:text-recognition:16.0.1",
+    "com.google.mlkit:vision-common:17.3.0",
+    "com.google.mlkit:vision-interfaces:16.3.0",
+    "commons-io:commons-io:2.20.0",
+    "io.flutter:arm64_v8a_release:1.0.0-035316565ad77281a75305515e4682e6c4c6f7ca",
+    "io.flutter:armeabi_v7a_release:1.0.0-035316565ad77281a75305515e4682e6c4c6f7ca",
+    "io.flutter:flutter_embedding_release:1.0.0-035316565ad77281a75305515e4682e6c4c6f7ca",
+    "io.flutter:x86_64_release:1.0.0-035316565ad77281a75305515e4682e6c4c6f7ca",
+    "javax.inject:javax.inject:1",
+    "org.apache.tika:tika-core:3.2.3",
+    "org.jetbrains.kotlin:kotlin-stdlib:2.1.20",
+    "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0",
+    "org.jetbrains.kotlinx:kotlinx-coroutines-bom:1.9.0",
+    "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.9.0",
+    "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0",
+    "org.jetbrains:annotations:23.0.0",
+    "org.jspecify:jspecify:1.0.0",
+    "org.slf4j:slf4j-api:2.0.17"
+  ],
+  "releaseRuntimeAfter": [
+    "androidx.activity:activity:1.12.4",
+    "androidx.annotation:annotation-experimental:1.4.1",
+    "androidx.annotation:annotation-jvm:1.9.1",
+    "androidx.annotation:annotation:1.9.1",
+    "androidx.appcompat:appcompat-resources:1.6.1",
+    "androidx.appcompat:appcompat:1.6.1",
+    "androidx.arch.core:core-common:2.2.0",
+    "androidx.arch.core:core-runtime:2.2.0",
+    "androidx.collection:collection-jvm:1.4.2",
+    "androidx.collection:collection:1.4.2",
+    "androidx.compose.runtime:runtime-annotation-android:1.9.0",
+    "androidx.compose.runtime:runtime-annotation:1.9.0",
+    "androidx.concurrent:concurrent-futures:1.1.0",
+    "androidx.core:core-ktx:1.18.0",
+    "androidx.core:core-viewtree:1.0.0",
+    "androidx.core:core:1.18.0",
+    "androidx.cursoradapter:cursoradapter:1.0.0",
+    "androidx.customview:customview:1.0.0",
+    "androidx.drawerlayout:drawerlayout:1.0.0",
+    "androidx.emoji2:emoji2-views-helper:1.2.0",
+    "androidx.emoji2:emoji2:1.2.0",
+    "androidx.exifinterface:exifinterface:1.4.2",
+    "androidx.fragment:fragment:1.7.1",
+    "androidx.interpolator:interpolator:1.0.0",
+    "androidx.lifecycle:lifecycle-common-java8:2.8.7",
+    "androidx.lifecycle:lifecycle-common-jvm:2.8.7",
+    "androidx.lifecycle:lifecycle-common:2.8.7",
+    "androidx.lifecycle:lifecycle-livedata-core-ktx:2.8.7",
+    "androidx.lifecycle:lifecycle-livedata-core:2.8.7",
+    "androidx.lifecycle:lifecycle-livedata:2.8.7",
+    "androidx.lifecycle:lifecycle-process:2.8.7",
+    "androidx.lifecycle:lifecycle-runtime-android:2.8.7",
+    "androidx.lifecycle:lifecycle-runtime:2.8.7",
+    "androidx.lifecycle:lifecycle-viewmodel-android:2.8.7",
+    "androidx.lifecycle:lifecycle-viewmodel-savedstate:2.8.7",
+    "androidx.lifecycle:lifecycle-viewmodel:2.8.7",
+    "androidx.loader:loader:1.0.0",
+    "androidx.navigationevent:navigationevent-android:1.0.2",
+    "androidx.navigationevent:navigationevent:1.0.2",
+    "androidx.profileinstaller:profileinstaller:1.4.0",
+    "androidx.resourceinspection:resourceinspection-annotation:1.0.1",
+    "androidx.savedstate:savedstate:1.2.1",
+    "androidx.startup:startup-runtime:1.1.1",
+    "androidx.tracing:tracing:1.2.0",
+    "androidx.vectordrawable:vectordrawable-animated:1.1.0",
+    "androidx.vectordrawable:vectordrawable:1.1.0",
+    "androidx.versionedparcelable:versionedparcelable:1.1.1",
+    "androidx.viewpager:viewpager:1.0.0",
+    "androidx.window.extensions.core:core:1.0.0",
+    "androidx.window:window-java:1.2.0",
+    "androidx.window:window:1.2.0",
+    "com.getkeepsafe.relinker:relinker:1.4.5",
+    "com.google.android.datatransport:transport-api:2.2.1",
+    "com.google.android.datatransport:transport-backend-cct:2.3.3",
+    "com.google.android.datatransport:transport-runtime:2.2.6",
+    "com.google.android.gms:play-services-base:18.5.0",
+    "com.google.android.gms:play-services-basement:18.4.0",
+    "com.google.android.gms:play-services-mlkit-text-recognition-common:19.1.0",
+    "com.google.android.gms:play-services-mlkit-text-recognition:19.0.1",
+    "com.google.android.gms:play-services-tasks:18.2.0",
+    "com.google.android.odml:image:1.0.0-beta1",
+    "com.google.firebase:firebase-annotations:16.0.0",
+    "com.google.firebase:firebase-components:16.1.0",
+    "com.google.firebase:firebase-encoders-json:17.1.0",
+    "com.google.firebase:firebase-encoders:16.1.0",
+    "com.google.guava:listenablefuture:1.0",
+    "com.google.mlkit:common:18.11.0",
+    "com.google.mlkit:text-recognition-bundled-common:17.0.0",
+    "com.google.mlkit:text-recognition:16.0.1",
+    "com.google.mlkit:vision-common:17.3.0",
+    "com.google.mlkit:vision-interfaces:16.3.0",
+    "commons-io:commons-io:2.20.0",
+    "io.flutter:arm64_v8a_release:1.0.0-035316565ad77281a75305515e4682e6c4c6f7ca",
+    "io.flutter:armeabi_v7a_release:1.0.0-035316565ad77281a75305515e4682e6c4c6f7ca",
+    "io.flutter:flutter_embedding_release:1.0.0-035316565ad77281a75305515e4682e6c4c6f7ca",
+    "io.flutter:x86_64_release:1.0.0-035316565ad77281a75305515e4682e6c4c6f7ca",
+    "javax.inject:javax.inject:1",
+    "org.apache.tika:tika-core:3.2.3",
+    "org.jetbrains.kotlin:kotlin-stdlib:2.1.20",
+    "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0",
+    "org.jetbrains.kotlinx:kotlinx-coroutines-bom:1.9.0",
+    "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.9.0",
+    "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0",
+    "org.jetbrains:annotations:23.0.0",
+    "org.jspecify:jspecify:1.0.0",
+    "org.slf4j:slf4j-api:2.0.17"
+  ],
+  "debugRuntimeBefore": [
+    "androidx.activity:activity:1.12.4",
+    "androidx.annotation:annotation-experimental:1.4.1",
+    "androidx.annotation:annotation-jvm:1.9.1",
+    "androidx.annotation:annotation:1.9.1",
+    "androidx.appcompat:appcompat-resources:1.6.1",
+    "androidx.appcompat:appcompat:1.6.1",
+    "androidx.arch.core:core-common:2.2.0",
+    "androidx.arch.core:core-runtime:2.2.0",
+    "androidx.collection:collection-jvm:1.4.2",
+    "androidx.collection:collection:1.4.2",
+    "androidx.compose.runtime:runtime-annotation-android:1.9.0",
+    "androidx.compose.runtime:runtime-annotation:1.9.0",
+    "androidx.concurrent:concurrent-futures:1.1.0",
+    "androidx.core:core-ktx:1.18.0",
+    "androidx.core:core-viewtree:1.0.0",
+    "androidx.core:core:1.18.0",
+    "androidx.cursoradapter:cursoradapter:1.0.0",
+    "androidx.customview:customview:1.0.0",
+    "androidx.drawerlayout:drawerlayout:1.0.0",
+    "androidx.emoji2:emoji2-views-helper:1.2.0",
+    "androidx.emoji2:emoji2:1.2.0",
+    "androidx.exifinterface:exifinterface:1.4.2",
+    "androidx.fragment:fragment:1.7.1",
+    "androidx.interpolator:interpolator:1.0.0",
+    "androidx.lifecycle:lifecycle-common-java8:2.8.7",
+    "androidx.lifecycle:lifecycle-common-jvm:2.8.7",
+    "androidx.lifecycle:lifecycle-common:2.8.7",
+    "androidx.lifecycle:lifecycle-livedata-core-ktx:2.8.7",
+    "androidx.lifecycle:lifecycle-livedata-core:2.8.7",
+    "androidx.lifecycle:lifecycle-livedata:2.8.7",
+    "androidx.lifecycle:lifecycle-process:2.8.7",
+    "androidx.lifecycle:lifecycle-runtime-android:2.8.7",
+    "androidx.lifecycle:lifecycle-runtime:2.8.7",
+    "androidx.lifecycle:lifecycle-viewmodel-android:2.8.7",
+    "androidx.lifecycle:lifecycle-viewmodel-savedstate:2.8.7",
+    "androidx.lifecycle:lifecycle-viewmodel:2.8.7",
+    "androidx.loader:loader:1.0.0",
+    "androidx.navigationevent:navigationevent-android:1.0.2",
+    "androidx.navigationevent:navigationevent:1.0.2",
+    "androidx.profileinstaller:profileinstaller:1.4.0",
+    "androidx.resourceinspection:resourceinspection-annotation:1.0.1",
+    "androidx.savedstate:savedstate:1.2.1",
+    "androidx.startup:startup-runtime:1.1.1",
+    "androidx.test.espresso:espresso-core:3.2.0",
+    "androidx.test.espresso:espresso-idling-resource:3.2.0",
+    "androidx.test:monitor:1.2.0",
+    "androidx.test:rules:1.2.0",
+    "androidx.test:runner:1.2.0",
+    "androidx.tracing:tracing:1.2.0",
+    "androidx.vectordrawable:vectordrawable-animated:1.1.0",
+    "androidx.vectordrawable:vectordrawable:1.1.0",
+    "androidx.versionedparcelable:versionedparcelable:1.1.1",
+    "androidx.viewpager:viewpager:1.0.0",
+    "androidx.window.extensions.core:core:1.0.0",
+    "androidx.window:window-java:1.2.0",
+    "androidx.window:window:1.2.0",
+    "com.getkeepsafe.relinker:relinker:1.4.5",
+    "com.google.android.datatransport:transport-api:2.2.1",
+    "com.google.android.datatransport:transport-backend-cct:2.3.3",
+    "com.google.android.datatransport:transport-runtime:2.2.6",
+    "com.google.android.gms:play-services-base:18.5.0",
+    "com.google.android.gms:play-services-basement:18.4.0",
+    "com.google.android.gms:play-services-mlkit-text-recognition-common:19.1.0",
+    "com.google.android.gms:play-services-mlkit-text-recognition:19.0.1",
+    "com.google.android.gms:play-services-tasks:18.2.0",
+    "com.google.android.odml:image:1.0.0-beta1",
+    "com.google.code.findbugs:jsr305:3.0.2",
+    "com.google.errorprone:error_prone_annotations:2.3.2",
+    "com.google.firebase:firebase-annotations:16.0.0",
+    "com.google.firebase:firebase-components:16.1.0",
+    "com.google.firebase:firebase-encoders-json:17.1.0",
+    "com.google.firebase:firebase-encoders:16.1.0",
+    "com.google.guava:failureaccess:1.0.1",
+    "com.google.guava:guava:28.1-android",
+    "com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava",
+    "com.google.j2objc:j2objc-annotations:1.3",
+    "com.google.mlkit:common:18.11.0",
+    "com.google.mlkit:text-recognition-bundled-common:17.0.0",
+    "com.google.mlkit:text-recognition:16.0.1",
+    "com.google.mlkit:vision-common:17.3.0",
+    "com.google.mlkit:vision-interfaces:16.3.0",
+    "com.squareup:javawriter:2.1.1",
+    "commons-io:commons-io:2.20.0",
+    "io.flutter:arm64_v8a_debug:1.0.0-035316565ad77281a75305515e4682e6c4c6f7ca",
+    "io.flutter:armeabi_v7a_debug:1.0.0-035316565ad77281a75305515e4682e6c4c6f7ca",
+    "io.flutter:flutter_embedding_debug:1.0.0-035316565ad77281a75305515e4682e6c4c6f7ca",
+    "io.flutter:x86_64_debug:1.0.0-035316565ad77281a75305515e4682e6c4c6f7ca",
+    "javax.inject:javax.inject:1",
+    "junit:junit:4.12",
+    "net.sf.kxml:kxml2:2.3.0",
+    "org.apache.tika:tika-core:3.2.3",
+    "org.checkerframework:checker-compat-qual:2.5.5",
+    "org.codehaus.mojo:animal-sniffer-annotations:1.18",
+    "org.hamcrest:hamcrest-core:1.3",
+    "org.hamcrest:hamcrest-integration:1.3",
+    "org.hamcrest:hamcrest-library:1.3",
+    "org.jetbrains.kotlin:kotlin-stdlib:2.1.20",
+    "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0",
+    "org.jetbrains.kotlinx:kotlinx-coroutines-bom:1.9.0",
+    "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.9.0",
+    "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0",
+    "org.jetbrains:annotations:23.0.0",
+    "org.jspecify:jspecify:1.0.0",
+    "org.slf4j:slf4j-api:2.0.17"
+  ],
+  "debugRuntimeAfter": [
+    "androidx.activity:activity:1.12.4",
+    "androidx.annotation:annotation-experimental:1.4.1",
+    "androidx.annotation:annotation-jvm:1.9.1",
+    "androidx.annotation:annotation:1.9.1",
+    "androidx.appcompat:appcompat-resources:1.6.1",
+    "androidx.appcompat:appcompat:1.6.1",
+    "androidx.arch.core:core-common:2.2.0",
+    "androidx.arch.core:core-runtime:2.2.0",
+    "androidx.collection:collection-jvm:1.4.2",
+    "androidx.collection:collection:1.4.2",
+    "androidx.compose.runtime:runtime-annotation-android:1.9.0",
+    "androidx.compose.runtime:runtime-annotation:1.9.0",
+    "androidx.concurrent:concurrent-futures:1.1.0",
+    "androidx.core:core-ktx:1.18.0",
+    "androidx.core:core-viewtree:1.0.0",
+    "androidx.core:core:1.18.0",
+    "androidx.cursoradapter:cursoradapter:1.0.0",
+    "androidx.customview:customview:1.0.0",
+    "androidx.drawerlayout:drawerlayout:1.0.0",
+    "androidx.emoji2:emoji2-views-helper:1.2.0",
+    "androidx.emoji2:emoji2:1.2.0",
+    "androidx.exifinterface:exifinterface:1.4.2",
+    "androidx.fragment:fragment:1.7.1",
+    "androidx.interpolator:interpolator:1.0.0",
+    "androidx.lifecycle:lifecycle-common-java8:2.8.7",
+    "androidx.lifecycle:lifecycle-common-jvm:2.8.7",
+    "androidx.lifecycle:lifecycle-common:2.8.7",
+    "androidx.lifecycle:lifecycle-livedata-core-ktx:2.8.7",
+    "androidx.lifecycle:lifecycle-livedata-core:2.8.7",
+    "androidx.lifecycle:lifecycle-livedata:2.8.7",
+    "androidx.lifecycle:lifecycle-process:2.8.7",
+    "androidx.lifecycle:lifecycle-runtime-android:2.8.7",
+    "androidx.lifecycle:lifecycle-runtime:2.8.7",
+    "androidx.lifecycle:lifecycle-viewmodel-android:2.8.7",
+    "androidx.lifecycle:lifecycle-viewmodel-savedstate:2.8.7",
+    "androidx.lifecycle:lifecycle-viewmodel:2.8.7",
+    "androidx.loader:loader:1.0.0",
+    "androidx.navigationevent:navigationevent-android:1.0.2",
+    "androidx.navigationevent:navigationevent:1.0.2",
+    "androidx.profileinstaller:profileinstaller:1.4.0",
+    "androidx.resourceinspection:resourceinspection-annotation:1.0.1",
+    "androidx.savedstate:savedstate:1.2.1",
+    "androidx.startup:startup-runtime:1.1.1",
+    "androidx.tracing:tracing:1.2.0",
+    "androidx.vectordrawable:vectordrawable-animated:1.1.0",
+    "androidx.vectordrawable:vectordrawable:1.1.0",
+    "androidx.versionedparcelable:versionedparcelable:1.1.1",
+    "androidx.viewpager:viewpager:1.0.0",
+    "androidx.window.extensions.core:core:1.0.0",
+    "androidx.window:window-java:1.2.0",
+    "androidx.window:window:1.2.0",
+    "com.getkeepsafe.relinker:relinker:1.4.5",
+    "com.google.android.datatransport:transport-api:2.2.1",
+    "com.google.android.datatransport:transport-backend-cct:2.3.3",
+    "com.google.android.datatransport:transport-runtime:2.2.6",
+    "com.google.android.gms:play-services-base:18.5.0",
+    "com.google.android.gms:play-services-basement:18.4.0",
+    "com.google.android.gms:play-services-mlkit-text-recognition-common:19.1.0",
+    "com.google.android.gms:play-services-mlkit-text-recognition:19.0.1",
+    "com.google.android.gms:play-services-tasks:18.2.0",
+    "com.google.android.odml:image:1.0.0-beta1",
+    "com.google.firebase:firebase-annotations:16.0.0",
+    "com.google.firebase:firebase-components:16.1.0",
+    "com.google.firebase:firebase-encoders-json:17.1.0",
+    "com.google.firebase:firebase-encoders:16.1.0",
+    "com.google.guava:listenablefuture:1.0",
+    "com.google.mlkit:common:18.11.0",
+    "com.google.mlkit:text-recognition-bundled-common:17.0.0",
+    "com.google.mlkit:text-recognition:16.0.1",
+    "com.google.mlkit:vision-common:17.3.0",
+    "com.google.mlkit:vision-interfaces:16.3.0",
+    "commons-io:commons-io:2.20.0",
+    "io.flutter:arm64_v8a_debug:1.0.0-035316565ad77281a75305515e4682e6c4c6f7ca",
+    "io.flutter:armeabi_v7a_debug:1.0.0-035316565ad77281a75305515e4682e6c4c6f7ca",
+    "io.flutter:flutter_embedding_debug:1.0.0-035316565ad77281a75305515e4682e6c4c6f7ca",
+    "io.flutter:x86_64_debug:1.0.0-035316565ad77281a75305515e4682e6c4c6f7ca",
+    "javax.inject:javax.inject:1",
+    "org.apache.tika:tika-core:3.2.3",
+    "org.jetbrains.kotlin:kotlin-stdlib:2.1.20",
+    "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0",
+    "org.jetbrains.kotlinx:kotlinx-coroutines-bom:1.9.0",
+    "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.9.0",
+    "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0",
+    "org.jetbrains:annotations:23.0.0",
+    "org.jspecify:jspecify:1.0.0",
+    "org.slf4j:slf4j-api:2.0.17"
+  ],
+  "realPhotoOcrValidated": false
+}

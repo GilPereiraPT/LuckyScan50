@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +12,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'data/backup.dart';
 import 'data/receipt_scanner.dart';
+import 'data/receipt_diagnostic_report.dart';
 import 'domain/receipt_autofill.dart';
 import 'data/results_client.dart';
 import 'data/wallet_store.dart';
@@ -20,7 +22,7 @@ const buildSha = String.fromEnvironment(
   'LUCKYSCAN_BUILD_SHA',
   defaultValue: 'local',
 );
-const appVersion = '0.2.1+3';
+const appVersion = '0.2.2+4';
 
 final receiptScannerProvider = Provider<ReceiptScanner>(
   (ref) => scanReceiptImage,
@@ -1040,6 +1042,54 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
                   ),
                 ),
               ),
+            if (lastScan != null) ...[
+              OutlinedButton.icon(
+                icon: const Icon(Icons.ios_share),
+                label: const Text('Exportar relatório OCR'),
+                onPressed: busy
+                    ? null
+                    : () async {
+                        try {
+                          final report = receiptDiagnosticReport(
+                            lastScan!,
+                            build: buildSha,
+                            version: appVersion,
+                          );
+                          final directory = await getTemporaryDirectory();
+                          final file = File(
+                            p.join(
+                              directory.path,
+                              'LuckyScan50-OCR-${DateTime.now().millisecondsSinceEpoch}.json',
+                            ),
+                          );
+                          await file.writeAsString(
+                            const JsonEncoder.withIndent('  ').convert(report),
+                          );
+                          await SharePlus.instance.share(
+                            ShareParams(
+                              files: [
+                                XFile(file.path, mimeType: 'application/json'),
+                              ],
+                              subject: 'LuckyScan50 — diagnóstico OCR',
+                            ),
+                          );
+                        } catch (_) {
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Não foi possível exportar o relatório OCR.',
+                              ),
+                            ),
+                          );
+                        }
+                      },
+              ),
+              const Text(
+                'Inclui texto reconhecido do recibo; sem fotografias. '
+                'As edições manuais do formulário não entram no relatório.',
+              ),
+            ],
             if (lastScan?.recoveryError != null)
               Text(
                 'Recuperação indisponível; leitura inicial preservada: ${lastScan!.recoveryError}',

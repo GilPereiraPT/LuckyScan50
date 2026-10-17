@@ -18,6 +18,8 @@ class ReceiptScan {
     this.imagePath,
     this.ocrMs = 0,
     this.parseMs = 0,
+    this.initialParseMs = 0,
+    this.totalMs,
     this.multiPass,
     this.recoveryError,
     this.initialReceipt,
@@ -26,7 +28,9 @@ class ReceiptScan {
   final ScannedReceipt receipt;
   final String rawText;
   final String? imagePath, recoveryError;
-  final int ocrMs, parseMs;
+  final int ocrMs, parseMs, initialParseMs;
+  final int? totalMs;
+  int get totalProcessingMs => totalMs ?? ocrMs + parseMs;
   final MultiPassResult? multiPass;
   final ScannedReceipt? initialReceipt;
   final List<OrientationPass> orientationPasses;
@@ -52,6 +56,7 @@ Future<ReceiptScan?> scanReceiptImage(ImageSource source) async {
 }
 
 Future<ReceiptScan> scanReceiptFile(String path) async {
+  final total = Stopwatch()..start();
   String stage = 'seleção da imagem';
   TextRecognizer? recognizer;
   final preparedImages = <PreparedReceiptImage>[];
@@ -67,7 +72,9 @@ Future<ReceiptScan> scanReceiptFile(String path) async {
     );
     final ocrMs = timer.elapsedMilliseconds;
     final first = initial.parse();
+    final initialParseMs = timer.elapsedMilliseconds - ocrMs;
     timer.reset();
+    final orientationPasses = <OrientationPass>[];
     try {
       stage = 'normalização EXIF e preparação dos recortes';
       final prepared = await backend.prepare(path);
@@ -76,7 +83,6 @@ Future<ReceiptScan> scanReceiptFile(String path) async {
       // Native prepare writes lossless upright pixels without changing input.
       var normalized = prepared;
       var workingFrame = initial;
-      final orientationPasses = <OrientationPass>[];
       if (planBetCrops(
                 initial.tokens,
                 normalized.width,
@@ -132,6 +138,8 @@ Future<ReceiptScan> scanReceiptFile(String path) async {
         imagePath: path,
         ocrMs: ocrMs,
         parseMs: timer.elapsedMilliseconds,
+        initialParseMs: initialParseMs,
+        totalMs: total.elapsedMilliseconds,
         multiPass: recovered,
         initialReceipt: first,
         orientationPasses: orientationPasses,
@@ -143,6 +151,10 @@ Future<ReceiptScan> scanReceiptFile(String path) async {
         imagePath: path,
         ocrMs: ocrMs,
         parseMs: timer.elapsedMilliseconds,
+        initialParseMs: initialParseMs,
+        totalMs: total.elapsedMilliseconds,
+        initialReceipt: first,
+        orientationPasses: orientationPasses,
         recoveryError: '$stage: ${error.runtimeType}',
       );
     }

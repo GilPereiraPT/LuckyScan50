@@ -3,14 +3,14 @@ on:
   workflow_dispatch:
   push:
     branches: ['codex/luckyscan50-android-wallet']
-    paths: ['app/**', 'tools/verify_apk.py', '.github/workflows/ci-flutter.yml']
+    paths: ['app/**', 'qa/**', 'tools/run_flutter_qa.py', 'tools/verify_apk.py', '.github/workflows/ci-flutter.yml']
   pull_request:
-    paths: ['app/**', 'tools/verify_apk.py', '.github/workflows/ci-flutter.yml']
+    paths: ['app/**', 'qa/**', 'tools/run_flutter_qa.py', 'tools/verify_apk.py', '.github/workflows/ci-flutter.yml']
 permissions:
   contents: read
 concurrency:
   group: flutter-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 jobs:
   test-and-apk:
     runs-on: ubuntu-24.04
@@ -30,25 +30,31 @@ jobs:
           channel: stable
           cache: true
       - run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
-      - name: Reject private receipt photographs in distributable builds
-        run: |
-          if find assets/private_receipts -type f ! -name README.txt | grep -q .; then
-            echo "Private receipt photographs must not enter CI artifacts."
-            exit 1
-          fi
       - run: flutter pub get --enforce-lockfile
-      - run: dart format --output=none --set-exit-if-changed lib test integration_test test_driver
+      - run: dart format --output=none --set-exit-if-changed lib test ../qa/android/integration_test ../qa/android/test_driver ../qa/host
       - run: flutter analyze
       - run: flutter test --reporter expanded
-      - name: Build ARM64 debug APK (not a production release)
+      - name: Test SQLite persistence in an isolated desktop workspace
+        run: python3 ../tools/run_flutter_qa.py host
+      - name: Build ARM64 diagnostic APK (optimized; test signature)
         env:
           BUILD_SHA: ${{ github.sha }}
-        run: flutter build apk --debug --target-platform android-arm64 --dart-define=LUCKYSCAN_BUILD_SHA="$BUILD_SHA"
+        run: flutter build apk --release --target-platform android-arm64 --dart-define=LUCKYSCAN_BUILD_SHA="$BUILD_SHA"
       - name: Verify actual APK, signature, ABI and 16 KB alignment
         run: |
           SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
           BUILD_TOOLS=$(find "$SDK_ROOT/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)
-          python3 ../tools/verify_apk.py build/app/outputs/flutter-apk/app-debug.apk --build-tools "$BUILD_TOOLS"
-      - name: Distribution blocked pending real Android OCR evidence
-        run: |
-          echo "No APK is uploaded: both real receipt orientations and Android autofill must be demonstrated first."
+          python3 ../tools/verify_apk.py build/app/outputs/flutter-apk/app-release.apk --build-tools "$BUILD_TOOLS"
+      - name: Upload diagnostic APK from the development branch
+        if: (github.event_name == 'workflow_dispatch' || github.event_name == 'push') && github.ref == 'refs/heads/codex/luckyscan50-android-wallet'
+        uses: actions/upload-artifact@v4
+        with:
+          name: LuckyScan50-diagnostic-arm64-${{ github.sha }}
+          path: |
+            app/build/app/outputs/flutter-apk/app-release.apk
+            app/build/app/outputs/flutter-apk/app-release.apk.sha256
+            app/build/app/outputs/flutter-apk/app-release.verification.json
+          if-no-files-found: error
+          retention-days: 14
+      - name: Record validation scope
+        run: echo "Diagnostic build only. Real receipt OCR and Android autofill remain unvalidated until the private acceptance run passes."

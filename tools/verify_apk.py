@@ -21,6 +21,14 @@ def verify(apk, build_tools):
         names=archive.namelist()
         if not {'AndroidManifest.xml','classes.dex'}.issubset(names):
             raise ValueError('Missing Android manifest or bytecode')
+        forbidden = [n for n in names if 'private_receipts/' in n or n.endswith('.traineddata')
+                     or (n.startswith('assets/') and n.lower().endswith(('.jpg', '.jpeg', '.png', '.webp', '.heic')))]
+        if forbidden:
+            raise ValueError('Private/test or unsupported OCR assets in APK: '+str(forbidden))
+        inventory = [{'path': n, 'bytes': archive.getinfo(n).file_size,
+                      'compressedBytes': archive.getinfo(n).compress_size,
+                      'sha256': hashlib.sha256(archive.read(n)).hexdigest()}
+                     for n in names if n.startswith(('lib/', 'assets/'))]
         libraries=[n for n in names if n.startswith('lib/') and n.endswith('.so')]
         if 'lib/arm64-v8a/libflutter.so' not in libraries:
             raise ValueError('Missing Flutter ARM64 engine')
@@ -58,7 +66,7 @@ def verify(apk, build_tools):
     report={'apk':apk.name,'bytes':apk.stat().st_size,'sha256':hashlib.sha256(apk.read_bytes()).hexdigest(),
             'versionName':version[1] if version else None,'abi':'arm64-v8a',
             'signatureVerified':True,'certificateSha256':certificate[1] if certificate else None,
-            'nativeLibraries':len(libraries),'elf16KbAligned':True,'zip16KbAligned':True,
+            'nativeLibraries':len(libraries),'packagedFiles':inventory,'elf16KbAligned':True,'zip16KbAligned':True,
             'realPhotoOcrValidated':False}
     target=apk.with_suffix('.verification.json')
     target.write_text(json.dumps(report,indent=2)+'\n')

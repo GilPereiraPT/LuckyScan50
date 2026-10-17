@@ -47,3 +47,5 @@ app.*.map.json
 # Real gambling receipts: private, local integration testing only.
 /assets/private_receipts/*
 !/assets/private_receipts/README.txt
+
+/android/.kotlin/

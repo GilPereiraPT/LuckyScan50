@@ -73,7 +73,7 @@ void main() {
         'beforeComplete': scan.initialReceipt?.lines.length,
         'afterComplete': actual.length,
         'initialOcrMs': scan.ocrMs,
-        'totalProcessingMs': scan.ocrMs + scan.parseMs,
+        'totalProcessingMs': scan.totalProcessingMs,
         'recoveryMs': scan.multiPass?.elapsedMs,
         'passes': scan.multiPass?.passes.length,
         'perBet': perBet,
