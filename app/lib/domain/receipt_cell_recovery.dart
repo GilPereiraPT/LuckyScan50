@@ -133,6 +133,8 @@ Future<MultiPassResult> recoverReceiptCells({
     // needs corroboration; small unresolved glyphs justify one 2x attempt.
     final needsConfirmation =
         after.isNotEmpty &&
+        after.map((v) => v.value).toSet().length == 1 &&
+        after.map((v) => v.pass).toSet().length < 2 &&
         after.every((v) => v.correction != null || v.requiresConfirmation);
     if (needsConfirmation || (after.isEmpty && cell.box.height < 48)) {
       final retry = BetCrop(

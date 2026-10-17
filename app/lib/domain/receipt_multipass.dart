@@ -2,6 +2,7 @@ import 'receipt_parser.dart';
 import 'receipt_evidence.dart';
 import 'receipt_cells.dart';
 import 'receipt_cell_recovery.dart';
+import 'receipt_cell_consensus.dart';
 export 'receipt_evidence.dart';
 import 'receipt_geometry.dart';
 export 'receipt_geometry.dart';
@@ -121,7 +122,18 @@ Future<MultiPassResult> recoverReceiptRows({
   final geometryClock = Stopwatch()..start();
   final plan = planBetCrops(initial.tokens, width, height);
   final grid = planBetCells(initial.tokens, plan, width, height);
-  if (meta.game == 'euromilhoes' && grid.cells.isNotEmpty) {
+  final projected = projectCellObservations(initial, grid.cells, 'full-frame');
+  bool covered(ParsedBet bet, String kind, List<int> values) => values.every(
+    (value) => projected.any(
+      (v) => v.betIndex == bet.index && v.kind == kind && v.value == value,
+    ),
+  );
+  final preservesInitial = first.bets.every(
+    (b) => covered(b, 'N', b.numbers) && covered(b, 'E', b.stars),
+  );
+  if (meta.game == 'euromilhoes' &&
+      grid.cells.any((c) => c.kind == 'N') &&
+      preservesInitial) {
     final initialGeometryMs = geometryClock.elapsedMilliseconds;
     final result = await recoverReceiptCells(
       initialGrid: grid,

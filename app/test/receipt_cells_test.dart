@@ -290,4 +290,41 @@ void main() {
       );
     },
   );
+  test(
+    'an E group already read without separable cells is preserved by the row fallback',
+    () async {
+      final initial = OcrFrame('EUROMILHÕES COM M1LHÃO\n5 AP SIMPLES', [
+        ...reportedTokens(),
+        const ReceiptToken('E 07', 375, 1170, 80, width: 150),
+      ]);
+      expect(initial.parse().bets.first.stars, [7]);
+      final result = await recoverReceiptRows(
+        initial: initial,
+        width: 2160,
+        height: 3000,
+        recognizeCrop: (c, s) async => const OcrFrame('', []),
+      );
+      expect(result.receipt.bets.first.stars, [7]);
+      expect(result.passes.every((p) => p.crop.kind == null), true);
+    },
+  );
+  test(
+    'ambiguous number columns do not erase old numbers when only E cells can be found',
+    () async {
+      final initial = OcrFrame('EUROMILHÕES COM M1LHÃO\n5 AP SIMPLES', [
+        ...reportedTokens(),
+        const ReceiptToken('40', 1900, 1090, 80, width: 100),
+        for (var i = 0; i < 5; i++)
+          ReceiptToken('E', 375, 1170 + i * 174.0, 80, width: 35),
+      ]);
+      final before = initial.parse().bets.first.numbers;
+      final result = await recoverReceiptRows(
+        initial: initial,
+        width: 2160,
+        height: 3000,
+        recognizeCrop: (c, s) async => const OcrFrame('', []),
+      );
+      expect(result.receipt.bets.first.numbers, before);
+    },
+  );
 }
