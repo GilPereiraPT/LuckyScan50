@@ -28,45 +28,44 @@ ScannedReceipt parseScannedReceipt(RecognizedText recognized) {
     }
   }
   final raw = recognized.text.toUpperCase();
-  final code = RegExp(r'\b\d{3}-\d{8}-[A-Z0-9]{2,4}\b').firstMatch(raw)?.group(0);
+  final code = RegExp(r'\b\d{3}-\d{8}-\d{3}\b').firstMatch(raw)?.group(0) ??\n      RegExp(r'\b\d{3}-\d{8}-[A-Z0-9]{2,4}\b').firstMatch(raw)?.group(0);
   final amount = RegExp(r'€\s*(\d{1,4}[,.]\d{2})')
       .firstMatch(raw)?.group(1)?.replaceAll('.', ',');
   final expected = RegExp(r'\b(\d{1,2})\s+AP\s+SIMPLES\b').firstMatch(raw);
   final expectedLines = expected == null ? null : int.tryParse(expected.group(1)!);
 
-  // ML Kit may merge the marker and numbers into a single text element.
-  // Prefer its line grouping, then use geometric reconstruction as fallback.
-  final sourceLines = <String>[];
-  for (final block in recognized.blocks) {
-    for (final line in block.lines) {
-      sourceLines.add(line.text.toUpperCase());
-    }
-  }
-  final parsed = _parseBetLines(sourceLines);
-  if (parsed.isNotEmpty) {
-    return ScannedReceipt(lines: parsed, code: code, amount: amount, expectedLines: expectedLines);
-  }
-  fragments.sort((a, b) => a.y.compareTo(b.y));
-  final reconstructed = <String>[];
+  // Reconstruct physical rows before parsing: ML Kit text order is unreliable
+  // on receipts containing adjacent columns.
+  final physicalRows = <String>[];
   final heights = fragments.map((f) => f.height).where((h) => h > 0).toList()..sort();
   final medianHeight = heights.isEmpty ? 12.0 : heights[heights.length ~/ 2];
-  var row = <_Fragment>[];
+  fragments.sort((a, b) => a.y.compareTo(b.y));
+  var group = <_Fragment>[];
   double center = 0;
   for (final fragment in fragments) {
-    if (row.isNotEmpty && (fragment.y - center).abs() > medianHeight * 0.65) {
-      row.sort((a, b) => a.box.left.compareTo(b.box.left));
-      reconstructed.add(row.map((f) => f.text).join(' '));
-      row = <_Fragment>[];
+    if (group.isNotEmpty && (fragment.y - center).abs() > medianHeight * 0.6) {
+      group.sort((a, b) => a.box.left.compareTo(b.box.left));
+      physicalRows.add(group.map((f) => f.text).join(' '));
+      group = <_Fragment>[];
     }
-    row.add(fragment);
-    center = row.map((f) => f.y).reduce((a, b) => a + b) / row.length;
+    group.add(fragment);
+    center = group.map((f) => f.y).reduce((a, b) => a + b) / group.length;
   }
-  if (row.isNotEmpty) {
-    row.sort((a, b) => a.box.left.compareTo(b.box.left));
-    reconstructed.add(row.map((f) => f.text).join(' '));
+  if (group.isNotEmpty) {
+    group.sort((a, b) => a.box.left.compareTo(b.box.left));
+    physicalRows.add(group.map((f) => f.text).join(' '));
   }
+  final textRows = <String>[];
+  for (final block in recognized.blocks) {
+    for (final line in block.lines) {
+      textRows.add(line.text.toUpperCase());
+    }
+  }
+  final geometric = _parseBetLines(physicalRows);
+  final textual = _parseBetLines(textRows);
+  final parsed = geometric.length >= textual.length ? geometric : textual;
   return ScannedReceipt(
-    lines: _parseBetLines(reconstructed), code: code, amount: amount, expectedLines: expectedLines,
+    lines: parsed, code: code, amount: amount, expectedLines: expectedLines,
   );
 }
 
