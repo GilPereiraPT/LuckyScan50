@@ -1,0 +1,60 @@
+name: Limpar execucoes antigas
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Simular sem apagar (true/false)'
+        required: true
+        default: 'true'
+        type: choice
+        options: ['true', 'false']
+      confirm:
+        description: 'Para apagar, escrever APAGAR'
+        required: false
+        default: ''
+        type: string
+permissions:
+  actions: write
+  contents: read
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Limpar runs antigas da branch de desenvolvimento
+        uses: actions/github-script@v7
+        env:
+          DRY_RUN: ${{ inputs.dry_run }}
+          CONFIRM: ${{ inputs.confirm }}
+        with:
+          script: |
+            const dryRun = process.env.DRY_RUN !== 'false';
+            if (!dryRun && process.env.CONFIRM !== 'APAGAR') {
+              core.setFailed('Para apagar, indique confirm = APAGAR.');
+              return;
+            }
+            const { owner, repo } = context.repo;
+            const branch = 'codex/luckyscan50-android-wallet';
+            const runs = await github.paginate(github.rest.actions.listWorkflowRunsForRepo, {
+              owner, repo, branch, per_page: 100
+            });
+            const byWorkflow = new Map();
+            for (const run of runs) {
+              if (run.head_branch !== branch || run.status !== 'completed') continue;
+              const key = run.workflow_id;
+              if (!byWorkflow.has(key)) byWorkflow.set(key, []);
+              byWorkflow.get(key).push(run);
+            }
+            let count = 0;
+            for (const [workflow, items] of byWorkflow) {
+              items.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+              const keep = new Set(items.slice(0,10).map(x => x.id));
+              const latestSuccess = items.find(x => x.conclusion === 'success');
+              if (latestSuccess) keep.add(latestSuccess.id);
+              for (const run of items) {
+                if (keep.has(run.id) || run.id === context.runId) continue;
+                core.info(`${dryRun ? 'SIMULAR' : 'APAGAR'} workflow=${workflow} run=${run.id} ${run.html_url}`);
+                if (!dryRun) await github.rest.actions.deleteWorkflowRun({owner,repo,run_id:run.id});
+                count++;
+              }
+            }
+            core.summary.addRaw(`${dryRun ? 'Simuladas' : 'Apagadas'}: ${count} execuções. Preservadas as 10 mais recentes por workflow e a última bem-sucedida.`).write();
