@@ -13,7 +13,7 @@ Três builds distinguem limpeza de dependências de novas capacidades de diagnó
 |---|---:|---:|---|
 | Base `df260a3` | 31 730 810 | 31,730810 | Antes da limpeza |
 | Apenas limpeza | 31 730 328 | 31,730328 | Sem alterações de código de produção |
-| Diagnóstico com exportação | A preencher após compilação | — | Inclui exportação e identificação 0.2.2+4 |
+| Diagnóstico com exportação `e5a43e8` | 31 729 912 | 31,729912 | Exportação e identificação 0.2.2+4 |
 
 **Efeito isolado da limpeza: −482 bytes (−0,001519%).**
 Nos dois primeiros builds: Flutter 3.35.7, JDK 21.0.12.1, ARM64, release,
@@ -159,7 +159,8 @@ uma incompatibilidade de assinatura.
 
 O workflow valida análise, testes normais e FFI, compila ARM64, verifica ZIP/CRC,
 assinatura, arquitetura ELF AArch64 e alinhamento ELF/ZIP de 16 KB, e guarda APK,
-SHA-256 e inventário como artefacto por 14 dias. Publica apenas na branch de
+SHA-256 e inventário como artefacto por 14 dias. A execução num dispositivo de
+16 KB não foi ensaiada; a verificação feita é estrutural ELF/ZIP. Publica apenas na branch de
 desenvolvimento, em push ou `workflow_dispatch`; pull requests não distribuem.
 
 A interface de execução manual exige o workflow na branch predefinida. Como
@@ -175,9 +176,36 @@ https://github.com/GilPereiraPT/LuckyScan50/actions/workflows/ci-flutter.yml
 - API Python, `python3 -m unittest discover -v`: **13 testes aprovados**.
 - Dependências QA Android resolvidas; **não** equivale a executar esse teste.
 - Compilações e verificação binária: valores da referência e limpeza acima;
-  resultado final registado após a compilação.
+  APK final 0.2.2+4 compilado e verificado com sucesso (110,1 s de Gradle). Foram corrigidos um aviso de
+  contexto assíncrono na exportação e a cópia de diretórios QA vazios; a análise
+  e a resolução/testes afetados foram repetidos com sucesso.
 - Fotografias reais / OCR nas duas orientações / preenchimento real Android:
   **não executados**, sem fotografias reais nem dispositivo ligado disponíveis.
   Precisão por aposta e latência real continuam **não medidas**.
 
 A API cPanel, os dados de produção, a Google Play e `main` não foram alterados.
+
+## Artefacto final verificado
+
+Fonte: `e5a43e8`; ficheiro local
+`/workspace/artifacts/LuckyScan50-diagnostic-0.2.2-arm64.apk`.
+Tamanho: **31 729 912 bytes (31,729912 MB)**. A diferença líquida face ao build
+apenas limpo é −416 bytes (−0,001311%); inclui identificação, código AOT,
+recursos e empacotamento, não é uma medição isolada do custo da exportação.
+Os modelos OCR permanecem idênticos por SHA-256. A assinatura corresponde ao
+certificado local anterior; CRC, ARM64 e alinhamento de 16 KB passaram.
+
+SHA-256: `0796e10b8eaaa3e196de9c06c95242f7e0da8adb2b4eca75c57ba6aa76f932fa`.
+O ficheiro `.apk.sha256` e o inventário `.verification.json` ficam ao lado.
+Ver [validação final](validation/2026-10-17-diagnostic-apk-verification.json).
+
+Os commits de código foram publicados por push normal. A API GitHub devolve
+`GET https://api.github.com/repos/GilPereiraPT/LuckyScan50/actions/runs: Forbidden`;
+por isso **não se confirma** execução ou download remoto do Actions. O workflow
+está configurado para guardar o APK após os checks, na branch de desenvolvimento.
+O APK local acima foi efetivamente produzido e verificado, independentemente do
+acesso à API GitHub. A consulta ADB atual não apresentou dispositivos.
+
+As instruções reutilizáveis `start_skill` foram guardadas no rascunho do ambiente;
+a ativação futura exige rever/guardar nas definições e publicar o ambiente.
+Não se alteraram rede, credenciais ou o script de instalação neste pedido.

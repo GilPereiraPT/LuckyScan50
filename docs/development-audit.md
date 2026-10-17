@@ -54,3 +54,41 @@ O diagnóstico real comunicado pelo utilizador identifica palavras verticais a ~
 Validação desta continuação: 44 testes Flutter e 13 Python passaram; análise estática e compilação Kotlin/debug interna passaram. Não havia fotografias reais nem dispositivos Android no ADB: o teste de aceitação real **não foi executado**, e precisão/latência real permanecem não medidas. O novo teste Android exige ambas as imagens e compara saídas reais e preenchimento do formulário.
 
 Nenhum novo APK foi publicado ou disponibilizado. O upload foi removido do workflow até demonstração real, e há guarda contra fotos privadas nos assets de CI. Foi medido um snapshot debug interno (119 599 026 bytes, +22 647 294 face ao anterior), incluindo suporte de teste e empacotamento; não representa impacto isolado do recorte nem tamanho release. O protótipo Tesseract é desktop e limitado a regiões N/E, sem novo motor no APK. Ver [OCR_MULTIPASS.md](OCR_MULTIPASS.md) e o estado estruturado em `docs/validation/2026-10-17-multipass-status.json`.
+
+
+## APK de diagnóstico e limpeza — continuação a partir de df260a3
+
+A autorização seguinte permite entregar um APK de diagnóstico sem declarar o
+OCR real validado. Commits publicados: `3eee516` (exportação JSON e isolamento
+QA) e `e5a43e8` (tempos efetivamente medidos). Histórico anterior preservado;
+`/workspace/LuckyScan50-work.bundle` voltou a passar `git bundle verify`.
+
+Comparação release ARM64 idêntica: 31 730 810 → 31 730 328 bytes; limpeza de
+482 bytes (0,001519%). Saíram oito pacotes Dart do grafo da aplicação e os
+assets de fotografias de teste. Os plugins de teste já eram excluídos do release;
+o grafo Maven release, código executável, bibliotecas e modelos ficaram iguais
+no build só de limpeza. O SQLite FFI e o integration_test passaram a cópias QA
+temporárias. ML Kit Latin e JNI do path_provider permanecem; Tesseract só desktop.
+
+APK final **0.2.2+4**, código `e5a43e8`: **31 729 912 bytes**, assinatura de teste
+local anterior preservada, integridade CRC/SHA-256, ARM64 e ELF/ZIP de 16 KB
+verificados. Download local: `/workspace/artifacts/LuckyScan50-diagnostic-0.2.2-arm64.apk`.
+Relatório exportável inclui primeira passagem, orientações, recortes, apostas,
+estrelas, proveniência, conflitos, tempos e erros, sem fotografias por defeito.
+
+Checks finais efetivamente executados: `flutter analyze` sem problemas,
+`flutter test` **45 aprovados**, runner SQLite FFI com lockfile **1 aprovado**,
+API Python **13 aprovados**; compilação Android release aprovada. Manifesto e
+lockfile de produção permaneceram inalterados durante o runner QA.
+O teste com as duas fotografias originais e o formulário Android não foi
+executado: fotografias indisponíveis e ADB sem dispositivos. Precisão por aposta,
+latência real e execução num dispositivo de 16 KB continuam não medidas.
+
+Workflow atualizado com artefactos de diagnóstico (APK, SHA-256, inventário),
+retenção de 14 dias e upload só para a branch de desenvolvimento. O arranque
+manual pela interface exige o ficheiro na branch predefinida; como não está na
+main, o push da branch serve de gatilho. Pushes normais confirmados, sem força.
+A consulta de runs pela API continua bloqueada com `Forbidden`; não se afirma
+que já existe um artefacto remoto. API cPanel, dados de produção, main e Play
+não foram alterados. Relatório e inventários completos em
+[DEPENDENCY_APK_AUDIT.md](DEPENDENCY_APK_AUDIT.md).

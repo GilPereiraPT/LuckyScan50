@@ -1199,5 +1199,39 @@
     "org.jspecify:jspecify:1.0.0",
     "org.slf4j:slf4j-api:2.0.17"
   ],
-  "realPhotoOcrValidated": false
+  "realPhotoOcrValidated": false,
+  "finalDiagnostic": {
+    "sourceCommit": "e5a43e8d123b1046068edb6079e285ed41120821",
+    "bytes": 31729912,
+    "sha256": "0796e10b8eaaa3e196de9c06c95242f7e0da8adb2b4eca75c57ba6aa76f932fa",
+    "command": "flutter build apk --release --target-platform android-arm64 --dart-define=LUCKYSCAN_BUILD_SHA=e5a43e8",
+    "deltaBytesVsCleanup": -416,
+    "deltaPercentVsCleanup": -0.0013110485337560962,
+    "verificationFile": "2026-10-17-diagnostic-apk-verification.json"
+  },
+  "tests": {
+    "flutterAnalyze": "passed: no issues",
+    "flutterTests": {
+      "passed": 45,
+      "failed": 0
+    },
+    "isolatedSqliteFfi": {
+      "passed": 1,
+      "failed": 0,
+      "enforceLockfile": true,
+      "sourceManifestUnchanged": true
+    },
+    "pythonApi": {
+      "passed": 13,
+      "failed": 0
+    },
+    "androidRealReceiptAcceptance": "not_run: original photographs and Android device unavailable"
+  },
+  "github": {
+    "push": "normal push succeeded",
+    "artifactWorkflow": "configured for development branch pushes and workflow_dispatch",
+    "remoteRunAndArtifactStatus": "unconfirmed",
+    "apiError": "GET https://api.github.com/repos/GilPereiraPT/LuckyScan50/actions/runs: Forbidden",
+    "manualUiBlocker": "workflow file is not on default branch; main has not been changed"
+  }
 }
