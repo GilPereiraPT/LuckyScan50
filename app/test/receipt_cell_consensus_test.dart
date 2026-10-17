@@ -88,4 +88,26 @@ void main() {
       [6],
     );
   });
+  test(
+    'single-glyph readings remain uncertain until a distinct pass corroborates them',
+    () {
+      const observation = ValueEvidence(
+        'N',
+        0,
+        6,
+        '6',
+        'cell@1x',
+        betIndex: 1,
+        bounds: box,
+        requiresConfirmation: true,
+      );
+      var result = consolidateCellEvidence(cells, [observation]);
+      expect(result.bets.single.numbers, isEmpty);
+      result = consolidateCellEvidence(cells, [
+        observation,
+        ValueEvidence('N', 0, 6, '06', 'contrast', betIndex: 1, bounds: box),
+      ]);
+      expect(result.bets.single.numbers, [6]);
+    },
+  );
 }

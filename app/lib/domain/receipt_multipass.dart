@@ -118,10 +118,12 @@ Future<MultiPassResult> recoverReceiptRows({
   final clock = Stopwatch()..start();
   final first = initial.parse();
   final meta = metadata ?? first;
+  final geometryClock = Stopwatch()..start();
   final plan = planBetCrops(initial.tokens, width, height);
   final grid = planBetCells(initial.tokens, plan, width, height);
   if (meta.game == 'euromilhoes' && grid.cells.isNotEmpty) {
-    return recoverReceiptCells(
+    final initialGeometryMs = geometryClock.elapsedMilliseconds;
+    final result = await recoverReceiptCells(
       initialGrid: grid,
       initial: initial,
       metadata: meta,
@@ -129,6 +131,17 @@ Future<MultiPassResult> recoverReceiptRows({
       width: width,
       height: height,
       recognizeCrop: recognizeCrop,
+    );
+    return MultiPassResult(
+      result.initial,
+      result.receipt,
+      result.plan,
+      result.passes,
+      result.evidence,
+      clock.elapsedMilliseconds,
+      geometryMs: initialGeometryMs + result.geometryMs,
+      cellMs: result.cellMs,
+      skippedKnownCells: result.skippedKnownCells,
     );
   }
   final bets = {for (final b in first.bets) b.index: b};

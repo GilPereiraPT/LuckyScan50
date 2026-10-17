@@ -19,8 +19,12 @@ Future<MultiPassResult> recoverReceiptCells({
   var geometryMs = geometry.elapsedMilliseconds;
   final first = initial.parse(), passes = <CropPass>[], errors = <String>[];
   final observations = <ValueEvidence>[], augmented = [...initial.tokens];
+  var budgetExhausted = false;
   Future<OcrFrame?> read(BetCrop crop, double scale, String id) async {
-    if (passes.length >= maxPasses) return null;
+    if (passes.length >= maxPasses) {
+      budgetExhausted = true;
+      return null;
+    }
     final watch = Stopwatch()..start();
     try {
       final frame = await recognizeCrop(crop, scale);
@@ -90,22 +94,14 @@ Future<MultiPassResult> recoverReceiptCells({
         bounds: cell.box,
         correction: value.correction,
         validation: rejected ? 'rejected-range' : 'observed',
+        requiresConfirmation: value.raw.length == 1 || value.correction != null,
       ),
     );
   }
 
-  for (final cell in grid.cells) {
-    for (final token in initial.tokens) {
-      if (verticalReceiptToken(token)) continue;
-      if (token.x >= cell.box.left &&
-          token.x <= cell.box.right &&
-          token.y >= cell.box.top &&
-          token.y <= cell.box.bottom &&
-          token.width <= cell.box.width * 1.2) {
-        observe(cell, token.text, 'full-frame');
-      }
-    }
-  }
+  observations.addAll(
+    projectCellObservations(initial, grid.cells, 'full-frame'),
+  );
   var skipped = 0;
   for (final cell in grid.cells) {
     final known = observations.where(
@@ -117,7 +113,7 @@ Future<MultiPassResult> recoverReceiptCells({
     );
     if (known.isNotEmpty &&
         known.map((v) => v.value).toSet().length == 1 &&
-        known.any((v) => v.correction == null)) {
+        known.any((v) => v.correction == null && !v.requiresConfirmation)) {
       skipped++;
       continue;
     }
@@ -135,9 +131,10 @@ Future<MultiPassResult> recoverReceiptCells({
         .toList();
     // No blind 2x retry on already high-resolution receipt pixels. A correction
     // needs corroboration; small unresolved glyphs justify one 2x attempt.
-    final correctionOnly =
-        after.isNotEmpty && after.every((v) => v.correction != null);
-    if (correctionOnly || (after.isEmpty && cell.box.height < 48)) {
+    final needsConfirmation =
+        after.isNotEmpty &&
+        after.every((v) => v.correction != null || v.requiresConfirmation);
+    if (needsConfirmation || (after.isEmpty && cell.box.height < 48)) {
       final retry = BetCrop(
         cell.index,
         cell.box,
@@ -145,7 +142,7 @@ Future<MultiPassResult> recoverReceiptCells({
         kind: cell.kind,
         position: cell.position,
         deskewDegrees: cell.deskewDegrees,
-        contrast: correctionOnly,
+        contrast: needsConfirmation,
       );
       final scale = cell.box.height < 48 ? 2.0 : 1.0;
       final retryId =
@@ -164,7 +161,7 @@ Future<MultiPassResult> recoverReceiptCells({
     ...plan.warnings,
     ...grid.warnings,
     ...errors,
-    if (passes.length >= maxPasses)
+    if (budgetExhausted)
       'Limite de $maxPasses passagens atingido; leitura parcial.',
   ];
   if (bets.any((b) => !b.complete) ||

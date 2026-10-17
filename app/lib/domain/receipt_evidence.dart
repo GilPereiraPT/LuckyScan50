@@ -13,6 +13,7 @@ class ValueEvidence {
     this.betIndex,
     this.bounds,
     this.validation = 'observed',
+    this.requiresConfirmation = false,
   });
   final String kind, raw, pass;
   final int position, value;
@@ -21,6 +22,7 @@ class ValueEvidence {
   final int? betIndex;
   final CropBox? bounds;
   final String validation;
+  final bool requiresConfirmation;
   ValueEvidence validated(String state, {bool conflict = false}) =>
       ValueEvidence(
         kind,
@@ -32,6 +34,7 @@ class ValueEvidence {
         betIndex: betIndex,
         bounds: bounds,
         validation: state,
+        requiresConfirmation: requiresConfirmation,
         conflict: conflict,
       );
   String get description =>

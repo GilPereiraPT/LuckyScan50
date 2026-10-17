@@ -94,7 +94,10 @@ void main() {
         height: 3000,
         recognizeCrop: (c, s) async => c.kind == 'marker'
             ? markerFrame(c)
-            : OcrFrame('${(c.kind == 'N' ? n : e)[c.position!]}', const []),
+            : OcrFrame(
+                '${(c.kind == 'N' ? n : e)[c.position!]}'.padLeft(2, '0'),
+                const [],
+              ),
       );
       expect(result.receipt.lines.length, 5);
       expect(
@@ -169,6 +172,7 @@ void main() {
         expect(parseNumericCell(text, 'N').value, isNull);
       }
       expect(parseNumericCell('13', 'E').value, isNull);
+      expect(parseNumericCell('06', 'M1').value, isNull);
     },
   );
   test(
@@ -209,6 +213,81 @@ void main() {
       ]);
       expect(result.bets.first.numbers, [6]);
       expect(result.bets.first.complete, false);
+    },
+  );
+  test(
+    'actual recorded row results recover the observed 20 in bet five without filling unseen values',
+    () {
+      final data =
+          jsonDecode(
+                File(
+                  'test/fixtures/receipt_1792267583612_geometry.json',
+                ).readAsStringSync(),
+              )
+              as Map;
+      final tokens = reportedTokens();
+      final grid = planBetCells(
+        tokens,
+        planBetCrops(tokens, 2160, 3000),
+        2160,
+        3000,
+      );
+      final observed = projectCellObservations(
+        initialFrame(),
+        grid.cells,
+        'full-frame',
+      );
+      expect(
+        consolidateCellEvidence(
+          grid.cells,
+          observed,
+        ).bets.fold(0, (int a, b) => a + b.numbers.length),
+        14,
+      );
+      for (final pass in data['cropPasses']) {
+        if (!(pass['id'] as String).endsWith('@1x')) continue;
+        final b = pass['bounds'];
+        final frame = OcrFrame(pass['rawText'], [
+          for (final t in pass['tokens'])
+            ReceiptToken(
+              t['text'],
+              (t['x'] as num).toDouble(),
+              (t['y'] as num).toDouble(),
+              (t['height'] as num).toDouble(),
+              width: (t['width'] as num).toDouble(),
+              angle: (t['angleDegrees'] as num).toDouble(),
+            ),
+        ]);
+        observed.addAll(
+          projectCellObservations(
+            frame,
+            grid.cells,
+            pass['id'],
+            sourceBox: CropBox(
+              (b['left'] as num).toDouble(),
+              (b['top'] as num).toDouble(),
+              (b['right'] as num).toDouble(),
+              (b['bottom'] as num).toDouble(),
+            ),
+          ),
+        );
+      }
+      final result = consolidateCellEvidence(grid.cells, observed);
+      expect(result.bets.fold(0, (int a, b) => a + b.numbers.length), 15);
+      expect(result.bets.last.numbers, [13, 20, 32]);
+      expect(
+        result.evidence.last.acceptedValues
+            .singleWhere((v) => v.value == 20)
+            .position,
+        3,
+      );
+      expect(result.bets.every((b) => !b.complete && b.stars.isEmpty), true);
+      expect(
+        result.evidence.every(
+          (b) => b.acceptedValues.every((v) => v.position >= 2),
+        ),
+        true,
+      );
     },
   );
 }

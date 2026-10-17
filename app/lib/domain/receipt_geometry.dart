@@ -47,6 +47,9 @@ class CropPlan {
   final CropBox? zone;
 }
 
+double horizontalReceiptAngle(double angle) =>
+    ((angle + 90) % 180 + 180) % 180 - 90;
+
 bool verticalReceiptToken(ReceiptToken token) {
   final angle = ((token.angle % 180) + 180) % 180;
   return (angle - 90).abs() <= 20 &&
@@ -73,7 +76,7 @@ CropPlan planBetCrops(List<ReceiptToken> tokens, double width, double height) {
             !verticalReceiptToken(t) &&
             t.height > 0 &&
             t.height < height / 8 &&
-            t.angle.abs() % 180 <= 20 &&
+            horizontalReceiptAngle(t.angle).abs() <= 20 &&
             t.x >= 0 &&
             t.x <= width &&
             t.y >= 0 &&
@@ -88,7 +91,7 @@ CropPlan planBetCrops(List<ReceiptToken> tokens, double width, double height) {
   }
   final h = _median(horizontal.map((t) => t.height));
   final angles = horizontal
-      .map((t) => t.angle)
+      .map((t) => horizontalReceiptAngle(t.angle))
       .where((a) => a.abs() <= 15)
       .toList();
   final slope = angles.isEmpty

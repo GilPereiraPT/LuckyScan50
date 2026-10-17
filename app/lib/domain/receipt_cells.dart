@@ -49,8 +49,13 @@ CellGrid planBetCells(
   final pitch = pitches.isEmpty ? null : _median(pitches);
   final eAnchors = <int, ReceiptToken>{};
   final markers = <BetCrop>[], warnings = <String>[];
-  double slope(ReceiptToken n) =>
-      math.tan((n.angle.abs() <= 15 ? n.angle : 0) * math.pi / 180);
+  double slope(ReceiptToken n) => math.tan(
+    (horizontalReceiptAngle(n.angle).abs() <= 15
+            ? horizontalReceiptAngle(n.angle)
+            : 0) *
+        math.pi /
+        180,
+  );
   for (var i = 0; i < ordered.length; i++) {
     final index = ordered[i].key, n = ordered[i].value;
     final next = i + 1 < ordered.length
@@ -68,12 +73,15 @@ CellGrid planBetCells(
         .toList();
     if (found.length == 1) {
       eAnchors[index] = found.single;
-    } else if (found.isEmpty && pitch != null && pitch > h * 1.5) {
+    } else if (found.isEmpty && next - n.y > h * 1.5) {
       final box = CropBox(
         math.max(0, n.x - n.width / 2 - h * .15),
-        n.y + h * .35,
+        n.y + n.height / 2,
         math.min(width, n.x + n.width / 2 + h * .3),
-        math.min(height, next - h * .35),
+        math.min(
+          height,
+          next - (i + 1 < ordered.length ? ordered[i + 1].value.height : h) / 2,
+        ),
       );
       if (box.height >= h * .7) {
         markers.add(BetCrop(index, box, printedIndex: true, kind: 'marker'));
@@ -197,6 +205,9 @@ CellGrid planBetCells(
   String kind,
 ) {
   final raw = text.trim().toUpperCase();
+  if (kind != 'N' && kind != 'E') {
+    return (value: null, raw: raw, correction: null);
+  }
   if (!RegExp(r'^[0-9OIS]{1,2}$').hasMatch(raw)) {
     return (value: null, raw: raw, correction: null);
   }

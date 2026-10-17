@@ -1,4 +1,5 @@
 import 'receipt_evidence.dart';
+import 'receipt_cells.dart';
 import 'receipt_geometry.dart';
 import 'receipt_parser.dart';
 
@@ -69,7 +70,9 @@ CellConsensus consolidateCellEvidence(
         final conflict = distinct.length > 1;
         final confirmed =
             distinct.length == 1 &&
-            (values.any((v) => v.correction == null) ||
+            (values.any(
+                  (v) => v.correction == null && !v.requiresConfirmation,
+                ) ||
                 values.map((v) => v.pass).toSet().length >= 2);
         final state = conflict
             ? 'conflict'
@@ -104,4 +107,51 @@ CellConsensus consolidateCellEvidence(
     );
   }
   return CellConsensus(bets, provenance);
+}
+
+/// Projects observed element centres from an axis-aligned crop into the working
+/// image. This also accepts captured old row results; text order is irrelevant.
+List<ValueEvidence> projectCellObservations(
+  OcrFrame frame,
+  List<BetCrop> cells,
+  String pass, {
+  CropBox? sourceBox,
+  double scale = 1,
+}) {
+  if (scale <= 0 || !scale.isFinite) return [];
+  final observations = <ValueEvidence>[];
+  for (final cell in cells.where((c) => c.isCell && c.kind != 'marker')) {
+    for (final token in frame.tokens) {
+      if (verticalReceiptToken(token)) continue;
+      final x = (sourceBox?.left ?? 0) + token.x / scale;
+      final y = (sourceBox?.top ?? 0) + token.y / scale;
+      if (x < cell.box.left ||
+          x > cell.box.right ||
+          y < cell.box.top ||
+          y > cell.box.bottom ||
+          token.width / scale > cell.box.width * 1.2) {
+        continue;
+      }
+      final parsed = parseNumericCell(token.text, cell.kind!);
+      final rejected =
+          parsed.value == null && RegExp(r'^\d{1,2}$').hasMatch(parsed.raw);
+      if (parsed.value == null && !rejected) continue;
+      observations.add(
+        ValueEvidence(
+          cell.kind!,
+          cell.position!,
+          parsed.value ?? int.parse(parsed.raw),
+          parsed.raw,
+          pass,
+          betIndex: cell.index,
+          bounds: cell.box,
+          correction: parsed.correction,
+          requiresConfirmation:
+              parsed.raw.length == 1 || parsed.correction != null,
+          validation: rejected ? 'rejected-range' : 'observed',
+        ),
+      );
+    }
+  }
+  return observations;
 }
