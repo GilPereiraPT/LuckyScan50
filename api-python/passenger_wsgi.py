@@ -17,6 +17,7 @@ from domain import validate_result
 from store import Store, read_json
 from result_statistics import frequencies, summary
 from rss_import import overview as rss_overview
+from official_statistics import overview as statistics_overview
 
 DATA_FILE=Path(os.environ.get('LUCKYSCAN_RESULTS_FILE',str(ROOT/'data'/'results.json')))
 DATABASE_FILE=os.environ.get('LUCKYSCAN_DATABASE')
@@ -48,6 +49,12 @@ def application(environ,start_response):
     params={k:v[0] for k,v in query.items()}
     if path in ('/','/health'):
         return reply(200,{'ok':True,'service':'luckyscan50-results','version':'0.2.0','runtime':'native_wsgi'})
+    if path=='/v1/statistics/official':
+        try:
+            return reply(200, statistics_overview(Store(DATABASE_FILE) if DATABASE_FILE else None))
+        except (ValueError,OSError,TypeError,KeyError,sqlite3.Error):
+            log.error('Official statistics storage unavailable')
+            return reply(503,{'error':'statistics_unavailable'})
     if path=='/v1/rss/overview':
         try:
             return reply(200, rss_overview(Store(DATABASE_FILE)) if DATABASE_FILE else {'data': [], 'conflicts': 0})

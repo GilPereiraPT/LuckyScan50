@@ -121,6 +121,11 @@ class Store:
                                (now,source,changed,unchanged))
         return {'changed':changed,'unchanged':unchanged}
 
+    def import_official_statistics(self, payload, *, format='html', now=None):
+        """Aggregate-only snapshots never insert draws or revision cursor entries."""
+        from official_statistics import ingest
+        return ingest(self, payload, format=format, now=now)
+
     def import_legacy(self, path):
         path=Path(path)
         rows=read_json(path)

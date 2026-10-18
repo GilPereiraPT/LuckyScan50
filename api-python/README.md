@@ -85,3 +85,7 @@ permitem promover parciais compatíveis com revisão; divergências ficam em qua
 Não usa pubDate como data, jackpot como prémio unitário ou valores Portal como escalões.
 
 Ver [ficheiros a atualizar e instalação sem mudar Cron](../docs/official-results-cpanel.md).
+
+
+Estatísticas oficiais agregadas: ver [contrato, importação offline e limitações](../docs/official-statistics.md).
+O modo novo é opt-in e não altera o ciclo RSS/Cron existente.
