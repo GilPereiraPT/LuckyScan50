@@ -1,0 +1,37 @@
+name: Temporary four corner validation
+on:
+  push:
+    branches: [feat/android-receipt-four-corners-20261018]
+permissions:
+  contents: write
+jobs:
+  format-and-validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: true
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.35.7'
+          channel: stable
+          cache: true
+      - name: Format touched Dart sources
+        working-directory: app
+        run: dart format lib/data/receipt_corners.dart lib/data/receipt_crop_backend.dart lib/main.dart test/receipt_corners_test.dart
+      - name: Commit formatting only if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/lib/data/receipt_corners.dart app/lib/data/receipt_crop_backend.dart app/lib/main.dart app/test/receipt_corners_test.dart
+          if ! git diff --cached --quiet; then
+            git commit -m "style: format four-corner Flutter sources"
+            git push
+          fi
+      - name: Flutter static analysis and focused tests
+        working-directory: app
+        run: |
+          flutter pub get --enforce-lockfile
+          flutter analyze
+          flutter test test/receipt_corners_test.dart
