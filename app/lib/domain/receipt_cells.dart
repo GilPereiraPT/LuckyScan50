@@ -229,7 +229,6 @@ CellGrid planBetCells(
   );
 }
 
-
 /// Prefer spatial cell recognition when whole-frame OCR collapses the first
 /// columns of several bets into tall, 90-degree text elements.
 ///
@@ -272,8 +271,7 @@ CellGrid planVisualBetCells(
       return const CellGrid([], [], ['Ordem geométrica N ambígua.']);
     }
     pitches.add(
-      (current.value.y - previous.value.y) /
-          (current.key - previous.key),
+      (current.value.y - previous.value.y) / (current.key - previous.key),
     );
   }
   final pitch = _median(pitches);
@@ -282,10 +280,12 @@ CellGrid planVisualBetCells(
   }
   final numeric = RegExp(r'^[0-9OIS]{1,2}$', caseSensitive: false);
   final angles = tokens
-      .where((t) =>
-          !verticalReceiptToken(t) &&
-          numeric.hasMatch(t.text.trim()) &&
-          horizontalReceiptAngle(t.angle).abs() <= 10)
+      .where(
+        (t) =>
+            !verticalReceiptToken(t) &&
+            numeric.hasMatch(t.text.trim()) &&
+            horizontalReceiptAngle(t.angle).abs() <= 10,
+      )
       .map((t) => horizontalReceiptAngle(t.angle))
       .toList();
   final slope = math.tan(
@@ -315,8 +315,7 @@ CellGrid planVisualBetCells(
   samples.sort();
   final clusters = <List<double>>[];
   for (final x in samples) {
-    if (clusters.isEmpty ||
-        x - _median(clusters.last) > h * 1.2) {
+    if (clusters.isEmpty || x - _median(clusters.last) > h * 1.2) {
       clusters.add([x]);
     } else {
       clusters.last.add(x);
@@ -327,8 +326,7 @@ CellGrid planVisualBetCells(
   }
   final observed = clusters.map(_median).toList();
   final distances = <double>[
-    for (var i = 1; i < observed.length; i++)
-      observed[i] - observed[i - 1],
+    for (var i = 1; i < observed.length; i++) observed[i] - observed[i - 1],
   ];
   final step = _median(distances);
   if (step <= h * 1.1 ||
@@ -356,13 +354,8 @@ CellGrid planVisualBetCells(
     for (final kind in ['N', 'E']) {
       for (var i = 0; i < (kind == 'N' ? 5 : 2); i++) {
         final x = xs[i];
-        final y = n.y +
-            slope * (x - n.x) +
-            (kind == 'E' ? pitch * .45 : 0);
-        final halfHeight = math.min(
-          pitch * .33,
-          h * (kind == 'N' ? .58 : .50),
-        );
+        final y = n.y + slope * (x - n.x) + (kind == 'E' ? pitch * .45 : 0);
+        final halfHeight = math.min(pitch * .33, h * (kind == 'N' ? .58 : .50));
         final box = CropBox(
           math.max(0, x - step * .46),
           math.max(0, y - halfHeight),
@@ -371,13 +364,7 @@ CellGrid planVisualBetCells(
         );
         if (box.width < h || box.height < h * .75) continue;
         cells.add(
-          BetCrop(
-            entry.key,
-            box,
-            kind: kind,
-            position: i,
-            printedIndex: true,
-          ),
+          BetCrop(entry.key, box, kind: kind, position: i, printedIndex: true),
         );
       }
     }
