@@ -73,7 +73,12 @@ void main() {
       expect(encoded, isNot(contains('/private/user')));
       expect(encoded, isNot(contains('photo.jpg')));
       expect(report['photographsIncluded'], false);
-      expect(report['schemaVersion'], 2);
+      expect(report['schemaVersion'], 3);
+      final analysis = report['analysis'] as Map;
+      expect(analysis['status'], 'review_required');
+      expect(analysis['completeBets'], 1);
+      expect(analysis['incompleteBets'], 1);
+      expect(analysis['failedCropPasses'], 1);
       expect(encoded, contains('"validation":"conflict"'));
       expect(encoded, contains('"betIndex":2'));
       expect((report['timingsMs'] as Map)['phases'], {
@@ -107,6 +112,7 @@ void main() {
       version: 'test',
     );
     expect(report['errors'], ['crop: PlatformException']);
+    expect((report['analysis'] as Map)['flags'], contains('recovery_exception'));
     expect(report['cropPasses'], isEmpty);
     expect((report['initialPass'] as Map)['parsed'], isNotNull);
   });
