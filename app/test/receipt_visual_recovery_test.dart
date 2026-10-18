@@ -95,12 +95,19 @@ void main() {
       recognizeCrop: (crop, scale) async {
         if (crop.kind == 'marker') {
           if (unreadableMissingE) return const OcrFrame('', []);
-          return OcrFrame('E', [
-            ReceiptToken(
-              'E', crop.box.width / 2, crop.box.height / 2, 30,
-              width: 20,
-            ),
-          ], rows: const ['E']);
+          return OcrFrame(
+            'E',
+            [
+              ReceiptToken(
+                'E',
+                crop.box.width / 2,
+                crop.box.height / 2,
+                30,
+                width: 20,
+              ),
+            ],
+            rows: const ['E'],
+          );
         }
         // Full-line probes lack a cell position in this simulated OCR backend.
         if (crop.position == null) return const OcrFrame('', []);
@@ -152,12 +159,12 @@ void main() {
   test('blank 1x visual cells recover through 2x contrast crop', () async {
     final scan = await simulatedScan(emptyAt1x: true);
     expect(scan.receipt.lines, hasLength(5));
-    final blankFirstPasses = scan.passes.where(
-      (p) => p.id.startsWith('cell-') && p.id.contains('@1x'),
-    ).length;
-    final enlargedRetries = scan.passes.where(
-      (p) => p.id.startsWith('cell-') && p.id.contains('@2x-contrast'),
-    ).length;
+    final blankFirstPasses = scan.passes
+        .where((p) => p.id.startsWith('cell-') && p.id.contains('@1x'))
+        .length;
+    final enlargedRetries = scan.passes
+        .where((p) => p.id.startsWith('cell-') && p.id.contains('@2x-contrast'))
+        .length;
     // Cells with trustworthy full-frame evidence need not be reprocessed.
     expect(blankFirstPasses, greaterThan(0));
     // First-pass crops already corroborated by the full frame need no retry.
@@ -177,7 +184,10 @@ void main() {
         .toSet();
     expect(missing, isNotEmpty);
     for (final index in missing) {
-      expect(scan.receipt.bets.singleWhere((b) => b.index == index).complete, isFalse);
+      expect(
+        scan.receipt.bets.singleWhere((b) => b.index == index).complete,
+        isFalse,
+      );
       expect(scan.receipt.warnings.join(' '), contains('E não confirmado'));
     }
   });

@@ -22,11 +22,17 @@ void main() {
     expect(s.combinations, 18);
     final lines = expandManualSelections([s]);
     expect(lines, hasLength(18));
-    expect(lines.map((l) => '${l.numbers.join(',')}+${l.stars.join(',')}').toSet(), hasLength(18));
+    expect(
+      lines.map((l) => '${l.numbers.join(',')}+${l.stars.join(',')}').toSet(),
+      hasLength(18),
+    );
   });
 
   test('incomplete entries cannot be saved', () {
-    expect(() => expandManualSelections([ManualSelection()]), throwsFormatException);
+    expect(
+      () => expandManualSelections([ManualSelection()]),
+      throwsFormatException,
+    );
   });
 
   test('large multiple is rejected to protect local wallet', () {

@@ -23,7 +23,11 @@ Future<MultiPassResult> recoverReceiptCells({
   final total = Stopwatch()..start(), geometry = Stopwatch()..start();
   var grid = initialGrid ?? planBetCells(initial.tokens, plan, width, height);
   var geometryMs = geometry.elapsedMilliseconds;
-  final first = withBetLayout(initial.parse(), plan.expectedLines),
+  final first = withBetLayout(
+        initial.parse(),
+        plan.expectedLines,
+        closedBettingZone: plan.footerRule != null,
+      ),
       passes = <CropPass>[],
       errors = <String>[];
   final observations = <ValueEvidence>[], augmented = [...initial.tokens];
@@ -92,10 +96,14 @@ Future<MultiPassResult> recoverReceiptCells({
   // The visual-grid E position comes from a standalone observed E or a
   // predicted position. Only verified marker probes permit predicted stars.
   final activeCells = strategy == 'visual-grid-cells'
-      ? grid.cells.where((c) =>
-          c.kind != 'E' ||
-          !missingE.contains(c.index) ||
-          verifiedMissingE.contains(c.index)).toList()
+      ? grid.cells
+            .where(
+              (c) =>
+                  c.kind != 'E' ||
+                  !missingE.contains(c.index) ||
+                  verifiedMissingE.contains(c.index),
+            )
+            .toList()
       : grid.cells;
   geometryMs += geometry.elapsedMilliseconds;
   void observe(BetCrop cell, String raw, String pass) {
@@ -127,19 +135,22 @@ Future<MultiPassResult> recoverReceiptCells({
   // Individual cells remain the fallback and detect contradictory readings.
   for (final index in plan.rows.map((r) => r.index)) {
     for (final kind in ['N', 'E']) {
-      final parts = activeCells
-          .where((c) => c.index == index && c.kind == kind)
-          .toList()
-        ..sort((a, b) => a.position!.compareTo(b.position!));
+      final parts =
+          activeCells.where((c) => c.index == index && c.kind == kind).toList()
+            ..sort((a, b) => a.position!.compareTo(b.position!));
       final count = kind == 'N' ? 5 : 2;
       if (parts.length != count ||
           List.generate(count, (i) => i).any((i) => parts[i].position != i)) {
         continue;
       }
       final left = parts.map((c) => c.box.left).reduce((a, b) => a < b ? a : b);
-      final right = parts.map((c) => c.box.right).reduce((a, b) => a > b ? a : b);
+      final right = parts
+          .map((c) => c.box.right)
+          .reduce((a, b) => a > b ? a : b);
       final top = parts.map((c) => c.box.top).reduce((a, b) => a < b ? a : b);
-      final bottom = parts.map((c) => c.box.bottom).reduce((a, b) => a > b ? a : b);
+      final bottom = parts
+          .map((c) => c.box.bottom)
+          .reduce((a, b) => a > b ? a : b);
       final entire = BetCrop(
         index,
         CropBox(left, top, right, bottom),
@@ -151,17 +162,19 @@ Future<MultiPassResult> recoverReceiptCells({
       final values = NeLineDigits.parse(frame.text.trim(), stars: kind == 'E');
       if (values == null) continue;
       for (var i = 0; i < values.length; i++) {
-        observations.add(ValueEvidence(
-          kind,
-          i,
-          values[i],
-          values[i].toString().padLeft(2, '0'),
-          'line-$index-$kind@1x',
-          betIndex: index,
-          bounds: parts[i].box,
-          // Full-line reading remains one ML Kit observation, not two votes.
-          requiresConfirmation: true,
-        ));
+        observations.add(
+          ValueEvidence(
+            kind,
+            i,
+            values[i],
+            values[i].toString().padLeft(2, '0'),
+            'line-$index-$kind@1x',
+            betIndex: index,
+            bounds: parts[i].box,
+            // Full-line reading remains one ML Kit observation, not two votes.
+            requiresConfirmation: true,
+          ),
+        );
       }
     }
   }
@@ -225,8 +238,8 @@ Future<MultiPassResult> recoverReceiptCells({
       // Retry unreadable visual cells at 2x without inventing any digits.
       final scale =
           (strategy == 'visual-grid-cells' &&
-              (after.isEmpty || needsConfirmation)) ||
-          cell.box.height < 48
+                  (after.isEmpty || needsConfirmation)) ||
+              cell.box.height < 48
           ? 2.0
           : 1.0;
       final retryId =

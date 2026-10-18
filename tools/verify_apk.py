@@ -14,12 +14,17 @@ def verify_assets(archive):
     root = Path(__file__).resolve().parents[1] / 'app/assets/branding'
     allowed = {f'assets/flutter_assets/assets/branding/{name}': root / name
                for name in ('luckyscan50-logo.webp', 'luckyscan50-banner.webp')}
-    for name in archive.namelist():
+    names = archive.namelist()
+    if len(names) != len(set(names)):
+        raise ValueError('Duplicate ZIP entries are forbidden')
+    for name in names:
+        lower = name.lower()
         if name in allowed:
             if archive.read(name) != allowed[name].read_bytes():
                 raise ValueError('Modified branding asset: ' + name)
-        elif ('private_receipts/' in name or name.endswith('.traineddata') or
-              (name.startswith('assets/') and name.lower().endswith(('.jpg', '.jpeg', '.png', '.webp', '.heic')))):
+        elif ('private_receipts/' in lower or lower.endswith('.traineddata') or
+              (lower.startswith('assets/') and lower.endswith(
+                  ('.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif', '.gif', '.bmp', '.tif', '.tiff')))):
             raise ValueError('Private/test or unsupported OCR asset: ' + name)
 
 
@@ -28,12 +33,41 @@ def verify_certificate(output, expected=None, require_private=False):
     if not match:
         raise ValueError('Missing signing certificate digest; apksigner output: ' + output[-3000:])
     digest = match[1].lower()
+    if len(digest) != 64:
+        raise ValueError('Invalid SHA-256 signing certificate digest')
     if require_private and ('android debug' in output.lower() or digest ==
             '0695a638827b0ffa1725698204080edd8b76d65971cbe30ff2d5219d2d0ee860'):
         raise ValueError('Debug signing certificate is forbidden')
     if expected and digest != expected.lower().replace(':', ''):
         raise ValueError('APK signing certificate differs from configured private key')
     return digest
+
+
+def verify_elf(data, name):
+    """Validate every loadable ELF segment, not only its reported alignment."""
+    if len(data) < 64 or data[:6] != b'\x7fELF\x02\x01':
+        raise ValueError('Expected little-endian ELF64: ' + name)
+    if struct.unpack_from('<H', data, 18)[0] != 183:
+        raise ValueError('Native library is not AArch64: ' + name)
+    offset = struct.unpack_from('<Q', data, 32)[0]
+    size, count = struct.unpack_from('<HH', data, 54)
+    if size < 56 or offset + size * count > len(data):
+        raise ValueError('Invalid ELF program header table: ' + name)
+    loads = 0
+    for index in range(count):
+        header = struct.unpack_from('<IIQQQQQQ', data, offset + index * size)
+        if header[0] != 1:
+            continue
+        loads += 1
+        _, _, file_offset, address, _, file_size, memory_size, alignment = header
+        if alignment < 16384 or alignment & (alignment - 1):
+            raise ValueError('ELF LOAD alignment is not a power of two >= 16 KB: ' + name)
+        if file_offset % alignment != address % alignment:
+            raise ValueError('ELF LOAD offset/address alignment mismatch: ' + name)
+        if file_size > memory_size or file_offset + file_size > len(data):
+            raise ValueError('ELF LOAD segment exceeds file or memory bounds: ' + name)
+    if not loads:
+        raise ValueError('No ELF LOAD segments: ' + name)
 
 
 def verify(apk, build_tools, expected=None, require_private=False):
@@ -58,22 +92,7 @@ def verify(apk, build_tools, expected=None, require_private=False):
         if any(n.split('/')[1]!='arm64-v8a' for n in libraries):
             raise ValueError('Unexpected ABI in ARM64 artifact')
         for name in libraries:
-            data=archive.read(name)
-            if data[:6]!=b'\x7fELF\x02\x01':
-                raise ValueError('Expected little-endian ELF64: '+name)
-            if struct.unpack_from('<H',data,18)[0] != 183:
-                raise ValueError('Native library is not AArch64: '+name)
-            offset=struct.unpack_from('<Q',data,32)[0]
-            size,count=struct.unpack_from('<HH',data,54)
-            loads=0
-            for index in range(count):
-                header=struct.unpack_from('<IIQQQQQQ',data,offset+index*size)
-                if header[0]==1:
-                    loads+=1
-                    if header[-1]<16384:
-                        raise ValueError('ELF LOAD alignment below 16 KB: '+name)
-            if not loads:
-                raise ValueError('No ELF LOAD segments: '+name)
+            verify_elf(archive.read(name), name)
     outputs={}
     for label,command in [
         ('signature',[str(build_tools/'apksigner'),'verify','--verbose','--print-certs',str(apk)]),
@@ -84,10 +103,19 @@ def verify(apk, build_tools, expected=None, require_private=False):
         outputs[label]=result.stdout
     if "package: name='com.gilpereira.luckyscan50'" not in outputs['package']:
         raise ValueError('Unexpected application ID')
+    debuggable = 'application-debuggable' in outputs['package']
+    if require_private and debuggable:
+        raise ValueError('A privately signed release must not be debuggable')
     version=re.search(r"versionName='([^']+)'",outputs['package'])
+    version_code = re.search(r"versionCode='([^']+)'", outputs['package'])
+    min_sdk = re.search(r"sdkVersion:'([^']+)'", outputs['package'])
     certificate=verify_certificate(outputs['signature'], expected, require_private)
     report={'apk':apk.name,'bytes':apk.stat().st_size,'sha256':hashlib.sha256(apk.read_bytes()).hexdigest(),
-            'versionName':version[1] if version else None,'abi':'arm64-v8a',
+            'versionName':version[1] if version else None,
+            'versionCode':version_code[1] if version_code else None,
+            'minSdk':min_sdk[1] if min_sdk else None, 'debuggable':debuggable,
+            'megabytes':apk.stat().st_size / 1000000,
+            'mebibytes':apk.stat().st_size / 1048576, 'abi':'arm64-v8a',
             'signatureVerified':True,'certificateSha256':certificate,
             'nativeLibraries':len(libraries),'packagedFiles':inventory,'elf16KbAligned':True,'zip16KbAligned':True,
             'realPhotoOcrValidated':False}

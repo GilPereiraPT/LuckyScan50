@@ -5,7 +5,13 @@ import 'package:luckyscan50/domain/receipt_parser.dart';
 void main() {
   test('linha N: dez algarismos divididos em cinco pares', () {
     expect(NeLineDigits.parse('0620293248', stars: false), [6, 20, 29, 32, 48]);
-    expect(NeLineDigits.parse('06 20 29 32 48', stars: false), [6, 20, 29, 32, 48]);
+    expect(NeLineDigits.parse('06 20 29 32 48', stars: false), [
+      6,
+      20,
+      29,
+      32,
+      48,
+    ]);
   });
   test('linha E: quatro algarismos divididos em dois pares', () {
     expect(NeLineDigits.parse('0406', stars: true), [4, 6]);
@@ -24,7 +30,8 @@ void main() {
     expect(NeLineDigits.parse('0012', stars: true), isNull);
   });
   test('talão físico: N seguido de E isolado e metadados explícitos', () {
-    const data = 'EUROMILHÕES\n'
+    const data =
+        'EUROMILHÕES\n'
         '5 AP SIMPLES AUT SORT 081\n'
         '1.N 06 20 29 32 48\nE\n04 06\n'
         '2.N 05 17 36 47 49\nE\n05 11\n'
@@ -39,7 +46,8 @@ void main() {
     expect(result.bets.first.stars.length, lessThanOrEqualTo(2));
   });
   test('parser principal associa N e E de cinco apostas', () {
-    const data = '5 AP SIMPLES AUT SORT 081\n'
+    const data =
+        '5 AP SIMPLES AUT SORT 081\n'
         '1.N 0620293248\nE 0406\n'
         '2.N 0517364749\nE 0511\n'
         '3.N 2226434547\nE 0309\n'

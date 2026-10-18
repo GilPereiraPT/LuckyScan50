@@ -73,7 +73,10 @@ void main() {
       );
       expect(result.receipt.lines, isEmpty);
       expect(result.receipt.bets.every((b) => b.stars.isEmpty), true);
-      expect(result.passes.where((p) => p.crop.kind == 'E').length, 15); // 5 full E lines + 10 cell passes.
+      expect(
+        result.passes.where((p) => p.crop.kind == 'E').length,
+        15,
+      ); // 5 full E lines + 10 cell passes.
       expect(result.skippedKnownCells, 14);
       expect(result.passes.where((p) => p.scale == 2), isEmpty);
       expect(

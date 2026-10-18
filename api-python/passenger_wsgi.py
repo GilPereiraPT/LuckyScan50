@@ -66,7 +66,7 @@ def application(environ,start_response):
         limit=int(params.get('limit','30'))
         offset=int(params.get('offset','0'))
         after=int(params.get('after','0'))
-        if not 1<=limit<=100 or offset<0 or after<0:
+        if not 1<=limit<=100 or offset<0 or not 0<=after<=9223372036854775807:
             raise ValueError()
     except ValueError:
         return reply(400,{'error':'invalid_pagination'})

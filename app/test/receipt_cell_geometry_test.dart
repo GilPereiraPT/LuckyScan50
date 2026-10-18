@@ -66,10 +66,15 @@ void main() {
         for (final x in [200.0, 260.0, 320.0])
           ReceiptToken('29', x, y, 24, width: 22),
     ];
-    final plan = CropPlan([
-      const BetCrop(1, CropBox(0, 80, 450, 280), printedIndex: true),
-      const BetCrop(2, CropBox(0, 280, 450, 440), printedIndex: true),
-    ], const [], const [], expectedLines: 2);
+    final plan = CropPlan(
+      [
+        const BetCrop(1, CropBox(0, 80, 450, 280), printedIndex: true),
+        const BetCrop(2, CropBox(0, 280, 450, 440), printedIndex: true),
+      ],
+      const [],
+      const [],
+      expectedLines: 2,
+    );
     final grid = planVisualBetCells(tokens, plan, 450, 450);
     expect(grid.cells.length, 14);
     expect(grid.markers, isEmpty);

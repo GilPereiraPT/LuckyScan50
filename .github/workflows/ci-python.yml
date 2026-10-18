@@ -4,6 +4,8 @@ on:
     paths: ['api-python/**', '.github/workflows/ci-python.yml']
   pull_request:
     paths: ['api-python/**', '.github/workflows/ci-python.yml']
+permissions:
+  contents: read
 jobs:
   tests:
     runs-on: ubuntu-24.04
@@ -11,7 +13,7 @@ jobs:
       run:
         working-directory: api-python
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'

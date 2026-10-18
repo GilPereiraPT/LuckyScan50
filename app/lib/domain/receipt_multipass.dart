@@ -102,7 +102,9 @@ export 'receipt_geometry.dart';
   }
   return (
     bet: ParsedBet(index, b.numbers, b.stars, [
-      ...b.issues,
+      ...b.issues.where(
+        (issue) => issue != 'Índice da aposta por confirmar' || !indexedAnchor,
+      ),
       if (associationIssue != null) associationIssue,
     ]),
     values: values,
@@ -113,6 +115,7 @@ ScannedReceipt _boundedInitial(OcrFrame frame, CropPlan plan) {
   final scan = withBetLayout(
     frame.parse(),
     plan.expectedLines,
+    closedBettingZone: plan.footerRule != null,
     unconfirmed: plan.rows
         .where((r) => !r.printedIndex)
         .map((r) => r.index)
@@ -177,7 +180,11 @@ Future<MultiPassResult> recoverReceiptRows({
   final geometryClock = Stopwatch()..start();
   final plan = planBetCrops(initial.tokens, width, height, rules: rules);
   final first = _boundedInitial(initial, plan);
-  final meta = withBetLayout(metadata ?? first, plan.expectedLines);
+  final meta = withBetLayout(
+    metadata ?? first,
+    plan.expectedLines,
+    closedBettingZone: plan.footerRule != null,
+  );
 
   // Whole-frame ML Kit can collapse the first two N/E columns into long
   // vertical words. Recover values from original-image numeric cell crops,
