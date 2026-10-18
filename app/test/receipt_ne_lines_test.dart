@@ -24,11 +24,11 @@ void main() {
     expect(NeLineDigits.parse('0012', stars: true), isNull);
   });
   test('talão físico: N seguido de E isolado e metadados explícitos', () {
-    const data = 'EUROMILHÕES\\n'
-        '5 AP SIMPLES AUT SORT 081\\n'
-        '1.N 06 20 29 32 48\\nE\\n04 06\\n'
-        '2.N 05 17 36 47 49\\nE\\n05 11\\n'
-        'TOTAL A PAGAR € 11,00\\n2026/10/09';
+    const data = 'EUROMILHÕES\n'
+        '5 AP SIMPLES AUT SORT 081\n'
+        '1.N 06 20 29 32 48\nE\n04 06\n'
+        '2.N 05 17 36 47 49\nE\n05 11\n'
+        'TOTAL A PAGAR € 11,00\n2026/10/09';
     final result = parseReceiptObservations(text: data);
     expect(result.amount, '11,00');
     expect(result.drawDate, '2026-10-09');
