@@ -44,6 +44,20 @@ class ResultsClient {
     return rows;
   }
 
+  Future<Map<String, dynamic>> fetchRssOverview() async {
+    final response = await client
+        .get(Uri.parse('$base/v1/rss/overview'))
+        .timeout(const Duration(seconds: 20));
+    if (response.statusCode != 200) {
+      throw const FormatException('Informação RSS indisponível');
+    }
+    final decoded = jsonDecode(response.body);
+    if (decoded is! Map<String, dynamic> || decoded['data'] is! List) {
+      throw const FormatException('Resposta RSS inválida');
+    }
+    return decoded;
+  }
+
   void close() => client.close();
 }
 
