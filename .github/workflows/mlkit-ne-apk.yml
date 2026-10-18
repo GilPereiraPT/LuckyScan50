@@ -47,13 +47,26 @@ jobs:
               target = Path(f'app/android/app/src/main/res/mipmap-{density}/ic_launcher.png')
               image.resize((size, size), Image.Resampling.LANCZOS).save(target)
           PY
-      - name: Build diagnostic arm64 APK
+      - name: Build smaller arm64 profile APK (ML Kit retained)
         working-directory: app
-        run: flutter build apk --debug --target-platform android-arm64
+        run: flutter build apk --profile --target-platform android-arm64
+      - name: Record actual APK size
+        working-directory: app
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          file = Path('build/app/outputs/flutter-apk/app-profile.apk')
+          size = file.stat().st_size
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as output:
+              output.write(f'Profile ARM64 APK: {size:,} bytes ({size / 1048576:.2f} MiB)\\n\\n')
+              output.write('Includes real Google ML Kit, but is NOT a privately signed release.\\n')
+          PY
       - name: Upload diagnostic APK
         uses: actions/upload-artifact@v4
         with:
-          name: LuckyScan50-mlkit-ne-arm64-debug
-          path: app/build/app/outputs/flutter-apk/app-debug.apk
+          name: LuckyScan50-mlkit-ne-arm64-profile
+          path: app/build/app/outputs/flutter-apk/app-profile.apk
           if-no-files-found: error
           retention-days: 7
