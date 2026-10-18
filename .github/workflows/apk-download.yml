@@ -28,6 +28,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version: '3.35.0'
           cache: true
       - name: Dependencias
         run: flutter pub get
