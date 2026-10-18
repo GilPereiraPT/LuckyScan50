@@ -18,6 +18,7 @@ import 'data/results_client.dart';
 import 'data/api_overview_page.dart';
 import 'data/wallet_store.dart';
 import 'domain/wallet.dart';
+import 'manual_bets_page.dart';
 
 const buildSha = String.fromEnvironment(
   'LUCKYSCAN_BUILD_SHA',
@@ -83,6 +84,7 @@ final router = GoRouter(
   routes: [
     GoRoute(path: '/', builder: (_, __) => const Home()),
     GoRoute(path: '/add', builder: (_, __) => const AddReceipt()),
+    GoRoute(path: '/manual', builder: (_, __) => const ManualBetPage()),
     GoRoute(path: '/about', builder: (_, __) => const AboutPage()),
     GoRoute(path: '/api', builder: (_, __) => const ApiOverviewPage()),
     GoRoute(
@@ -248,9 +250,9 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
       ),
       floatingActionButton: index < 2
           ? FloatingActionButton.extended(
-              onPressed: () => context.push('/add'),
-              icon: const Icon(Icons.add),
-              label: const Text('Registar aposta'),
+              onPressed: () => context.push('/manual'),
+              icon: const Icon(Icons.grid_view_rounded),
+              label: const Text('Criar aposta manual'),
             )
           : null,
       bottomNavigationBar: NavigationBar(
@@ -304,6 +306,23 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
           style: Theme.of(context).textTheme.bodyMedium,
         ),
         const SizedBox(height: 12),
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.add_circle_outline),
+            title: const Text('Nova aposta manual'),
+            subtitle: const Text('Selecionar números e estrelas sem fotografia'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/manual'),
+          ),
+        ),
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.camera_alt_outlined),
+            title: const Text('Fotografar ou importar talão'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/add'),
+          ),
+        ),
         Card(
           child: ListTile(
             leading: const Icon(Icons.cloud_done_outlined),
