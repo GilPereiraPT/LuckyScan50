@@ -49,6 +49,8 @@ jobs:
         run: |
           set -o pipefail
           flutter test --reporter expanded 2>&1 | tee "$RUNNER_TEMP/luckyscan50-flutter-test.log"
+      - name: Compile Android debug APK (verify native PDF renderer)
+        run: flutter build apk --debug --target-platform android-arm64
       - name: Publish Flutter test failures in the job summary
         if: failure()
         shell: bash
