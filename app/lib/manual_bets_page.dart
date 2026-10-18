@@ -19,7 +19,7 @@ class ManualSelection {
 }
 
 int choose(int n, int k) {
-  if (n < k) return 0;
+  if (n < k) { return 0; }
   var result = 1;
   for (var i = 1; i <= k; i++) {
     result = result * (n - k + i) ~/ i;
@@ -98,12 +98,12 @@ class _ManualBetPageState extends ConsumerState<ManualBetPage> {
     final set = star ? selection.stars : selection.numbers;
     final limit = star ? (selection.multiple ? 12 : 2) : (selection.multiple ? 10 : 5);
     setState(() {
-      if (!set.remove(value) && set.length < limit) set.add(value);
+      if (!set.remove(value) && set.length < limit) { set.add(value); }
     });
   }
 
   Future<void> save() async {
-    if (saving) return;
+    if (saving) { return; }
     try {
       final lines = expandManualSelections(selections);
       final drawId = draw.text.trim();
@@ -133,7 +133,7 @@ class _ManualBetPageState extends ConsumerState<ManualBetPage> {
           ],
         ),
       );
-      if (confirmed != true || !mounted) return;
+      if (confirmed != true || !mounted) { return; }
       setState(() => saving = true);
       final now = DateTime.now();
       final receipt = Receipt(
@@ -148,15 +148,15 @@ class _ManualBetPageState extends ConsumerState<ManualBetPage> {
       );
       await ref.read(storeProvider).save(receipt);
       ref.invalidate(receiptsProvider);
-      if (mounted) Navigator.of(context).pop();
+      if (mounted) { Navigator.of(context).pop(); }
     } on FormatException catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      if (mounted) { ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message))); }
     } catch (_) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+      if (mounted) { ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Não foi possível guardar as apostas.')),
-      );
+      ); }
     } finally {
-      if (mounted) setState(() => saving = false);
+      if (mounted) { setState(() => saving = false); }
     }
   }
 
