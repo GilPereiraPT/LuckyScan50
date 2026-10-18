@@ -29,7 +29,9 @@ void main() {
         tokens.add(TicketGlyph('${numbers[i][j]}', 170.0 + 60 * j, y, 30, 28));
       }
       for (var j = 0; j < 2; j++) {
-        tokens.add(TicketGlyph('${stars[i][j]}', 170.0 + 60 * j, y + 38, 30, 28));
+        tokens.add(
+          TicketGlyph('${stars[i][j]}', 170.0 + 60 * j, y + 38, 30, 28),
+        );
       }
     }
     final result = readStructuredTicket(tokens.reversed.toList());

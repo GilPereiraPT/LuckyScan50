@@ -26,16 +26,22 @@ class StructuredTicket {
   const StructuredTicket(this.rows, this.issues);
   final List<TicketRow> rows;
   final List<String> issues;
-  bool get complete => rows.isNotEmpty &&
-      issues.isEmpty &&
-      rows.every((row) => row.complete);
+  bool get complete =>
+      rows.isNotEmpty && issues.isEmpty && rows.every((row) => row.complete);
 }
 
 StructuredTicket readStructuredTicket(List<TicketGlyph> glyphs) {
-  final valid = glyphs.where((g) =>
-      g.x.isFinite && g.y.isFinite &&
-      g.height.isFinite && g.height > 0 &&
-      g.width.isFinite && g.width >= 0).toList();
+  final valid = glyphs
+      .where(
+        (g) =>
+            g.x.isFinite &&
+            g.y.isFinite &&
+            g.height.isFinite &&
+            g.height > 0 &&
+            g.width.isFinite &&
+            g.width >= 0,
+      )
+      .toList();
   final anchors = <({TicketGlyph glyph, int index})>[];
   final label = RegExp(r'^(\d{1,2})\s*[.)]?\s*N$', caseSensitive: false);
   for (final glyph in valid) {
@@ -56,21 +62,31 @@ StructuredTicket readStructuredTicket(List<TicketGlyph> glyphs) {
     final nextY = i + 1 < anchors.length
         ? anchors[i + 1].glyph.y
         : double.infinity;
-    final eCandidates = valid.where((g) =>
-        g.text.trim().toUpperCase() == 'E' &&
-        g.y > anchor.glyph.y + anchor.glyph.height * 0.3 &&
-        g.y < nextY &&
-        (g.x - anchor.glyph.x).abs() <= anchor.glyph.height * 2).toList();
+    final eCandidates = valid
+        .where(
+          (g) =>
+              g.text.trim().toUpperCase() == 'E' &&
+              g.y > anchor.glyph.y + anchor.glyph.height * 0.3 &&
+              g.y < nextY &&
+              (g.x - anchor.glyph.x).abs() <= anchor.glyph.height * 2,
+        )
+        .toList();
     eCandidates.sort((a, b) => a.y.compareTo(b.y));
     final e = eCandidates.length == 1 ? eCandidates.single : null;
     List<int> cells(TicketGlyph row) {
-      final candidates = valid.where((g) =>
-          g.x - g.width / 2 > row.x + row.width / 2 &&
-          (g.y - row.y).abs() <= row.height * 0.45 &&
-          RegExp(r'^\d{1,2}$').hasMatch(g.text.trim())).toList()
-        ..sort((a, b) => a.x.compareTo(b.x));
+      final candidates =
+          valid
+              .where(
+                (g) =>
+                    g.x - g.width / 2 > row.x + row.width / 2 &&
+                    (g.y - row.y).abs() <= row.height * 0.45 &&
+                    RegExp(r'^\d{1,2}$').hasMatch(g.text.trim()),
+              )
+              .toList()
+            ..sort((a, b) => a.x.compareTo(b.x));
       return candidates.map((g) => int.parse(g.text.trim())).toList();
     }
+
     final numbers = cells(anchor.glyph);
     final stars = e == null ? <int>[] : cells(e);
     final issues = <String>[];
