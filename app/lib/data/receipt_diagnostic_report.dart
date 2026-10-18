@@ -56,8 +56,45 @@ Map<String, Object?> receiptDiagnosticReport(
     'conflict': v.conflict,
   };
   final first = scan.initialReceipt;
+  final finalBets = scan.receipt.bets;
+  final complete = finalBets.where((b) => b.complete).length;
+  final incomplete = finalBets.where((b) => !b.complete).length;
+  final passes = recovery?.passes ?? <CropPass>[];
+  final failedPasses = passes.where((p) => p.error != null).length;
+  final emptyPasses = passes.where((p) => p.frame == null ||
+      (p.frame!.text.trim().isEmpty && p.frame!.tokens.isEmpty)).length;
+  final unresolved = <String>[];
+  if (scan.recoveryError != null) unresolved.add('recovery_exception');
+  if (recovery == null) unresolved.add('no_recovery_result');
+  if (recovery?.plan.zone == null) unresolved.add('betting_zone_not_detected');
+  if (recovery != null && recovery.plan.rows.isEmpty) {
+    unresolved.add('no_bet_rows_detected');
+  }
+  if (failedPasses > 0) unresolved.add('crop_recognition_errors');
+  if (emptyPasses > 0) unresolved.add('empty_crop_observations');
+  if (incomplete > 0) unresolved.add('incomplete_bets');
+  if (scan.receipt.expectedLines != null &&
+      complete < scan.receipt.expectedLines!) {
+    unresolved.add('expected_bets_not_complete');
+  }
   return {
-    'schemaVersion': 2,
+    'schemaVersion': 3,
+    'analysis': {
+      'status': unresolved.isEmpty ? 'no_detected_blockers' : 'review_required',
+      'flags': unresolved,
+      'expectedBets': scan.receipt.expectedLines,
+      'detectedBets': finalBets.length,
+      'completeBets': complete,
+      'incompleteBets': incomplete,
+      'plannedRows': recovery?.plan.rows.length,
+      'cropPasses': passes.length,
+      'failedCropPasses': failedPasses,
+      'emptyCropPasses': emptyPasses,
+      'orientationAttempts': scan.orientationPasses.length,
+      'manualConfirmationRequired': incomplete > 0 ||
+          scan.receipt.warnings.isNotEmpty || unresolved.isNotEmpty,
+      'note': 'Heuristic diagnostic only; not proof of correct photo OCR.',
+    },
     'build': build,
     'appVersion': version,
     'engine': 'Google ML Kit Latin',
