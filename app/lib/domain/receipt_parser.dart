@@ -42,6 +42,7 @@ class ScannedReceipt {
     this.drawId,
     this.hasMilhao = false,
     this.milhaoCodes = const [],
+    this.milhaoDrawId,
     this.tokenCount = 0,
     this.skewDegrees = 0,
     this.strategy = 'text',
@@ -50,7 +51,7 @@ class ScannedReceipt {
   final List<ParsedBet> bets;
   final List<ReceiptToken> observations;
   final List<String> rows, warnings, milhaoCodes;
-  final String? code, amount, game, drawDate, drawId;
+  final String? code, amount, game, drawDate, drawId, milhaoDrawId;
   final int? expectedLines;
   final bool hasMilhao;
   final int tokenCount;

@@ -12,6 +12,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'data/backup.dart';
 import 'data/receipt_scanner.dart';
+import 'data/receipt_crop_backend.dart';
 import 'data/receipt_diagnostic_report.dart';
 import 'domain/receipt_autofill.dart';
 import 'data/results_client.dart';
@@ -781,6 +782,7 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
     'date': receiptDate,
     'expected': expectedCount,
     'milhaoCodes': milhaoCodes,
+    'milhaoDraws': milhaoDraws,
   };
   @override
   void dispose() {
@@ -802,6 +804,8 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
   Future<void> scan(
     ImageSource selected, {
     bool additionalMilhao = false,
+    bool onlinePdf = false,
+    Future<ReceiptScan?> Function()? documentScan,
   }) async {
     if (busy) return;
     final atStart = {
@@ -809,7 +813,9 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
     };
     setState(() => busy = true);
     try {
-      final result = await ref.read(receiptScannerProvider)(selected);
+      final result = await (documentScan != null
+          ? documentScan()
+          : ref.read(receiptScannerProvider)(selected));
       if (result == null || !mounted) return;
       final fields = scanFields;
       final updates = receiptAutofill(
@@ -827,7 +833,9 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
         if (!additionalMilhao) {
           if (result.imagePath != null) image = File(result.imagePath!);
           ocrText = result.rawText;
-          source = source == 'manual' ? 'physical' : source;
+          source = onlinePdf && result.receipt.strategy == 'online-pdf-table'
+              ? 'online'
+              : (source == 'manual' ? 'physical' : source);
           milhaoDetected = result.receipt.hasMilhao;
           milhaoDeferred = false;
           expectedBets = result.receipt.expectedLines;
@@ -862,6 +870,62 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
       }
     } finally {
       if (mounted) setState(() => busy = false);
+    }
+  }
+
+  Future<void> importPdf() async {
+    if (busy) return;
+    try {
+      final selection = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+        withData: false,
+      );
+      if (selection == null || !mounted) return;
+      final path = selection.files.single.path;
+      if (path == null) throw const FormatException('Ficheiro PDF não disponível.');
+      final count = await const ReceiptCropBackend().pdfPageCount(path);
+      if (!mounted) return;
+      int? pageIndex = 0;
+      if (count > 1) {
+        pageIndex = await showDialog<int>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Escolher página do PDF'),
+            content: SizedBox(
+              width: 280,
+              height: 300,
+              child: ListView.builder(
+                itemCount: count,
+                itemBuilder: (ctx, index) => ListTile(
+                  title: Text('Página ${index + 1}'),
+                  onTap: () => Navigator.of(ctx).pop(index),
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text('Cancelar'),
+              ),
+            ],
+          ),
+        );
+      }
+      if (pageIndex == null || !mounted) return;
+      final selectedPage = pageIndex;
+      await scan(
+        ImageSource.gallery,
+        onlinePdf: true,
+        documentScan: () => scanReceiptPdf(path, pageIndex: selectedPage),
+      );
+    } catch (_) {
+      if (mounted) {
+        message(
+          context,
+          'Não foi possível abrir o PDF. Confirme que não está protegido e tem até 20 páginas.',
+        );
+      }
     }
   }
 
@@ -950,7 +1014,10 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
           p.join((await getApplicationDocumentsDirectory()).path, 'receipts'),
         );
         await dir.create(recursive: true);
-        final copied = await image!.copy(p.join(dir.path, '$id.jpg'));
+        final extension = p.extension(image!.path).toLowerCase();
+        final copied = await image!.copy(
+          p.join(dir.path, '$id${extension == '.png' ? '.png' : '.jpg'}'),
+        );
         await ref
             .read(storeProvider)
             .save(
@@ -1003,6 +1070,11 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
                   icon: const Icon(Icons.image),
                   label: const Text('Importar imagem'),
                 ),
+                FilledButton.icon(
+                  onPressed: busy ? null : importPdf,
+                  icon: const Icon(Icons.picture_as_pdf),
+                  label: const Text('Importar PDF'),
+                ),
               ],
             ),
             if (busy) const LinearProgressIndicator(),
@@ -1019,7 +1091,7 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
-            if (milhaoDetected && !milhaoDeferred)
+            if (milhaoDetected && milhaoCodes.text.trim().isEmpty && !milhaoDeferred)
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(12),

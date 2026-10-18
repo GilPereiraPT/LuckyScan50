@@ -11,6 +11,26 @@ class PreparedReceiptImage {
 class ReceiptCropBackend {
   const ReceiptCropBackend();
   static const channel = MethodChannel('luckyscan50/receipt_crops');
+  Future<int> pdfPageCount(String path) async {
+    final info = await channel.invokeMapMethod<String, dynamic>(
+      'pdfInfo',
+      {'path': path},
+    );
+    if (info == null || info['pages'] is! int) {
+      throw StateError('PDF page count unavailable');
+    }
+    return info['pages'] as int;
+  }
+
+  Future<String> renderPdfPage(String path, int pageIndex) async {
+    final image = await channel.invokeMethod<String>(
+      'renderPdfPage',
+      {'path': path, 'page': pageIndex},
+    );
+    if (image == null) throw StateError('PDF render unavailable');
+    return image;
+  }
+
   Future<PreparedReceiptImage> prepare(String path) async {
     final response = await channel.invokeMapMethod<String, dynamic>('prepare', {
       'path': path,
