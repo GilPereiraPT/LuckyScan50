@@ -398,3 +398,46 @@ Proposta de configuração do ambiente guardada para acrescentar apenas
 `api.github.com` aos domínios personalizados. É um rascunho confirmado pelo
 serviço; precisa de revisão, gravação e publicação nas definições do ambiente.
 Não foi aplicado à rede da sessão nem alterou o token injetado.
+
+## 2026-10-18 — Auditoria integral, PR #10 e estatísticas oficiais
+
+Nova base confirmada `a37ad82d8c7d8c5d5ed37b50506cd07b4c17b8eb`,
+`codex/mlkit-ne-line-structure`, isolada em worktree sem mudar o checkout anterior.
+Relatório completo em `docs/auditoria-tecnica-integral.md`: arquitetura, branches,
+causas/evidências/gravidades, propostas, medidas, testes e limitações.
+
+Publicadas sem force push:
+- `audit/luckyscan50-integral-20261018` — código
+  `ab5484ea3492f517e74860bc232ea4499784db56`, correções conservadoras
+  OCR/carteira/validação e CI Node24/Ubuntu24, diagnóstico manual, sem schema novo.
+- `feat/luckyscan50-official-statistics-20261018` — código
+  `e01b747e5237a23d11898f8ef2e11a9f9b0afbc2`, dependente da primeira:
+  API/snapshots/CLI opt-in e cache/ecrã Android nas settings existentes.
+
+Baseline103 Flutter; core isolado133 Flutter/80 Python; integração138 Flutter,
+105 Python,10 Node,7 SQLite real FFI e7 verificador APK; format/analyze aprovados.
+Actions verdes do código integrado:
+https://github.com/GilPereiraPT/LuckyScan50/actions/runs/39170768974 e
+https://github.com/GilPereiraPT/LuckyScan50/actions/runs/39170768976 .
+Sem APK novo: Profile baseline/final bloqueado por403 no download do engine em
+storage.googleapis.com. Sem chave privada local, assinatura substituta ou AAB.
+Inspeção histórica separa bytes APK de ZIP e não atribui diferenças debug/release
+a limpeza de dependências. Não foi removida dependência necessária.
+
+Fonte SCEstatisticas/SCMotorBusca/SCCartazResult bloqueada por CONNECT403.
+Nenhuma captura real17/10/2026 03:00 validada; os25 testes novos de estatísticas
+usam fixtures sintéticas, API expõe snapshotReferenceVerified:false, não existem
+62 valores reais importados nem histórico completo declarado. Prazos90/12/60 e
+recebimentos por prémio são proposta pendente de fonte/migração, não funcionalidade
+anunciada como concluída. OCR real Android permanece não demonstrado.
+
+Dois `gh pr create --draft` falharam: POST api.github.com/graphql Forbidden.
+Nenhum PR foi criado ou merge feito; textos guardados em docs/pull-requests.
+Comparações para abrir PR1 e PR2 dependente, respetivamente:
+https://github.com/GilPereiraPT/LuckyScan50/compare/codex/mlkit-ne-line-structure...audit/luckyscan50-integral-20261018?expand=1
+https://github.com/GilPereiraPT/LuckyScan50/compare/audit/luckyscan50-integral-20261018...feat/luckyscan50-official-statistics-20261018?expand=1
+
+Produção, Cron, SQLite real, assinaturas, main e Play não foram alterados.
+Rascunho de rede guardado com api.github.com, www.jogossantacasa.pt e
+storage.googleapis.com; necessita revisão/gravação/publicação nas definições,
+não foi aplicado nem contornado na sessão.

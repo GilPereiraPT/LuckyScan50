@@ -1,0 +1,5 @@
+A confirmação concorrente podia gravar dois recibos e duplicar gastos. O OCR também perdia posições quando o plano geométrico era parcial e descartava estrelas após uma linha E isolada. Esta proposta corrige as causas reproduzidas, protege as invariantes da carteira e adapta o seletor manual a 320dp e alvos de toque de48 dp.
+
+Inclui a auditoria integral em docs/auditoria-tecnica-integral.md, regressões de dados/SQLite, validação de resultados coerente com Python e workflows com formato estrito, Actions Node24 e diagnóstico exclusivamente manual. Mantém identidade, chave e schema da carteira. Nenhuma dependência Android nova ou alteração de produção.
+
+Validação integrada com a proposta estatística dependente:138 testes Flutter,105 Python,10 Node,7 SQLite e7 do verificador APK aprovados; format/analyze passam. A CI desta branch deve confirmar a árvore isolada. Profile local bloqueado por403 ao obter componentes do Flutter. Sem Android/fotografias originais, OCR real não está validado. Dados oficiais, histórico completo e regras90/12/60 continuam pendentes de fonte verificável. Não fazer merge/deploy automático.

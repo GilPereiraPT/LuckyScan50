@@ -886,3 +886,34 @@ ref pelo CLI/API é o procedimento preparado. Fonte consultada:
 https://github.com/github/docs/blob/main/content/actions/how-tos/manage-workflow-runs/manually-run-a-workflow.md .
 Dificuldade baixa para código; acesso remoto é dependência externa. Não houve
 dispatch de APK na auditoria nem substituição de qualquer assinatura existente.
+
+### Verificação final das branches e execução remota
+
+- Correções/auditoria: `ab5484ea3492f517e74860bc232ea4499784db56`, branch
+  `audit/luckyscan50-integral-20261018`, baseada em `a37ad82`.
+- Estatísticas: `e01b747e5237a23d11898f8ef2e11a9f9b0afbc2`, branch
+  `feat/luckyscan50-official-statistics-20261018`, dependente da anterior.
+- Além da árvore integrada, a cópia exata de `ab5484e` foi validada isoladamente:
+  pubget com lock, formato49ficheiros sem alterações, análise sem problemas e
+  **133 testes Flutter aprovados**. A suite Python isolada mantém **80 testes**.
+- Actions do código integrado `e01b747`: **success** em
+  https://github.com/GilPereiraPT/LuckyScan50/actions/runs/39170768974
+  (Flutter/SQLite/Python/Node/verificador) e
+  https://github.com/GilPereiraPT/LuckyScan50/actions/runs/39170768976 (Python).
+  Nas páginas finais não foram observadas anotações de depreciação Node20.
+  São execuções de validação, não builds ou prova de instalação/OCR real.
+- Profile também foi tentado na árvore final `e01b747`; falhou pelo mesmo403
+  de descarregamento do engine, após assemble53.5s e retry22.4s.
+  Nenhum APK foi produzido/publicado, e não há medição de tamanho desta árvore.
+- Duas tentativas de `gh pr create --draft` falharam em
+  `POST https://api.github.com/graphql: Forbidden`. As branches foram publicadas
+  sem force push; **os PRs não foram criados**. Textos prontos estão em
+  `docs/pull-requests/audit-core.md` e `docs/pull-requests/official-statistics.md`.
+  Nenhum merge foi realizado. As ligações compare são alternativas de revisão,
+  não PRs já abertos.
+- Não foi executado um scanner CVE online nem teste de intrusão; inspeção de
+  dependências/imports/empacotamento não garante ausência de vulnerabilidades.
+
+A auditoria documentada e as correções testadas estão entregues. A integração
+real da adenda e a conclusão operacional dos PRs/builds continuam bloqueadas
+pela captura oficial ausente e pelos acessos acima, não são declaradas aceites.
