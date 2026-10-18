@@ -1,7 +1,14 @@
-name: Fix Dart formatting (manual)
+name: Fix Dart formatting (automatic)
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - codex/luckyscan50-android-wallet
+    paths:
+      - 'app/lib/**'
+      - 'app/test/**'
+      - 'qa/android/**'
 
 permissions:
   contents: write
