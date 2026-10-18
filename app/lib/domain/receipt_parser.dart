@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'receipt_ne_lines.dart';
 
 // Existing segmentation safety limit, shared with parsing and recovery.
 const maxReceiptBets = 20;
@@ -491,7 +492,9 @@ List<ParsedBet> _parseBets(List<String> rows) {
     hasStars = false;
   }
 
-  List<int> numeric(String value) {
+  List<int> numeric(String value, {required bool starsLine}) {
+    final exact = NeLineDigits.parse(value.trim(), stars: starsLine);
+    if (exact != null) return exact;
     final parts = value.trim().split(RegExp(r'\s+')).where((s) => s.isNotEmpty);
     final values = <int>[];
     for (final token in parts) {
@@ -528,18 +531,19 @@ List<ParsedBet> _parseBets(List<String> rows) {
       final marker = RegExp(r'E\s*[:.]?\s*(?=[0-9])').firstMatch(tail);
       numbers = numeric(
         marker == null ? tail : tail.substring(0, marker.start),
+        starsLine: false,
       );
       if (marker != null) {
-        stars = numeric(tail.substring(marker.end));
+        stars = numeric(tail.substring(marker.end), starsLine: true);
         hasStars = true;
       }
     } else if (e != null && index != null && !hasStars) {
-      stars = numeric(e[1]!);
+      stars = numeric(e[1]!, starsLine: true);
       hasStars = true;
     } else if (index != null &&
         !hasStars &&
         RegExp(r'^[0-9\s]+$').hasMatch(row)) {
-      numbers.addAll(numeric(row));
+      numbers.addAll(numeric(row, starsLine: false));
     } else if (index != null && row.isNotEmpty) {
       flush();
     }
