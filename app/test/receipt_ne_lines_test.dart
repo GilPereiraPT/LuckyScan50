@@ -23,6 +23,21 @@ void main() {
     expect(NeLineDigits.parse('2029063248', stars: false), isNull);
     expect(NeLineDigits.parse('0012', stars: true), isNull);
   });
+  test('talão físico: N seguido de E isolado e metadados explícitos', () {
+    const data = 'EUROMILHÕES\\n'
+        '5 AP SIMPLES AUT SORT 081\\n'
+        '1.N 06 20 29 32 48\\nE\\n04 06\\n'
+        '2.N 05 17 36 47 49\\nE\\n05 11\\n'
+        'TOTAL A PAGAR € 11,00\\n2026/10/09';
+    final result = parseReceiptObservations(text: data);
+    expect(result.amount, '11,00');
+    expect(result.drawDate, '2026-10-09');
+    expect(result.drawId, '081/2026');
+    expect(result.expectedLines, 5);
+    // An isolated E never authorizes borrowing a number from the next N row.
+    expect(result.bets.first.numbers, [6, 20, 29, 32, 48]);
+    expect(result.bets.first.stars.length, lessThanOrEqualTo(2));
+  });
   test('parser principal associa N e E de cinco apostas', () {
     const data = '5 AP SIMPLES AUT SORT 081\n'
         '1.N 0620293248\nE 0406\n'
