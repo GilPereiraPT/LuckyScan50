@@ -121,7 +121,7 @@ void main() {
     'scan pipeline uses visual OCR and recovers five complete bets',
     () async {
       final scan = await simulatedScan();
-      expect(scan.receipt.strategy, 'geometric-cells');
+      expect(scan.receipt.strategy, 'visual-grid-cells');
       expect(scan.receipt.bets.length, 5);
       for (var i = 0; i < 5; i++) {
         final bet = scan.receipt.bets[i];
