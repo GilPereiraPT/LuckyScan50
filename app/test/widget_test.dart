@@ -5,7 +5,7 @@ import 'package:luckyscan50/main.dart';
 import 'package:luckyscan50/domain/wallet.dart';
 
 void main() {
-  testWidgets('wallet shows empty state and navigates to confirmation form', (
+  testWidgets('wallet shows empty state and opens the manual selector', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -23,10 +23,10 @@ void main() {
     await tester.tap(find.text('Bilhetes'));
     await tester.pumpAndSettle();
     expect(find.text('Sem bilhetes para esta pesquisa.'), findsOneWidget);
-    await tester.tap(find.text('Registar aposta'));
+    await tester.tap(find.text('Criar aposta manual'));
     await tester.pumpAndSettle();
-    expect(find.text('Confirmar aposta'), findsOneWidget);
-    expect(find.text('Uma despesa por recibo'), findsOneWidget);
+    expect(find.text('Introdução manual'), findsOneWidget);
+    expect(find.text('As suas chaves, à sua maneira'), findsOneWidget);
     await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
   });

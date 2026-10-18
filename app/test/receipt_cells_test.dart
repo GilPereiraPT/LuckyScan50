@@ -73,7 +73,10 @@ void main() {
       );
       expect(result.receipt.lines, isEmpty);
       expect(result.receipt.bets.every((b) => b.stars.isEmpty), true);
-      expect(result.passes.where((p) => p.crop.kind == 'E').length, 10);
+      expect(
+        result.passes.where((p) => p.crop.kind == 'E').length,
+        15,
+      ); // 5 full E lines + 10 cell passes.
       expect(result.skippedKnownCells, 14);
       expect(result.passes.where((p) => p.scale == 2), isEmpty);
       expect(
@@ -94,6 +97,8 @@ void main() {
         height: 3000,
         recognizeCrop: (c, s) async => c.kind == 'marker'
             ? markerFrame(c)
+            : c.position == null
+            ? const OcrFrame('', [])
             : OcrFrame(
                 '${(c.kind == 'N' ? n : e)[c.position!]}'.padLeft(2, '0'),
                 const [],
@@ -108,8 +113,8 @@ void main() {
       expect(result.receipt.bets.last.numbers, [1, 2, 13, 4, 32]);
       expect(
         result.passes.length,
-        26,
-      ); // 5 label probes + 21 missing cells; no row OCR/2x.
+        36,
+      ); // 5 label probes + 10 full N/E line reads + 21 cell reads.
       expect(
         result.evidence
             .expand((e) => e.acceptedValues)

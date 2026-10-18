@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'receipt_ne_lines.dart';
 
 // Existing segmentation safety limit, shared with parsing and recovery.
 const maxReceiptBets = 20;
@@ -191,6 +192,20 @@ List<ParsedBet> _parseAnchoredTokens(List<ReceiptToken> tokens) {
   }
   if (ns.isEmpty) return [];
   ns.sort((a, b) => y(a.token).compareTo(y(b.token)));
+  final footerYs = horizontal
+      .where(
+        (t) =>
+            y(t) > y(ns.first.token) + ns.first.token.height &&
+            RegExp(
+              r'^(?:TOTAL\b|EUROMILH[ÕO]ES\s+COM\b|EM TODO\b|VIRN\b|CODIGO\b)',
+            ).hasMatch(t.text.trim().toUpperCase()),
+      )
+      .map(y)
+      .toList();
+  if (footerYs.isNotEmpty) {
+    final footerY = footerYs.reduce(math.min);
+    ns.removeWhere((n) => y(n.token) >= footerY);
+  }
   final es = horizontal
       .where(
         (t) => RegExp(
@@ -339,8 +354,11 @@ ScannedReceipt parseReceiptObservations({
   final codes = identifiers
       .where((s) => RegExp(r'-\d{3}$').hasMatch(s))
       .toList();
+  // The official physical receipt separates TOTAL A PAGAR and the amount
+  // onto different OCR lines, or prints them on the same line.
+  // Never collect arbitrary monetary values outside this anchored label.
   final amounts = RegExp(
-    r'\bTOTAL\s*:?\s*(?:€\s*)?(\d{1,5}[,.]\d{2})(?:\s*€)?',
+    r'\bTOTAL\s*(?:A\s+PAGAR\s*)?:?\s*(?:€\s*)?(\d{1,5}[,.]\d{2})(?:\s*€)?',
   ).allMatches(raw).map((m) => m[1]!.replaceAll('.', ',')).toSet();
   if (amounts.length > 1) {
     warnings.add('Mais de um valor TOTAL; confirme o valor pago.');
@@ -381,13 +399,30 @@ ScannedReceipt parseReceiptObservations({
       dates.add('${m[3]}-${m[2]}-${m[1]}');
     }
   }
+  // Physical receipt OCR sometimes reads the printed ISO-style date.
+  for (final m in RegExp(r'\b(20\d{2})/(\d{2})/(\d{2})\b').allMatches(raw)) {
+    final year = int.parse(m[1]!);
+    final month = int.parse(m[2]!);
+    final dayOfMonth = int.parse(m[3]!);
+    final date = DateTime(year, month, dayOfMonth);
+    if (date.year == year && date.month == month && date.day == dayOfMonth) {
+      dates.add('${m[1]}-${m[2]}-${m[3]}');
+    }
+  }
   final day = dates.length == 1 ? dates.single : null;
   if (dates.length > 1) {
     warnings.add('Várias datas reconhecidas; confirmar a data do sorteio.');
   }
-  final contests = RegExp(
-    r'\b(?:CONCURSO|CONC\.)\s*(?:N[.º°]*\s*)?:?\s*(\d{3})(?:/(\d{4}))?\b',
-  ).allMatches(raw).map((m) => (number: m[1]!, year: m[2])).toSet();
+  // Euromilhões physical tickets often label the draw "AUT SORT 081",
+  // rather than "CONCURSO 081". Only use an unequivocal anchored number.
+  final contests = <({String number, String? year})>{
+    ...RegExp(
+      r'\b(?:CONCURSO|CONC\.)\s*(?:N[.º°]*\s*)?:?\s*(\d{3})(?:/(\d{4}))?\b',
+    ).allMatches(raw).map((m) => (number: m[1]!, year: m[2])),
+    ...RegExp(r'\bAUT\s+SORT\s+([0-9O]{3})\b')
+        .allMatches(raw)
+        .map((m) => (number: m[1]!.replaceAll('O', '0'), year: null)),
+  };
   String? drawId;
   if (contests.length == 1) {
     final contest = contests.single;
@@ -470,6 +505,7 @@ List<ParsedBet> _parseBets(List<String> rows) {
   List<int> numbers = [], stars = [];
   final issues = <String>[];
   bool hasStars = false;
+  bool expectingStars = false;
   void flush() {
     if (index == null) return;
     final found = <String>[...issues];
@@ -489,9 +525,12 @@ List<ParsedBet> _parseBets(List<String> rows) {
     stars = [];
     issues.clear();
     hasStars = false;
+    expectingStars = false;
   }
 
-  List<int> numeric(String value) {
+  List<int> numeric(String value, {required bool starsLine}) {
+    final exact = NeLineDigits.parse(value.trim(), stars: starsLine);
+    if (exact != null) return exact;
     final parts = value.trim().split(RegExp(r'\s+')).where((s) => s.isNotEmpty);
     final values = <int>[];
     for (final token in parts) {
@@ -524,22 +563,32 @@ List<ParsedBet> _parseBets(List<String> rows) {
       index = n[1] == null
           ? (bets.isEmpty ? 1 : bets.last.index + 1)
           : int.parse(n[1]!);
+      if (n[1] == null) issues.add('Índice da aposta por confirmar');
       final tail = n[2]!;
       final marker = RegExp(r'E\s*[:.]?\s*(?=[0-9])').firstMatch(tail);
       numbers = numeric(
         marker == null ? tail : tail.substring(0, marker.start),
+        starsLine: false,
       );
       if (marker != null) {
-        stars = numeric(tail.substring(marker.end));
+        stars = numeric(tail.substring(marker.end), starsLine: true);
         hasStars = true;
       }
     } else if (e != null && index != null && !hasStars) {
-      stars = numeric(e[1]!);
+      stars = numeric(e[1]!, starsLine: true);
       hasStars = true;
+      expectingStars = e[1]!.trim().isEmpty;
+    } else if (index != null &&
+        expectingStars &&
+        RegExp(r'^[0-9\s]+$').hasMatch(row)) {
+      // An isolated E authorizes only its next numeric row. Never continue
+      // across another N anchor or append later footer digits to the group.
+      stars = numeric(row, starsLine: true);
+      expectingStars = false;
     } else if (index != null &&
         !hasStars &&
         RegExp(r'^[0-9\s]+$').hasMatch(row)) {
-      numbers.addAll(numeric(row));
+      numbers.addAll(numeric(row, starsLine: false));
     } else if (index != null && row.isNotEmpty) {
       flush();
     }
@@ -567,14 +616,28 @@ ScannedReceipt withBetLayout(
   int? count, {
   List<String> warnings = const [],
   Set<int> unconfirmed = const {},
+  bool closedBettingZone = false,
 }) {
   if (count == null) return scan;
+  // A partially detected layout must not erase previously observed positions
+  // or a larger printed bet count. Missing rows remain pending in the form.
+  final expected = closedBettingZone
+      ? count
+      : math.max(
+          count,
+          math.max(
+            scan.expectedLines ?? 0,
+            scan.bets.isEmpty
+                ? 0
+                : scan.bets.map((b) => b.index).reduce(math.max),
+          ),
+        );
   final indexed = {
-    for (final b in scan.bets.where((b) => b.index <= count)) b.index: b,
+    for (final b in scan.bets.where((b) => b.index <= expected)) b.index: b,
   };
   return ScannedReceipt(
     bets: [
-      for (var i = 1; i <= count; i++)
+      for (var i = 1; i <= expected; i++)
         unconfirmed.contains(i) && indexed.containsKey(i)
             ? ParsedBet(i, indexed[i]!.numbers, indexed[i]!.stars, [
                 ...indexed[i]!.issues,
@@ -594,7 +657,7 @@ ScannedReceipt withBetLayout(
     ],
     code: scan.code,
     amount: scan.amount,
-    expectedLines: count,
+    expectedLines: expected,
     game: scan.game,
     drawDate: scan.drawDate,
     drawId: scan.drawId,

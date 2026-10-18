@@ -12,18 +12,21 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'data/backup.dart';
 import 'data/receipt_scanner.dart';
+import 'data/receipt_crop_backend.dart';
+import 'data/receipt_corners.dart';
 import 'data/receipt_diagnostic_report.dart';
 import 'domain/receipt_autofill.dart';
 import 'data/results_client.dart';
 import 'data/api_overview_page.dart';
 import 'data/wallet_store.dart';
 import 'domain/wallet.dart';
+import 'manual_bets_page.dart';
 
 const buildSha = String.fromEnvironment(
   'LUCKYSCAN_BUILD_SHA',
   defaultValue: 'local',
 );
-const appVersion = '0.2.4+6';
+const appVersion = '0.2.5+7';
 
 final receiptScannerProvider = Provider<ReceiptScanner>(
   (ref) => scanReceiptImage,
@@ -41,6 +44,21 @@ final resultsProvider = FutureProvider(
 final themeProvider = StateProvider<ThemeMode>((ref) => ThemeMode.system);
 final money = NumberFormat.currency(locale: 'pt_PT', symbol: '€');
 String euro(int value) => money.format(value / 100);
+
+/// Keep the real LuckyScan50 identity visible on secondary pages.
+Widget brandedPageTitle(String title) => Row(
+  mainAxisSize: MainAxisSize.min,
+  children: [
+    Image.asset(
+      'assets/branding/luckyscan50-logo.webp',
+      width: 32,
+      height: 32,
+      fit: BoxFit.contain,
+    ),
+    const SizedBox(width: 10),
+    Flexible(child: Text(title)),
+  ],
+);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -68,6 +86,7 @@ final router = GoRouter(
   routes: [
     GoRoute(path: '/', builder: (_, __) => const Home()),
     GoRoute(path: '/add', builder: (_, __) => const AddReceipt()),
+    GoRoute(path: '/manual', builder: (_, __) => const ManualBetPage()),
     GoRoute(path: '/about', builder: (_, __) => const AboutPage()),
     GoRoute(path: '/api', builder: (_, __) => const ApiOverviewPage()),
     GoRoute(
@@ -233,9 +252,9 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
       ),
       floatingActionButton: index < 2
           ? FloatingActionButton.extended(
-              onPressed: () => context.push('/add'),
-              icon: const Icon(Icons.add),
-              label: const Text('Registar aposta'),
+              onPressed: () => context.push('/manual'),
+              icon: const Icon(Icons.grid_view_rounded),
+              label: const Text('Criar aposta manual'),
             )
           : null,
       bottomNavigationBar: NavigationBar(
@@ -289,6 +308,25 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
           style: Theme.of(context).textTheme.bodyMedium,
         ),
         const SizedBox(height: 12),
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.add_circle_outline),
+            title: const Text('Nova aposta manual'),
+            subtitle: const Text(
+              'Selecionar números e estrelas sem fotografia',
+            ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/manual'),
+          ),
+        ),
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.camera_alt_outlined),
+            title: const Text('Fotografar ou importar talão'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/add'),
+          ),
+        ),
         Card(
           child: ListTile(
             leading: const Icon(Icons.cloud_done_outlined),
@@ -543,7 +581,7 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
       ),
       const SizedBox(height: 20),
       const Text(
-        'LuckyScan50 · versão $appVersion · $buildSha\nAplicação não oficial. Nunca utilize estatísticas como previsão de prémios.',
+        'LuckyScan50 · Gil Pereira · versão $appVersion · $buildSha\nAplicação não oficial. Nunca utilize estatísticas como previsão de prémios.',
       ),
     ];
   }
@@ -556,7 +594,7 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
         leading: const Icon(Icons.confirmation_number_outlined),
         title: Text(
           receipt.code.isEmpty
-              ? 'Recibo ${receipt.id.substring(0, 6)}'
+              ? 'Recibo ${receipt.id.substring(0, receipt.id.length < 6 ? receipt.id.length : 6)}'
               : receipt.code,
         ),
         subtitle: Text(
@@ -767,7 +805,9 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
       expectedCount = TextEditingController();
   String source = 'manual', ocrText = '';
   File? image;
+  final _temporaryRectified = <String>{};
   bool busy = false;
+  bool saving = false;
   bool milhaoDetected = false;
   int? expectedBets;
   bool milhaoDeferred = false;
@@ -796,20 +836,66 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
     ]) {
       c.dispose();
     }
+    // Corrected images are temporary until explicitly copied into the wallet.
+    // Never delete the original camera/gallery image.
+    for (final path in _temporaryRectified) {
+      File(path).delete().catchError((Object _) => File(path));
+    }
     super.dispose();
+  }
+
+  Future<ReceiptScan?> _guidedScan(ImageSource selected) async {
+    final picked = await ImagePicker().pickImage(source: selected);
+    if (picked == null || !mounted) return null;
+    const backend = ReceiptCropBackend();
+    final preview = await backend.prepare(picked.path, preview: true);
+    try {
+      if (!mounted) return null;
+      final corners = await Navigator.of(context).push<List<ReceiptCorner>>(
+        MaterialPageRoute(
+          builder: (_) => ReceiptCornersPage(
+            path: preview.path,
+            width: preview.width,
+            height: preview.height,
+          ),
+        ),
+      );
+      if (corners == null || !mounted) return null;
+      if (corners.isEmpty) return scanReceiptFile(picked.path);
+      final corrected = await backend.rectify(preview, [
+        for (final corner in corners) ...[corner.x, corner.y],
+      ]);
+      try {
+        final scan = await scanReceiptFile(corrected);
+        _temporaryRectified.add(corrected);
+        return scan;
+      } catch (_) {
+        try {
+          await File(corrected).delete();
+        } catch (_) {
+          // Temporary cache cleanup will also occur on next app start.
+        }
+        rethrow;
+      }
+    } finally {
+      await backend.dispose(preview);
+    }
   }
 
   Future<void> scan(
     ImageSource selected, {
     bool additionalMilhao = false,
+    bool guided = false,
   }) async {
-    if (busy) return;
+    if (busy || saving) return;
     final atStart = {
       for (final entry in scanFields.entries) entry.key: entry.value.text,
     };
     setState(() => busy = true);
     try {
-      final result = await ref.read(receiptScannerProvider)(selected);
+      final result = guided
+          ? await _guidedScan(selected)
+          : await ref.read(receiptScannerProvider)(selected);
       if (result == null || !mounted) return;
       final fields = scanFields;
       final updates = receiptAutofill(
@@ -868,6 +954,8 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
   Future<void> scanMilhao(ImageSource selected) =>
       scan(selected, additionalMilhao: true);
   Future<void> save() async {
+    if (saving || busy) return;
+    setState(() => saving = true);
     try {
       if (lines.text.contains('?')) {
         throw const FormatException(
@@ -970,17 +1058,31 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
               : 'Não foi possível guardar o recibo.',
         );
       }
+    } finally {
+      if (mounted) setState(() => saving = false);
     }
   }
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Confirmar aposta')),
+    appBar: AppBar(title: brandedPageTitle('Confirmar aposta')),
+    bottomNavigationBar: SafeArea(
+      top: false,
+      minimum: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+      child: SizedBox(
+        height: 52,
+        child: FilledButton.icon(
+          onPressed: busy || saving ? null : save,
+          icon: const Icon(Icons.check),
+          label: const Text('Confirmar e guardar'),
+        ),
+      ),
+    ),
     body: Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 700),
         child: ListView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
           children: [
             const Text(
               'Uma despesa por recibo',
@@ -990,21 +1092,73 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
               'Agrupe as secções Euromilhões e M1lhão do mesmo comprovativo. Confirme os campos antes de guardar.',
             ),
             const SizedBox(height: 16),
-            Wrap(
-              spacing: 8,
+            ExpansionTile(
+              initiallyExpanded: true,
+              title: const Text('OCR direto, sem corrigir perspetiva'),
               children: [
-                OutlinedButton.icon(
-                  onPressed: busy ? null : () => scan(ImageSource.camera),
-                  icon: const Icon(Icons.camera_alt),
-                  label: const Text('Fotografar'),
-                ),
-                OutlinedButton.icon(
-                  onPressed: busy ? null : () => scan(ImageSource.gallery),
-                  icon: const Icon(Icons.image),
-                  label: const Text('Importar imagem'),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: busy || saving
+                          ? null
+                          : () => scan(ImageSource.camera),
+                      icon: const Icon(Icons.camera_alt),
+                      label: const Text('Fotografar'),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: busy || saving
+                          ? null
+                          : () => scan(ImageSource.gallery),
+                      icon: const Icon(Icons.image),
+                      label: const Text('Importar imagem'),
+                    ),
+                  ],
                 ),
               ],
             ),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Captura com moldura de quatro cantos',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Fotografe o talão completo e ajuste os cantos '
+                      'do papel antes de iniciar o OCR. A correção é opcional '
+                      'e pode ser dispensada para usar a fotografia original.',
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        OutlinedButton.icon(
+                          onPressed: busy || saving
+                              ? null
+                              : () => scan(ImageSource.camera, guided: true),
+                          icon: const Icon(Icons.crop_free),
+                          label: const Text('Fotografar com moldura'),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: busy || saving
+                              ? null
+                              : () => scan(ImageSource.gallery, guided: true),
+                          icon: const Icon(Icons.photo_size_select_large),
+                          label: const Text('Importar com moldura'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
             if (busy) const LinearProgressIndicator(),
             if (image != null)
               Padding(
@@ -1015,7 +1169,7 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Text(
-                  'Apostas reconhecidas: ${lines.text.trim().isEmpty ? 0 : lines.text.trim().split(String.fromCharCode(10)).length} / $expectedBets',
+                  'Apostas completas: ${lastScan?.receipt.lines.length ?? 0} / $expectedBets',
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
@@ -1037,14 +1191,14 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
                         spacing: 8,
                         children: [
                           OutlinedButton.icon(
-                            onPressed: busy
+                            onPressed: busy || saving
                                 ? null
                                 : () => scanMilhao(ImageSource.camera),
                             icon: const Icon(Icons.camera_alt),
                             label: const Text('Fotografar M1lhão'),
                           ),
                           OutlinedButton.icon(
-                            onPressed: busy
+                            onPressed: busy || saving
                                 ? null
                                 : () => scanMilhao(ImageSource.gallery),
                             icon: const Icon(Icons.image),
@@ -1065,7 +1219,7 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
               OutlinedButton.icon(
                 icon: const Icon(Icons.ios_share),
                 label: const Text('Exportar relatório OCR'),
-                onPressed: busy
+                onPressed: busy || saving
                     ? null
                     : () async {
                         try {
@@ -1173,7 +1327,7 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
                 title: const Text('Diagnóstico local da leitura'),
                 children: [
                   SelectableText(
-                    'Imagem → InputImage nativo + recortes PNG com EXIF normalizado; sem correção de perspetiva\n'
+                    'Imagem → ML Kit local; retificação de perspetiva quando selecionada\n'
                     'ML Kit: ${lastScan!.rawText.length} caracteres, ${lastScan!.receipt.tokenCount} elementos, ${lastScan!.ocrMs} ms\n'
                     'Reconstrução: ${lastScan!.receipt.strategy}, inclinação ${lastScan!.receipt.skewDegrees.toStringAsFixed(1)}°\n'
                     'Interpretação e recuperação: ${lastScan!.receipt.lines.length} apostas completas, ${lastScan!.parseMs} ms\n'
@@ -1211,7 +1365,8 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
               lines,
               'Chaves — uma por linha',
               hint: '1 2 3 4 5 + 1 2',
-              maxLines: 4,
+              minLines: 5,
+              maxLines: null,
             ),
             field(milhaoDraws, 'Concursos M1lhão (opcional)', hint: '009/2026'),
             field(
@@ -1223,12 +1378,6 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
             const Text(
               'O OCR tenta importar apenas chaves completas e válidas. Confirme sempre todas as chaves, estrelas e valores antes de guardar. Imagens não são enviadas ao servidor.',
             ),
-            const SizedBox(height: 20),
-            FilledButton.icon(
-              onPressed: busy ? null : save,
-              icon: const Icon(Icons.check),
-              label: const Text('Confirmar e guardar'),
-            ),
           ],
         ),
       ),
@@ -1238,11 +1387,13 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
     TextEditingController c,
     String label, {
     String? hint,
-    int maxLines = 1,
+    int? maxLines = 1,
+    int? minLines,
   }) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 8),
     child: TextField(
       controller: c,
+      minLines: minLines,
       maxLines: maxLines,
       decoration: InputDecoration(labelText: label, hintText: hint),
     ),
@@ -1258,7 +1409,7 @@ class AboutPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Sobre o LuckyScan50')),
+      appBar: AppBar(title: brandedPageTitle('Sobre o LuckyScan50')),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 760),
@@ -1277,10 +1428,11 @@ class AboutPage extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        Icons.document_scanner_outlined,
-                        size: 62,
-                        color: theme.colorScheme.primary,
+                      Image.asset(
+                        'assets/branding/luckyscan50-logo.webp',
+                        width: 68,
+                        height: 68,
+                        fit: BoxFit.contain,
                       ),
                       const SizedBox(height: 12),
                       const Text(
@@ -1322,6 +1474,8 @@ class AboutPage extends StatelessWidget {
                 'de prémios competem exclusivamente ao operador autorizado.',
               ),
               const SizedBox(height: 24),
+              const Text('Gil Pereira · LuckyScan50'),
+              const SizedBox(height: 8),
               Text(
                 'Versão de auditoria $appVersion · $buildSha',
                 style: theme.textTheme.bodySmall,

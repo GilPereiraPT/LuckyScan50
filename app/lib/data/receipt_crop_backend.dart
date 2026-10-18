@@ -11,10 +11,14 @@ class PreparedReceiptImage {
 class ReceiptCropBackend {
   const ReceiptCropBackend();
   static const channel = MethodChannel('luckyscan50/receipt_crops');
-  Future<PreparedReceiptImage> prepare(String path) async {
-    final response = await channel.invokeMapMethod<String, dynamic>('prepare', {
-      'path': path,
-    });
+  Future<PreparedReceiptImage> prepare(
+    String path, {
+    bool preview = false,
+  }) async {
+    final response = await channel.invokeMapMethod<String, dynamic>(
+      preview ? 'preparePreview' : 'prepare',
+      {'path': path},
+    );
     if (response == null) throw StateError('No prepared image');
     return PreparedReceiptImage(
       response['path'] as String,
@@ -22,6 +26,21 @@ class ReceiptCropBackend {
       (response['height'] as num).toDouble(),
       response['session'] as String,
     );
+  }
+
+  /// Produces a bounded JPEG from an upright preview using four normalized corners.
+  /// Caller owns the temporary returned file; it is not deleted with the session.
+  Future<String> rectify(
+    PreparedReceiptImage image,
+    List<double> corners,
+  ) async {
+    if (corners.length != 8) throw ArgumentError('Four corners required');
+    final path = await channel.invokeMethod<String>('rectify', {
+      'session': image.session,
+      'corners': corners,
+    });
+    if (path == null) throw StateError('No rectified image');
+    return path;
   }
 
   Future<PreparedReceiptImage> rotate(

@@ -1,0 +1,57 @@
+{
+  "baseCommit": "a37ad82d8c7d8c5d5ed37b50506cd07b4c17b8eb",
+  "date": "2026-10-18",
+  "timezone": "Europe/Lisbon",
+  "fixtureKind": "synthetic_desktop_benchmark_not_android",
+  "walletBefore": {
+    "syntheticReceipts": 20,
+    "linesEach": 500,
+    "verificationLinesPerSample": 200000,
+    "medianMicroseconds": 114602,
+    "samplesMicroseconds": [
+      111282,
+      113370,
+      114097,
+      114602,
+      114670,
+      115028,
+      115843
+    ],
+    "jsonUtf8Bytes": 384271,
+    "rssBytesAtEnd": 153141248,
+    "totals": {
+      "spent": 2000000,
+      "identified": 1000000,
+      "received": 0,
+      "theoreticalBalance": -1000000,
+      "cashBalance": -2000000
+    }
+  },
+  "walletAfter": {
+    "syntheticReceipts": 20,
+    "linesEach": 500,
+    "verificationLinesPerSample": 200000,
+    "medianMicroseconds": 32300,
+    "samplesMicroseconds": [
+      31136,
+      31301,
+      31514,
+      32300,
+      32303,
+      33269,
+      42463
+    ],
+    "jsonUtf8Bytes": 384271,
+    "rssBytesAtEnd": 152702976,
+    "totals": {
+      "spent": 2000000,
+      "identified": 1000000,
+      "received": 0,
+      "theoreticalBalance": -1000000,
+      "cashBalance": -2000000
+    }
+  },
+  "realPhotoOcrValidated": false,
+  "officialSnapshotReferenceVerified": false,
+  "productionModified": false
+}

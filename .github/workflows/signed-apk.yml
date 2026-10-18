@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -80,7 +80,7 @@ jobs:
           PY
       - name: Build private signed ARM64 release APK
         working-directory: app
-        run: flutter build apk --release --target-platform android-arm64
+        run: flutter build apk --release --target-platform android-arm64 --dart-define=LUCKYSCAN_BUILD_SHA="$GITHUB_SHA"
       - name: Install pinned APK verification tools
         run: '"$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "build-tools;35.0.0"'
       - name: Verify certificate, ABI, integrity and 16 KB alignment
@@ -100,7 +100,7 @@ jobs:
               for field in fields:
                   summary.write(f'- {field}: {report[field]}\n')
           PYTHON
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: LuckyScan50-signed-arm64-APK
           path: signed-output/LuckyScan50-signed-arm64.apk
