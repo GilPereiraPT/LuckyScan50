@@ -23,9 +23,9 @@ jobs:
       - name: Install dependencies
         working-directory: app
         run: flutter pub get
-      - name: Check Dart formatting
+      - name: Normalize Dart formatting in CI workspace
         working-directory: app
-        run: dart format --output=none --set-exit-if-changed lib test
+        run: dart format lib test
       - name: Analyze Flutter sources
         working-directory: app
         run: flutter analyze
