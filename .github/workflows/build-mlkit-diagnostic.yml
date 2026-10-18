@@ -1,0 +1,20 @@
+name: Manual Android APK (private release or diagnostic profile)
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Private release for installation, or explicitly marked diagnostic profile'
+        type: choice
+        required: true
+        default: private-release
+        options: [private-release, diagnostic-profile]
+permissions:
+  contents: read
+jobs:
+  private-release:
+    if: inputs.mode == 'private-release'
+    uses: ./.github/workflows/signed-apk.yml
+    secrets: inherit
+  diagnostic-profile:
+    if: inputs.mode == 'diagnostic-profile'
+    uses: ./.github/workflows/mlkit-ne-apk.yml

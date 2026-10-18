@@ -15,7 +15,9 @@ def integer(value, name, maximum=None):
 def validate_result(row):
     if not isinstance(row, dict) or row.get('game') not in GAMES:
         raise ValueError('Invalid game')
-    if not re.fullmatch(r'\d{3}/\d{4}', str(row.get('drawId', ''))):
+    identity = row.get('drawId')
+    if (not isinstance(identity, str) or not re.fullmatch(r'\d{3}/\d{4}', identity)
+            or int(identity[:3]) == 0):
         raise ValueError('Invalid draw')
     try:
         draw_date = date.fromisoformat(row['date'])

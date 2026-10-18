@@ -355,20 +355,24 @@ CellGrid planVisualBetCells(
   final eOffsets = <double>[];
   for (var j = 0; j < ordered.length; j++) {
     final entry = ordered[j], n = entry.value;
-    final nextY = j + 1 < ordered.length
-        ? ordered[j + 1].value.y
-        : n.y + pitch;
-    final found = tokens.where((t) =>
-        !verticalReceiptToken(t) &&
-        t.text.trim().toUpperCase() == 'E' &&
-        (t.x - n.x).abs() <= h * 1.25 &&
-        t.y > n.y + h * .35 &&
-        t.y < nextY - h * .25).toList();
+    final nextY = j + 1 < ordered.length ? ordered[j + 1].value.y : n.y + pitch;
+    final found = tokens
+        .where(
+          (t) =>
+              !verticalReceiptToken(t) &&
+              t.text.trim().toUpperCase() == 'E' &&
+              (t.x - n.x).abs() <= h * 1.25 &&
+              t.y > n.y + h * .35 &&
+              t.y < nextY - h * .25,
+        )
+        .toList();
     if (found.length == 1) {
       eAnchors[entry.key] = found.single;
       eOffsets.add(found.single.y - n.y);
     } else if (found.length > 1) {
-      warnings.add('Aposta ${entry.key}: várias âncoras E; estrelas por confirmar.');
+      warnings.add(
+        'Aposta ${entry.key}: várias âncoras E; estrelas por confirmar.',
+      );
     }
   }
   final eOffset = eOffsets.isEmpty ? null : _median(eOffsets);
@@ -386,7 +390,9 @@ CellGrid planVisualBetCells(
         math.min(width, n.x + h * 1.4),
         math.min(height, eY + h * .55),
       );
-      markers.add(BetCrop(entry.key, marker, kind: 'marker', printedIndex: true));
+      markers.add(
+        BetCrop(entry.key, marker, kind: 'marker', printedIndex: true),
+      );
     }
     for (final kind in ['N', 'E']) {
       for (var i = 0; i < (kind == 'N' ? 5 : 2); i++) {

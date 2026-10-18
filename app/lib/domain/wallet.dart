@@ -22,9 +22,11 @@ List<int> parseNumbers(String value, int count, int maximum) {
 }
 
 class BetLine {
-  BetLine(this.numbers, this.stars) {
-    parseNumbers(numbers.join(' '), 5, 50);
-    parseNumbers(stars.join(' '), 2, 12);
+  BetLine(List<int> numbers, List<int> stars)
+    : numbers = List<int>.unmodifiable(numbers),
+      stars = List<int>.unmodifiable(stars) {
+    parseNumbers(this.numbers.join(' '), 5, 50);
+    parseNumbers(this.stars.join(' '), 2, 12);
   }
   final List<int> numbers;
   final List<int> stars;
@@ -42,14 +44,17 @@ class Receipt {
     required this.source,
     required this.code,
     required this.costCents,
-    required this.lines,
-    required this.drawIds,
-    this.milhaoDrawIds = const [],
-    this.milhaoCodes = const [],
+    required List<BetLine> lines,
+    required List<String> drawIds,
+    List<String> milhaoDrawIds = const [],
+    List<String> milhaoCodes = const [],
     this.receivedCents = 0,
     this.imagePath,
     this.drawDate,
-  }) {
+  }) : lines = List<BetLine>.unmodifiable(lines),
+       drawIds = List<String>.unmodifiable(drawIds),
+       milhaoDrawIds = List<String>.unmodifiable(milhaoDrawIds),
+       milhaoCodes = List<String>.unmodifiable(milhaoCodes) {
     if (drawDate != null) {
       final day = DateTime.tryParse(drawDate!);
       if (day == null || day.toIso8601String().substring(0, 10) != drawDate) {
@@ -143,15 +148,13 @@ Verification verify(Receipt receipt, List<Map<String, dynamic>> results) {
       continue;
     }
     final draw = rows.first;
+    final drawnNumbers = Set<int>.from(draw['numbers'] as List);
+    final drawnStars = Set<int>.from(draw['stars'] as List);
     for (final line in receipt.lines) {
-      final main = line.numbers
-          .toSet()
-          .intersection(Set<int>.from(draw['numbers'] as List))
-          .length;
-      final stars = line.stars
-          .toSet()
-          .intersection(Set<int>.from(draw['stars'] as List))
-          .length;
+      // BetLine validates uniqueness, so counting membership avoids rebuilding
+      // four temporary sets for every expanded multiple combination.
+      final main = line.numbers.where(drawnNumbers.contains).length;
+      final stars = line.stars.where(drawnStars.contains).length;
       final tier = tierFor(main, stars);
       if (tier == null) continue;
       winners++;

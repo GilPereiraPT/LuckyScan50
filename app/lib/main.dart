@@ -310,7 +310,9 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
           child: ListTile(
             leading: const Icon(Icons.add_circle_outline),
             title: const Text('Nova aposta manual'),
-            subtitle: const Text('Selecionar números e estrelas sem fotografia'),
+            subtitle: const Text(
+              'Selecionar números e estrelas sem fotografia',
+            ),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push('/manual'),
           ),
@@ -590,7 +592,7 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
         leading: const Icon(Icons.confirmation_number_outlined),
         title: Text(
           receipt.code.isEmpty
-              ? 'Recibo ${receipt.id.substring(0, 6)}'
+              ? 'Recibo ${receipt.id.substring(0, receipt.id.length < 6 ? receipt.id.length : 6)}'
               : receipt.code,
         ),
         subtitle: Text(
@@ -802,6 +804,7 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
   String source = 'manual', ocrText = '';
   File? image;
   bool busy = false;
+  bool saving = false;
   bool milhaoDetected = false;
   int? expectedBets;
   bool milhaoDeferred = false;
@@ -837,7 +840,7 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
     ImageSource selected, {
     bool additionalMilhao = false,
   }) async {
-    if (busy) return;
+    if (busy || saving) return;
     final atStart = {
       for (final entry in scanFields.entries) entry.key: entry.value.text,
     };
@@ -902,6 +905,8 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
   Future<void> scanMilhao(ImageSource selected) =>
       scan(selected, additionalMilhao: true);
   Future<void> save() async {
+    if (saving || busy) return;
+    setState(() => saving = true);
     try {
       if (lines.text.contains('?')) {
         throw const FormatException(
@@ -1004,6 +1009,8 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
               : 'Não foi possível guardar o recibo.',
         );
       }
+    } finally {
+      if (mounted) setState(() => saving = false);
     }
   }
 
@@ -1016,7 +1023,7 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
       child: SizedBox(
         height: 52,
         child: FilledButton.icon(
-          onPressed: busy ? null : save,
+          onPressed: busy || saving ? null : save,
           icon: const Icon(Icons.check),
           label: const Text('Confirmar e guardar'),
         ),
@@ -1040,12 +1047,16 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
               spacing: 8,
               children: [
                 OutlinedButton.icon(
-                  onPressed: busy ? null : () => scan(ImageSource.camera),
+                  onPressed: busy || saving
+                      ? null
+                      : () => scan(ImageSource.camera),
                   icon: const Icon(Icons.camera_alt),
                   label: const Text('Fotografar'),
                 ),
                 OutlinedButton.icon(
-                  onPressed: busy ? null : () => scan(ImageSource.gallery),
+                  onPressed: busy || saving
+                      ? null
+                      : () => scan(ImageSource.gallery),
                   icon: const Icon(Icons.image),
                   label: const Text('Importar imagem'),
                 ),
@@ -1083,14 +1094,14 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
                         spacing: 8,
                         children: [
                           OutlinedButton.icon(
-                            onPressed: busy
+                            onPressed: busy || saving
                                 ? null
                                 : () => scanMilhao(ImageSource.camera),
                             icon: const Icon(Icons.camera_alt),
                             label: const Text('Fotografar M1lhão'),
                           ),
                           OutlinedButton.icon(
-                            onPressed: busy
+                            onPressed: busy || saving
                                 ? null
                                 : () => scanMilhao(ImageSource.gallery),
                             icon: const Icon(Icons.image),
@@ -1111,7 +1122,7 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
               OutlinedButton.icon(
                 icon: const Icon(Icons.ios_share),
                 label: const Text('Exportar relatório OCR'),
-                onPressed: busy
+                onPressed: busy || saving
                     ? null
                     : () async {
                         try {

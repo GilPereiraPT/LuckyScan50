@@ -192,6 +192,20 @@ List<ParsedBet> _parseAnchoredTokens(List<ReceiptToken> tokens) {
   }
   if (ns.isEmpty) return [];
   ns.sort((a, b) => y(a.token).compareTo(y(b.token)));
+  final footerYs = horizontal
+      .where(
+        (t) =>
+            y(t) > y(ns.first.token) + ns.first.token.height &&
+            RegExp(
+              r'^(?:TOTAL\b|EUROMILH[ÕO]ES\s+COM\b|EM TODO\b|VIRN\b|CODIGO\b)',
+            ).hasMatch(t.text.trim().toUpperCase()),
+      )
+      .map(y)
+      .toList();
+  if (footerYs.isNotEmpty) {
+    final footerY = footerYs.reduce(math.min);
+    ns.removeWhere((n) => y(n.token) >= footerY);
+  }
   final es = horizontal
       .where(
         (t) => RegExp(
@@ -491,6 +505,7 @@ List<ParsedBet> _parseBets(List<String> rows) {
   List<int> numbers = [], stars = [];
   final issues = <String>[];
   bool hasStars = false;
+  bool expectingStars = false;
   void flush() {
     if (index == null) return;
     final found = <String>[...issues];
@@ -510,6 +525,7 @@ List<ParsedBet> _parseBets(List<String> rows) {
     stars = [];
     issues.clear();
     hasStars = false;
+    expectingStars = false;
   }
 
   List<int> numeric(String value, {required bool starsLine}) {
@@ -547,6 +563,7 @@ List<ParsedBet> _parseBets(List<String> rows) {
       index = n[1] == null
           ? (bets.isEmpty ? 1 : bets.last.index + 1)
           : int.parse(n[1]!);
+      if (n[1] == null) issues.add('Índice da aposta por confirmar');
       final tail = n[2]!;
       final marker = RegExp(r'E\s*[:.]?\s*(?=[0-9])').firstMatch(tail);
       numbers = numeric(
@@ -560,6 +577,14 @@ List<ParsedBet> _parseBets(List<String> rows) {
     } else if (e != null && index != null && !hasStars) {
       stars = numeric(e[1]!, starsLine: true);
       hasStars = true;
+      expectingStars = e[1]!.trim().isEmpty;
+    } else if (index != null &&
+        expectingStars &&
+        RegExp(r'^[0-9\s]+$').hasMatch(row)) {
+      // An isolated E authorizes only its next numeric row. Never continue
+      // across another N anchor or append later footer digits to the group.
+      stars = numeric(row, starsLine: true);
+      expectingStars = false;
     } else if (index != null &&
         !hasStars &&
         RegExp(r'^[0-9\s]+$').hasMatch(row)) {
@@ -591,14 +616,28 @@ ScannedReceipt withBetLayout(
   int? count, {
   List<String> warnings = const [],
   Set<int> unconfirmed = const {},
+  bool closedBettingZone = false,
 }) {
   if (count == null) return scan;
+  // A partially detected layout must not erase previously observed positions
+  // or a larger printed bet count. Missing rows remain pending in the form.
+  final expected = closedBettingZone
+      ? count
+      : math.max(
+          count,
+          math.max(
+            scan.expectedLines ?? 0,
+            scan.bets.isEmpty
+                ? 0
+                : scan.bets.map((b) => b.index).reduce(math.max),
+          ),
+        );
   final indexed = {
-    for (final b in scan.bets.where((b) => b.index <= count)) b.index: b,
+    for (final b in scan.bets.where((b) => b.index <= expected)) b.index: b,
   };
   return ScannedReceipt(
     bets: [
-      for (var i = 1; i <= count; i++)
+      for (var i = 1; i <= expected; i++)
         unconfirmed.contains(i) && indexed.containsKey(i)
             ? ParsedBet(i, indexed[i]!.numbers, indexed[i]!.stars, [
                 ...indexed[i]!.issues,
@@ -618,7 +657,7 @@ ScannedReceipt withBetLayout(
     ],
     code: scan.code,
     amount: scan.amount,
-    expectedLines: count,
+    expectedLines: expected,
     game: scan.game,
     drawDate: scan.drawDate,
     drawId: scan.drawId,

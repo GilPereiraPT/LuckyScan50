@@ -94,8 +94,10 @@ void main() {
     expect(safeArea.minimum.bottom, greaterThanOrEqualTo(12));
     expect(find.text('Confirmar e guardar'), findsOneWidget);
     expect(find.byWidgetPredicate((w) => w is FilledButton), findsOneWidget);
-    expect(find.byWidgetPredicate((w) => w is Image && w.image is AssetImage),
-        findsOneWidget);
+    expect(
+      find.byWidgetPredicate((w) => w is Image && w.image is AssetImage),
+      findsOneWidget,
+    );
     await tester.scrollUntilVisible(
       field('Chaves — uma por linha'),
       400,

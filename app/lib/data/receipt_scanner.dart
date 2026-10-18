@@ -50,6 +50,25 @@ class ReceiptScanFailure implements Exception {
 
 typedef ReceiptScanner = Future<ReceiptScan?> Function(ImageSource source);
 
+bool receiptNeedsOrientationSearch(
+  List<ReceiptToken> tokens,
+  double width,
+  double height,
+) =>
+    uprightBetRowCount(tokens, width, height) == 0 &&
+    (tokens.any(verticalReceiptToken) ||
+        tokens.any((token) {
+          if (!token.angle.isFinite ||
+              !RegExp(
+                r'^\s*\d{1,2}\s*[.)]?\s*N\b',
+                caseSensitive: false,
+              ).hasMatch(token.text)) {
+            return false;
+          }
+          final angle = (token.angle % 360 + 360) % 360;
+          return angle > 45 && angle < 315;
+        }));
+
 Future<ReceiptScan?> scanReceiptImage(ImageSource source) async {
   try {
     final picked = await ImagePicker().pickImage(source: source);
@@ -100,13 +119,11 @@ Future<ReceiptScan> scanReceiptFile(String path) async {
       var normalized = prepared;
       var workingFrame = initial;
       final orientationClock = Stopwatch()..start();
-      if (uprightBetRowCount(
-                initial.tokens,
-                normalized.width,
-                normalized.height,
-              ) ==
-              0 &&
-          initial.tokens.any(verticalReceiptToken)) {
+      if (receiptNeedsOrientationSearch(
+        initial.tokens,
+        normalized.width,
+        normalized.height,
+      )) {
         for (final turns in preferredReceiptTurns(initial.tokens)) {
           final rotated = await backend.rotate(prepared, turns);
           preparedImages.add(rotated);

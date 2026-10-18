@@ -12,7 +12,7 @@ jobs:
   validate:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -28,7 +28,7 @@ jobs:
               raise SystemExit('Expected an existing JSON inside the repository')
           subprocess.run(['python', 'api-python/import_result.py', str(path), '--database', '/tmp/validated-results.sqlite3'], check=True)
           PY
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: validated-results-database
           path: /tmp/validated-results.sqlite3
