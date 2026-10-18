@@ -342,7 +342,7 @@ ScannedReceipt parseReceiptObservations({
       ).firstMatch(_label(line));
       final recognized = match ?? labeled;
       if (recognized != null) {
-        final code = recognized[1]!.toUpperCase() + ' ' + recognized[2]!;
+        final code = '${recognized[1]!.toUpperCase()} ${recognized[2]!}';
         if (seen.add(code)) milhaoCodes.add(code);
       }
     }
