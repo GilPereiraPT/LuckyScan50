@@ -6,6 +6,8 @@ on:
       - codex/luckyscan50-android-wallet
     paths:
       - .github/workflows/apk-download.yml
+      - 'app/lib/**'
+      - 'app/test/**'
 permissions:
   contents: read
 jobs:
