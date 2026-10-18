@@ -62,7 +62,7 @@ StructuredTicket readStructuredTicket(List<TicketGlyph> glyphs) {
         (g.x - anchor.glyph.x).abs() <= anchor.glyph.height * 2).toList();
     eCandidates.sort((a, b) => a.y.compareTo(b.y));
     final e = eCandidates.length == 1 ? eCandidates.single : null;
-    List<int> cells(TicketGlyph row, int max) {
+    List<int> cells(TicketGlyph row) {
       final candidates = valid.where((g) =>
           g.x - g.width / 2 > row.x + row.width / 2 &&
           (g.y - row.y).abs() <= row.height * 0.45 &&
@@ -70,8 +70,8 @@ StructuredTicket readStructuredTicket(List<TicketGlyph> glyphs) {
         ..sort((a, b) => a.x.compareTo(b.x));
       return candidates.map((g) => int.parse(g.text.trim())).toList();
     }
-    final numbers = cells(anchor.glyph, 50);
-    final stars = e == null ? <int>[] : cells(e, 12);
+    final numbers = cells(anchor.glyph);
+    final stars = e == null ? <int>[] : cells(e);
     final issues = <String>[];
     if (eCandidates.length != 1) {
       issues.add('Âncora E ausente ou ambígua');
