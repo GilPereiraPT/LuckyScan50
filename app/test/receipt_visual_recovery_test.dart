@@ -24,10 +24,13 @@ void main() {
   ];
 
   List<ReceiptToken> realGeometryTokens() {
-    final fixture = jsonDecode(
-      File('test/fixtures/receipt_1792267583612_geometry.json')
-          .readAsStringSync(),
-    ) as Map<String, dynamic>;
+    final fixture =
+        jsonDecode(
+              File(
+                'test/fixtures/receipt_1792267583612_geometry.json',
+              ).readAsStringSync(),
+            )
+            as Map<String, dynamic>;
     return [
       for (final entry in fixture['tokens'] as List)
         ReceiptToken(
@@ -41,30 +44,33 @@ void main() {
     ];
   }
 
-  test('visual crops create 35 independent N/E cells from real vertical OCR', () {
-    final tokens = realGeometryTokens();
-    final plan = planBetCrops(tokens, 2160, 3000);
-    final grid = planVisualBetCells(tokens, plan, 2160, 3000);
-    expect(plan.rows.map((r) => r.index), [1, 2, 3, 4, 5]);
-    expect(grid.cells.length, 35);
-    for (var index = 1; index <= 5; index++) {
-      expect(
-        grid.cells.where((c) => c.index == index && c.kind == 'N').length,
-        5,
+  test(
+    'visual crops create 35 independent N/E cells from real vertical OCR',
+    () {
+      final tokens = realGeometryTokens();
+      final plan = planBetCrops(tokens, 2160, 3000);
+      final grid = planVisualBetCells(tokens, plan, 2160, 3000);
+      expect(plan.rows.map((r) => r.index), [1, 2, 3, 4, 5]);
+      expect(grid.cells.length, 35);
+      for (var index = 1; index <= 5; index++) {
+        expect(
+          grid.cells.where((c) => c.index == index && c.kind == 'N').length,
+          5,
+        );
+        expect(
+          grid.cells.where((c) => c.index == index && c.kind == 'E').length,
+          2,
+        );
+      }
+      // The first two columns are not legible in the whole-frame fixture.
+      // Their coordinates, not their values, must be reconstructed.
+      final first = grid.cells.firstWhere(
+        (c) => c.index == 1 && c.kind == 'N' && c.position == 0,
       );
-      expect(
-        grid.cells.where((c) => c.index == index && c.kind == 'E').length,
-        2,
-      );
-    }
-    // The first two columns are not legible in the whole-frame fixture.
-    // Their coordinates, not their values, must be reconstructed.
-    final first = grid.cells.firstWhere(
-      (c) => c.index == 1 && c.kind == 'N' && c.position == 0,
-    );
-    expect(first.box.left, greaterThan(350));
-    expect(first.box.right, lessThan(900));
-  });
+      expect(first.box.left, greaterThan(350));
+      expect(first.box.right, lessThan(900));
+    },
+  );
 
   Future<MultiPassResult> simulatedScan({bool unreadableStar = false}) async {
     final tokens = realGeometryTokens();
@@ -95,8 +101,15 @@ void main() {
         final printed = value.toString().padLeft(2, '0');
         return OcrFrame(
           printed,
-          [ReceiptToken(printed, crop.box.width / 2, crop.box.height / 2, 30,
-              width: 50)],
+          [
+            ReceiptToken(
+              printed,
+              crop.box.width / 2,
+              crop.box.height / 2,
+              30,
+              width: 50,
+            ),
+          ],
           rows: [printed],
         );
       },
@@ -104,18 +117,21 @@ void main() {
     return scan;
   }
 
-  test('scan pipeline uses visual OCR and recovers five complete bets', () async {
-    final scan = await simulatedScan();
-    expect(scan.receipt.strategy, 'geometric-cells');
-    expect(scan.receipt.bets.length, 5);
-    for (var i = 0; i < 5; i++) {
-      final bet = scan.receipt.bets[i];
-      expect(bet.complete, isTrue);
-      expect(bet.numbers, numbers[i]);
-      expect(bet.stars, stars[i]);
-    }
-    expect(scan.passes.where((p) => p.id.startsWith('cell-')).length, 35);
-  });
+  test(
+    'scan pipeline uses visual OCR and recovers five complete bets',
+    () async {
+      final scan = await simulatedScan();
+      expect(scan.receipt.strategy, 'geometric-cells');
+      expect(scan.receipt.bets.length, 5);
+      for (var i = 0; i < 5; i++) {
+        final bet = scan.receipt.bets[i];
+        expect(bet.complete, isTrue);
+        expect(bet.numbers, numbers[i]);
+        expect(bet.stars, stars[i]);
+      }
+      expect(scan.passes.where((p) => p.id.startsWith('cell-')).length, 35);
+    },
+  );
 
   test('unreadable star stays pending and cannot be manufactured', () async {
     final scan = await simulatedScan(unreadableStar: true);
