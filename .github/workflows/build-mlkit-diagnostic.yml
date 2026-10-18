@@ -1,0 +1,47 @@
+name: Build LuckyScan50 diagnostic APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/build-mlkit-diagnostic.yml'
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: 'Git ref to compile'
+        required: true
+        default: 'codex/mlkit-ne-line-structure'
+
+permissions:
+  contents: read
+
+jobs:
+  build-diagnostic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout ML Kit N/E development branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.source_ref || 'codex/mlkit-ne-line-structure' }}
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.35.7'
+          cache: true
+      - name: Install packages
+        working-directory: app
+        run: flutter pub get --enforce-lockfile
+      - name: Run N/E tests
+        working-directory: app
+        run: flutter test test/receipt_ne_lines_test.dart
+      - name: Build diagnostic arm64 APK
+        working-directory: app
+        run: flutter build apk --debug --target-platform android-arm64
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: LuckyScan50-MLKit-NE-arm64-diagnostic
+          path: app/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
