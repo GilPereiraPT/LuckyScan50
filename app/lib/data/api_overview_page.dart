@@ -56,7 +56,9 @@ class _ApiOverviewPageState extends State<ApiOverviewPage> {
               ListTile(
                 leading: Icon(Icons.cloud_off_outlined),
                 title: Text('API temporariamente indisponível'),
-                subtitle: Text('Os resultados guardados no dispositivo continuam acessíveis offline.'),
+                subtitle: Text(
+                  'Os resultados guardados no dispositivo continuam acessíveis offline.',
+                ),
               ),
             ],
           );
@@ -83,7 +85,9 @@ class _ApiOverviewPageState extends State<ApiOverviewPage> {
             for (final item in rows)
               Card(
                 child: ListTile(
-                  title: Text(item['game'] == 'milhao' ? 'M1lhão' : 'Euromilhões'),
+                  title: Text(
+                    item['game'] == 'milhao' ? 'M1lhão' : 'Euromilhões',
+                  ),
                   subtitle: Text(
                     'Concurso: ${item['drawId'] ?? '—'}\\n'
                     'Validação: ${item['validation'] ?? '—'}\\n'

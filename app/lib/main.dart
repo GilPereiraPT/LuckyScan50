@@ -187,8 +187,12 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Image.asset('assets/branding/luckyscan50-logo.webp',
-                width: 32, height: 32, fit: BoxFit.contain),
+            Image.asset(
+              'assets/branding/luckyscan50-logo.webp',
+              width: 32,
+              height: 32,
+              fit: BoxFit.contain,
+            ),
             const SizedBox(width: 10),
             Flexible(child: Text(titles[index])),
           ],
@@ -289,7 +293,9 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
           child: ListTile(
             leading: const Icon(Icons.cloud_done_outlined),
             title: const Text('Resultados e fonte de dados'),
-            subtitle: const Text('Consultar a API LuckyScan50 e o estado dos feeds'),
+            subtitle: const Text(
+              'Consultar a API LuckyScan50 e o estado dos feeds',
+            ),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push('/api'),
           ),
