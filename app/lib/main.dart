@@ -12,6 +12,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'data/backup.dart';
 import 'data/receipt_scanner.dart';
+import 'data/receipt_crop_backend.dart';
+import 'data/receipt_corners.dart';
 import 'data/receipt_diagnostic_report.dart';
 import 'domain/receipt_autofill.dart';
 import 'data/results_client.dart';
@@ -803,6 +805,7 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
       expectedCount = TextEditingController();
   String source = 'manual', ocrText = '';
   File? image;
+  final _temporaryRectified = <String>{};
   bool busy = false;
   bool saving = false;
   bool milhaoDetected = false;
@@ -833,12 +836,10 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
     ]) {
       c.dispose();
     }
-    super.dispose();
-  }
-
-  Future<void> scan(
+    // Corrected images are temporary until explicitly copied into the wallet.\n    // Never delete the original camera/gallery image.\n    for (final path in _temporaryRectified) {\n      File(path).delete().catchError((Object _) => File(path));\n    }\n    super.dispose();\n  }\n\n  Future<ReceiptScan?> _guidedScan(ImageSource selected) async {\n    final picked = await ImagePicker().pickImage(source: selected);\n    if (picked == null || !mounted) return null;\n    const backend = ReceiptCropBackend();\n    final preview = await backend.prepare(picked.path, preview: true);\n    try {\n      if (!mounted) return null;\n      final corners = await Navigator.of(context).push<List<ReceiptCorner>>(\n        MaterialPageRoute(builder: (_) => ReceiptCornersPage(\n          path: preview.path, width: preview.width, height: preview.height,\n        )),\n      );\n      if (corners == null || !mounted) return null;\n      if (corners.isEmpty) return scanReceiptFile(picked.path);\n      final corrected = await backend.rectify(preview, [\n        for (final corner in corners) ...[corner.x, corner.y],\n      ]);\n      try {\n        final scan = await scanReceiptFile(corrected);\n        _temporaryRectified.add(corrected);\n        return scan;\n      } catch (_) {\n        try { await File(corrected).delete(); } catch (_) { /* Temp cache cleanup. */ }\n        rethrow;\n      }\n    } finally {\n      await backend.dispose(preview);\n    }\n  }\n\n  Future<void> scan(
     ImageSource selected, {
     bool additionalMilhao = false,
+    bool guided = false,
   }) async {
     if (busy || saving) return;
     final atStart = {
@@ -846,7 +847,7 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
     };
     setState(() => busy = true);
     try {
-      final result = await ref.read(receiptScannerProvider)(selected);
+      final result = guided\n          ? await _guidedScan(selected)\n          : await ref.read(receiptScannerProvider)(selected);
       if (result == null || !mounted) return;
       final fields = scanFields;
       final updates = receiptAutofill(
@@ -1043,7 +1044,41 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
               'Agrupe as secções Euromilhões e M1lhão do mesmo comprovativo. Confirme os campos antes de guardar.',
             ),
             const SizedBox(height: 16),
-            Wrap(
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Captura com moldura de quatro cantos',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 6),
+                    const Text('Fotografe o talão completo e ajuste os cantos '
+                      'do papel antes de iniciar o OCR. A correção é opcional '
+                      'e pode ser dispensada para usar a fotografia original.'),
+                    const SizedBox(height: 8),
+                    Wrap(spacing: 8, runSpacing: 8, children: [
+                      FilledButton.tonalIcon(
+                        onPressed: busy || saving ? null
+                            : () => scan(ImageSource.camera, guided: true),
+                        icon: const Icon(Icons.crop_free),
+                        label: const Text('Fotografar com moldura'),
+                      ),
+                      FilledButton.tonalIcon(
+                        onPressed: busy || saving ? null
+                            : () => scan(ImageSource.gallery, guided: true),
+                        icon: const Icon(Icons.photo_size_select_large),
+                        label: const Text('Importar com moldura'),
+                      ),
+                    ]),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            ExpansionTile(
+              title: const Text('OCR direto, sem corrigir perspetiva'),
+              children: [Wrap(
               spacing: 8,
               children: [
                 OutlinedButton.icon(
@@ -1060,7 +1095,7 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
                   icon: const Icon(Icons.image),
                   label: const Text('Importar imagem'),
                 ),
-              ],
+              ])],
             ),
             if (busy) const LinearProgressIndicator(),
             if (image != null)
@@ -1230,7 +1265,7 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
                 title: const Text('Diagnóstico local da leitura'),
                 children: [
                   SelectableText(
-                    'Imagem → InputImage nativo + recortes PNG com EXIF normalizado; sem correção de perspetiva\n'
+                    'Imagem → ML Kit local; moldura de quatro cantos quando selecionada, com retificação anterior ao OCR\n'
                     'ML Kit: ${lastScan!.rawText.length} caracteres, ${lastScan!.receipt.tokenCount} elementos, ${lastScan!.ocrMs} ms\n'
                     'Reconstrução: ${lastScan!.receipt.strategy}, inclinação ${lastScan!.receipt.skewDegrees.toStringAsFixed(1)}°\n'
                     'Interpretação e recuperação: ${lastScan!.receipt.lines.length} apostas completas, ${lastScan!.parseMs} ms\n'
