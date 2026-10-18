@@ -58,6 +58,20 @@ class ResultsClient {
     return decoded;
   }
 
+  Future<Map<String, dynamic>> fetchOfficialStatistics() async {
+    final response = await client
+        .get(Uri.parse('$base/v1/statistics/official'))
+        .timeout(const Duration(seconds: 20));
+    if (response.statusCode != 200) {
+      throw const FormatException('Estatísticas oficiais indisponíveis');
+    }
+    final decoded = jsonDecode(response.body);
+    if (decoded is! Map<String, dynamic>) {
+      throw const FormatException('Resposta estatística inválida');
+    }
+    return decoded;
+  }
+
   void close() => client.close();
 }
 

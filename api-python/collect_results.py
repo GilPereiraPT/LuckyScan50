@@ -14,6 +14,7 @@ from urllib.parse import urlsplit
 from store import Store
 import rss_import as rss
 import official_cartaz
+import official_statistics
 
 log = logging.getLogger('luckyscan50.collect')
 
@@ -167,11 +168,41 @@ def run_rss(database, *, fixtures=None, dates=None, cartaz=False):
         return report
 
 
+def run_official_statistics(database, *, source_file=None, input_format='html'):
+    """Explicit aggregate collection; shares the RSS/inbox execution lock."""
+    store = Store(database)
+    if not store.path.is_absolute() or not store.path.is_file():
+        raise ValueError('Statistics require an existing absolute SQLite database path')
+    store.all()  # Do not initialize or migrate an unknown production database.
+    if input_format not in ('html', 'json') or (source_file is None and input_format != 'html'):
+        raise ValueError('Remote statistics collection only accepts official HTML')
+    with store.path.with_suffix(store.path.suffix + '.lock').open('a') as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return {'skipped': 'locked', 'exitCode': 0}
+        try:
+            if source_file is None:
+                payload = official_statistics.fetch()
+            else:
+                with Path(source_file).open('rb') as source:
+                    payload = source.read(official_statistics.MAX_BYTES + 1)
+            result = store.import_official_statistics(payload, format=input_format)
+            return {**result, 'offline': source_file is not None,
+                    'exitCode': 2 if result['conflicts'] else 0}
+        except (OSError, ValueError, sqlite3.Error) as exc:
+            log.error('Official statistics collection failed: %s; previous snapshot retained', type(exc).__name__)
+            return {'error': type(exc).__name__, 'exitCode': 1}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument('--inbox', type=Path)
     mode.add_argument('--rss', action='store_true', help='Explicitly request official HTTPS collection')
+    mode.add_argument('--official-statistics', action='store_true', help='Explicit aggregate snapshot import; never changes draws')
+    parser.add_argument('--statistics-file', type=Path, help='Reviewed local statistics capture; no HTTP')
+    parser.add_argument('--statistics-format', choices=('html', 'json'), default='html')
     parser.add_argument('--database', default=os.environ.get('LUCKYSCAN_DATABASE'))
     parser.add_argument('--config', type=Path, help='Private JSON config for RSS Cron; paths must be absolute')
     parser.add_argument('--fixtures', type=Path, help='Offline XML directory; no HTTP')
@@ -185,9 +216,19 @@ def main():
         if not isinstance(database, str) or not Path(database).is_absolute():
             raise ValueError('An absolute database path is required')
         if args.inbox:
-            if args.config or args.fixtures or not args.inbox.is_dir():
+            if args.config or args.fixtures or args.statistics_file or args.statistics_format != 'html' or not args.inbox.is_dir():
                 raise ValueError('Inbox mode requires an existing directory and no RSS options')
             return run(database, args.inbox)
+        if args.official_statistics:
+            if args.fixtures:
+                raise ValueError('Statistics use --statistics-file, not RSS fixtures')
+            if args.statistics_file is None and config.get('enabled') is not True:
+                raise ValueError('Remote statistics collection disabled: enabled=true required')
+            report = run_official_statistics(database, source_file=args.statistics_file, input_format=args.statistics_format)
+            print(json.dumps(report, ensure_ascii=False))
+            return report['exitCode']
+        if args.statistics_file or args.statistics_format != 'html':
+            raise ValueError('Statistics options require --official-statistics')
         if not args.fixtures and config.get('enabled') is not True:
             raise ValueError('Remote collection disabled: review config and set enabled=true explicitly')
         dates_path = config.get('datesFile')
