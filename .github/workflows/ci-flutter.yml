@@ -41,7 +41,32 @@ jobs:
       - run: flutter pub get --enforce-lockfile
       - run: dart format --output=none --set-exit-if-changed lib test ../qa/android/integration_test ../qa/android/test_driver ../qa/host
       - run: flutter analyze
-      - run: flutter test --reporter expanded
+      - name: Run Flutter tests and keep complete failure diagnostics
+        shell: bash
+        run: |
+          set -o pipefail
+          flutter test --reporter expanded 2>&1 | tee "$RUNNER_TEMP/luckyscan50-flutter-test.log"
+      - name: Publish Flutter test failures in the job summary
+        if: failure()
+        shell: bash
+        run: |
+          if [ -f "$RUNNER_TEMP/luckyscan50-flutter-test.log" ]; then
+            {
+              echo '### Flutter test failure details'
+              echo 'See the `LuckyScan50-flutter-test-log` artifact for the complete output.'
+              echo '```text'
+              grep -E -A 12 '(^| )\[E\]|Expected:|Actual:|Which:|Some tests failed|EXCEPTION|Test failed|failed \(' "$RUNNER_TEMP/luckyscan50-flutter-test.log" | tail -n 140 || true
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Upload full Flutter test log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: LuckyScan50-flutter-test-log
+          path: ${{ runner.temp }}/luckyscan50-flutter-test.log
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Test SQLite persistence in an isolated desktop workspace
         run: python3 ../tools/run_flutter_qa.py host
       - name: Python API regression tests (offline, temporary databases)
