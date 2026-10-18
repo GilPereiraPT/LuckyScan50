@@ -74,16 +74,19 @@ CellGrid planBetCells(
               !verticalReceiptToken(t) &&
               t.y - slope(n) * (t.x - n.x) >= n.y - h * .5 &&
               t.y < end - h * .3 &&
-              t.x >= n.x - n.width / 2,
+              // E must sit underneath the N of the numbered anchor,
+              // never in an unrelated column to its right.
+              (t.x - (n.x + n.width * .25)).abs() <=
+                  math.max(h * .65, n.width * .65),
         )
         .toList();
     if (found.length == 1) {
       eAnchors[index] = found.single;
     } else if (found.isEmpty && end - n.y > h * 1.5) {
       final box = CropBox(
-        math.max(0, n.x - n.width / 2 - h * .15),
+        math.max(0, n.x - n.width / 2 - h * .25),
         n.y + n.height / 2,
-        math.min(width, n.x + n.width / 2 + h * .3),
+        math.min(width, n.x + n.width / 2 + h * .65),
         math.min(height, end),
       );
       if (box.height >= h * .7) {

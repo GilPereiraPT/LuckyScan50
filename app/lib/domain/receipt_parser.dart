@@ -214,7 +214,8 @@ ScannedReceipt parseReceiptObservations({
   final printed = counts.length == 1 && counts.single <= maxReceiptBets
       ? counts.single
       : null;
-  final expected = observed == null
+  final isMilhaoOnly = raw.contains('M1LHAO') && !raw.contains('EUROMILH');
+  final expected = isMilhaoOnly ? null : observed == null
       ? printed
       : math.max(observed, printed ?? observed);
   if (counts.length > 1) warnings.add('Número de apostas ambíguo.');
@@ -260,9 +261,26 @@ ScannedReceipt parseReceiptObservations({
     warnings.add('Leitura incompleta: confirmar todas as $expected apostas.');
   }
   final hasMilhao = raw.contains('M1LHAO');
-  final milhaoCodes = RegExp(
-    r'\bCODIGO\s+(?:DO\s+)?M1LHAO\s*:?\s*([A-Z]{3})\s*(\d{5})\b',
-  ).allMatches(raw).map((m) => '${m[1]} ${m[2]}').toSet().toList();
+  final milhaoCodes = <String>[];
+  if (hasMilhao) {
+    final seen = <String>{};
+    for (final line in rows) {
+      final match = RegExp(r'^\s*([A-Z]{3})\s+(\d{5})\s*$', caseSensitive: false)
+          .firstMatch(_label(line));
+      if (match != null) {
+        final code = '${match[1]!.toUpperCase()} ${match[2]}';
+        if (seen.add(code)) milhaoCodes.add(code);
+      }
+    }
+    final printedCodes = RegExp(r'\b(\d{1,2})\s+CODIGO\(S\)')
+        .firstMatch(raw);
+    if (printedCodes != null) {
+      final count = int.parse(printedCodes[1]!);
+      if (count != milhaoCodes.length) {
+        warnings.add('M1lhão: $count códigos impressos, ${milhaoCodes.length} completos reconhecidos; confirmar manualmente.');
+      }
+    }
+  }
   return ScannedReceipt(
     bets: bets,
     rows: rows,
