@@ -385,6 +385,16 @@ ScannedReceipt parseReceiptObservations({
       dates.add('${m[3]}-${m[2]}-${m[1]}');
     }
   }
+  // Physical receipt OCR sometimes reads the printed ISO-style date.
+  for (final m in RegExp(r'\b(20\d{2})/(\d{2})/(\d{2})\b').allMatches(raw)) {
+    final year = int.parse(m[1]!);
+    final month = int.parse(m[2]!);
+    final dayOfMonth = int.parse(m[3]!);
+    final date = DateTime(year, month, dayOfMonth);
+    if (date.year == year && date.month == month && date.day == dayOfMonth) {
+      dates.add('${m[1]}-${m[2]}-${m[3]}');
+    }
+  }
   final day = dates.length == 1 ? dates.single : null;
   if (dates.length > 1) {
     warnings.add('Várias datas reconhecidas; confirmar a data do sorteio.');
