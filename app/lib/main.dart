@@ -42,6 +42,21 @@ final themeProvider = StateProvider<ThemeMode>((ref) => ThemeMode.system);
 final money = NumberFormat.currency(locale: 'pt_PT', symbol: '€');
 String euro(int value) => money.format(value / 100);
 
+/// Keep the real LuckyScan50 identity visible on secondary pages.
+Widget brandedPageTitle(String title) => Row(
+  mainAxisSize: MainAxisSize.min,
+  children: [
+    Image.asset(
+      'assets/branding/luckyscan50-logo.webp',
+      width: 32,
+      height: 32,
+      fit: BoxFit.contain,
+    ),
+    const SizedBox(width: 10),
+    Flexible(child: Text(title)),
+  ],
+);
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final directory = await getApplicationDocumentsDirectory();
@@ -543,7 +558,7 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
       ),
       const SizedBox(height: 20),
       const Text(
-        'LuckyScan50 · versão $appVersion · $buildSha\nAplicação não oficial. Nunca utilize estatísticas como previsão de prémios.',
+        'LuckyScan50 · Gil Pereira · versão $appVersion · $buildSha\nAplicação não oficial. Nunca utilize estatísticas como previsão de prémios.',
       ),
     ];
   }
@@ -975,12 +990,24 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Confirmar aposta')),
+    appBar: AppBar(title: brandedPageTitle('Confirmar aposta')),
+    bottomNavigationBar: SafeArea(
+      top: false,
+      minimum: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+      child: SizedBox(
+        height: 52,
+        child: FilledButton.icon(
+          onPressed: busy ? null : save,
+          icon: const Icon(Icons.check),
+          label: const Text('Confirmar e guardar'),
+        ),
+      ),
+    ),
     body: Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 700),
         child: ListView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
           children: [
             const Text(
               'Uma despesa por recibo',
@@ -1015,7 +1042,7 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Text(
-                  'Apostas reconhecidas: ${lines.text.trim().isEmpty ? 0 : lines.text.trim().split(String.fromCharCode(10)).length} / $expectedBets',
+                  'Apostas completas: ${lastScan?.receipt.lines.length ?? 0} / $expectedBets',
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
@@ -1211,7 +1238,8 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
               lines,
               'Chaves — uma por linha',
               hint: '1 2 3 4 5 + 1 2',
-              maxLines: 4,
+              minLines: 5,
+              maxLines: null,
             ),
             field(milhaoDraws, 'Concursos M1lhão (opcional)', hint: '009/2026'),
             field(
@@ -1223,12 +1251,6 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
             const Text(
               'O OCR tenta importar apenas chaves completas e válidas. Confirme sempre todas as chaves, estrelas e valores antes de guardar. Imagens não são enviadas ao servidor.',
             ),
-            const SizedBox(height: 20),
-            FilledButton.icon(
-              onPressed: busy ? null : save,
-              icon: const Icon(Icons.check),
-              label: const Text('Confirmar e guardar'),
-            ),
           ],
         ),
       ),
@@ -1238,11 +1260,13 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
     TextEditingController c,
     String label, {
     String? hint,
-    int maxLines = 1,
+    int? maxLines = 1,
+    int? minLines,
   }) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 8),
     child: TextField(
       controller: c,
+      minLines: minLines,
       maxLines: maxLines,
       decoration: InputDecoration(labelText: label, hintText: hint),
     ),
@@ -1258,7 +1282,7 @@ class AboutPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Sobre o LuckyScan50')),
+      appBar: AppBar(title: brandedPageTitle('Sobre o LuckyScan50')),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 760),
@@ -1277,10 +1301,11 @@ class AboutPage extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        Icons.document_scanner_outlined,
-                        size: 62,
-                        color: theme.colorScheme.primary,
+                      Image.asset(
+                        'assets/branding/luckyscan50-logo.webp',
+                        width: 68,
+                        height: 68,
+                        fit: BoxFit.contain,
                       ),
                       const SizedBox(height: 12),
                       const Text(
@@ -1322,6 +1347,8 @@ class AboutPage extends StatelessWidget {
                 'de prémios competem exclusivamente ao operador autorizado.',
               ),
               const SizedBox(height: 24),
+              const Text('Gil Pereira · LuckyScan50'),
+              const SizedBox(height: 8),
               Text(
                 'Versão de auditoria $appVersion · $buildSha',
                 style: theme.textTheme.bodySmall,

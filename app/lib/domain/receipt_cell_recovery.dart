@@ -19,7 +19,7 @@ Future<MultiPassResult> recoverReceiptCells({
   // Each observed bet has seven fields and may need a marker probe and retries.
   // Scale the budget with the actual layout instead of starving bets after #5.
   final passBudget =
-      maxPasses ?? (plan.rows.length * 15).clamp(15, maxReceiptBets * 15);
+      maxPasses ?? (plan.rows.length * 20).clamp(20, maxReceiptBets * 20);
   final total = Stopwatch()..start(), geometry = Stopwatch()..start();
   var grid = initialGrid ?? planBetCells(initial.tokens, plan, width, height);
   var geometryMs = geometry.elapsedMilliseconds;
@@ -208,7 +208,15 @@ Future<MultiPassResult> recoverReceiptCells({
             needsConfirmation ||
             (strategy == 'visual-grid-cells' && after.isEmpty),
       );
-      final scale = cell.box.height < 48 ? 2.0 : 1.0;
+      // Real Android diagnostics show many blank 50-60 px crops. Repeating
+      // those cells at 1x contrast leaves the text too small for ML Kit.
+      // Retry unreadable visual cells at 2x without inventing any digits.
+      final scale =
+          (strategy == 'visual-grid-cells' &&
+              (after.isEmpty || needsConfirmation)) ||
+          cell.box.height < 48
+          ? 2.0
+          : 1.0;
       final retryId =
           '$id@${scale.toInt()}x${retry.contrast ? '-contrast' : ''}';
       final frame = await read(retry, scale, retryId);
