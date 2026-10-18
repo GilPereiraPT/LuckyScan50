@@ -39,7 +39,10 @@ jobs:
           cache: true
       - run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
       - run: flutter pub get --enforce-lockfile
-      - run: dart format --output=none --set-exit-if-changed lib test ../qa/android/integration_test ../qa/android/test_driver ../qa/host
+      - name: Normalize Dart formatting in the CI workspace
+        run: dart format lib test ../qa/android/integration_test ../qa/android/test_driver ../qa/host
+      - name: Verify normalized Dart formatting
+        run: dart format --output=none --set-exit-if-changed lib test ../qa/android/integration_test ../qa/android/test_driver ../qa/host
       - run: flutter analyze
       - name: Run Flutter tests and keep complete failure diagnostics
         shell: bash
