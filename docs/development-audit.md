@@ -358,3 +358,43 @@ as fotografias privadas na secção assets existente, sem duplicar a chave YAML.
 O descodificador do secret base64 aceita quebras de linha sem deixar de validar
 os caracteres. A execução remota `39126707826` aprovou a validação completa e
 iniciou o job de assinatura; aguarda-se o seu resultado e artefacto.
+
+### Resultado remoto confirmado — APK assinada publicada
+
+Código compilado: `fb8179e12d98f91b53df19579cab62cc6e45674d`.
+Workflow `.github/workflows/signed-apk.yml`, execução
+https://github.com/GilPereiraPT/LuckyScan50/actions/runs/39127946222 : **success**,
+7m23s. Validação completa: 1m25s; assinatura/compilação/verificação/upload: 5m53s.
+A página do GitHub confirma um artefacto `LuckyScan50-signed-arm64-APK`, ID
+`12137002388`, com o APK `LuckyScan50-signed-arm64.apk` (0.2.4+6).
+Ligação autenticada:
+https://github.com/GilPereiraPT/LuckyScan50/actions/runs/39127946222/artifacts/12137002388
+Retenção configurada: 14 dias.
+
+Tamanho mostrado pelo GitHub para o **arquivo do artefacto**: 15.3 MB; não é uma
+medição do APK descomprimido. Digest do arquivo publicado:
+`cff9680199f890b2593ed1fd4b16dba08fc59e371b5981d84e2ff2b6a693b76a`.
+Este digest não é apresentado como SHA256 do APK.
+
+As três tentativas anteriores chegaram à verificação final, mas não publicaram
+artefactos: `39126707826`, `39127028191`, `39127277273`. A anotação detalhada
+revelou `Missing signing certificate digest`. Fixados os build-tools de
+verificação em 35.0.0, reproduzida localmente a leitura do certificado e a rejeição
+de debug com essa versão; o run seguinte passou. Não se relaxou a exigência de
+correspondência entre o certificado do APK e o DER exportado do keystore privado.
+O run verde executou também CRC, inventário de assets, ABI ARM64 única,
+alinhamento ELF e ZIP de 16 KB e upload com erro se o APK estiver ausente.
+
+**Limite de verificação:** confirmei o sucesso dos dois jobs e a existência,
+nome, ID e digest do artefacto na página pública. A transferência autenticada
+não pôde ser reproduzida localmente: a ligação de download retorna 404 na sessão
+sem login; API/gh continuam bloqueados pelo proxy. Não se inventaram o tamanho
+descomprimido nem a impressão digital do certificado, disponíveis no resumo do
+job para utilizadores autenticados. Não houve instalação num dispositivo nem
+validação do OCR real com as duas fotografias. A APK está publicada; a precisão
+real e a experiência de instalação continuam a exigir o teste no Android.
+
+Proposta de configuração do ambiente guardada para acrescentar apenas
+`api.github.com` aos domínios personalizados. É um rascunho confirmado pelo
+serviço; precisa de revisão, gravação e publicação nas definições do ambiente.
+Não foi aplicado à rede da sessão nem alterou o token injetado.
