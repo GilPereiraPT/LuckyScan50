@@ -74,6 +74,7 @@ void main() {
   Future<MultiPassResult> simulatedScan({
     bool unreadableStar = false,
     bool emptyAt1x = false,
+    bool unreadableMissingE = false,
   }) async {
     final tokens = realGeometryTokens();
     final receipt = const ScannedReceipt(
@@ -92,6 +93,15 @@ void main() {
       width: 2160,
       height: 3000,
       recognizeCrop: (crop, scale) async {
+        if (crop.kind == 'marker') {
+          if (unreadableMissingE) return const OcrFrame('', []);
+          return OcrFrame('E', [
+            ReceiptToken(
+              'E', crop.box.width / 2, crop.box.height / 2, 30,
+              width: 20,
+            ),
+          ], rows: const ['E']);
+        }
         // Full-line probes lack a cell position in this simulated OCR backend.
         if (crop.position == null) return const OcrFrame('', []);
         if (emptyAt1x && scale == 1.0) return const OcrFrame('', []);
@@ -156,6 +166,19 @@ void main() {
     for (var i = 0; i < 5; i++) {
       expect(scan.receipt.bets[i].numbers, numbers[i]);
       expect(scan.receipt.bets[i].stars, stars[i]);
+    }
+  });
+
+  test('missing standalone E cannot borrow stars from a guessed row', () async {
+    final scan = await simulatedScan(unreadableMissingE: true);
+    final missing = scan.passes
+        .where((p) => p.id.startsWith('marker-'))
+        .map((p) => p.crop.index)
+        .toSet();
+    expect(missing, isNotEmpty);
+    for (final index in missing) {
+      expect(scan.receipt.bets.singleWhere((b) => b.index == index).complete, isFalse);
+      expect(scan.receipt.warnings.join(' '), contains('E não confirmado'));
     }
   });
 
