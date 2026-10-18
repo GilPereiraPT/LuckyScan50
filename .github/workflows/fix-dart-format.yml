@@ -1,0 +1,38 @@
+name: Fix Dart formatting (manual)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: github.ref == 'refs/heads/codex/luckyscan50-android-wallet'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: codex/luckyscan50-android-wallet
+          persist-credentials: true
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.35.7'
+          cache: true
+      - name: Format Dart files (no logic changes)
+        working-directory: app
+        run: dart format lib test ../qa/android/integration_test ../qa/android/test_driver ../qa/host
+      - name: Commit formatting only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- app/lib app/test qa/android/integration_test qa/android/test_driver qa/host
+          if git diff --cached --quiet; then
+            echo "Already formatted"
+          else
+            git commit -m "style(dart): apply dart format without logic changes"
+            git push origin HEAD:codex/luckyscan50-android-wallet
+          fi
