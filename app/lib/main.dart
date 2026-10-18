@@ -15,6 +15,7 @@ import 'data/receipt_scanner.dart';
 import 'data/receipt_diagnostic_report.dart';
 import 'domain/receipt_autofill.dart';
 import 'data/results_client.dart';
+import 'data/api_overview_page.dart';
 import 'data/wallet_store.dart';
 import 'domain/wallet.dart';
 
@@ -68,6 +69,7 @@ final router = GoRouter(
     GoRoute(path: '/', builder: (_, __) => const Home()),
     GoRoute(path: '/add', builder: (_, __) => const AddReceipt()),
     GoRoute(path: '/about', builder: (_, __) => const AboutPage()),
+    GoRoute(path: '/api', builder: (_, __) => const ApiOverviewPage()),
     GoRoute(
       path: '/receipt/:id',
       builder: (_, state) => ReceiptPage(state.pathParameters['id']!),
@@ -294,6 +296,16 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
             ],
           ),
         ),
+        const SizedBox(height: 12),
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.cloud_done_outlined),
+            title: const Text('Resultados e fonte de dados'),
+            subtitle: const Text('Consultar a API LuckyScan50 e o estado dos feeds'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/api'),
+          ),
+        ),
         const SizedBox(height: 16),
         metric('Total apostado', totals['spent']!),
         metric('Prémios identificados', totals['identified']!),
@@ -489,6 +501,14 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
           ref.read(themeProvider.notifier).state = v;
           await ref.read(storeProvider).setSetting('theme', v.name);
         },
+      ),
+      const SizedBox(height: 16),
+      ListTile(
+        leading: const Icon(Icons.cloud_outlined),
+        title: const Text('API e fontes oficiais'),
+        subtitle: const Text('Estado dos resultados, RSS e sincronização'),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => context.push('/api'),
       ),
       const SizedBox(height: 16),
       const Text(
