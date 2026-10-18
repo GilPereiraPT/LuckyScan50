@@ -1,18 +1,31 @@
-name: Signed APK (manual)
-
+name: Signed ARM64 release APK
 on:
   workflow_dispatch:
-
+  workflow_call:
+    secrets:
+      ANDROID_KEYSTORE_BASE64:
+        required: true
+      ANDROID_KEYSTORE_PASSWORD:
+        required: true
+      ANDROID_KEY_ALIAS:
+        required: true
+      ANDROID_KEY_PASSWORD:
+        required: true
+  push:
+    branches: ['codex/luckyscan50-android-wallet']
+    paths: ['app/**', 'qa/**', 'tools/**', '.github/workflows/**']
 permissions:
   contents: read
-
 jobs:
+  validation:
+    uses: ./.github/workflows/ci-flutter.yml
   signed-apk:
-    runs-on: ubuntu-latest
+    needs: validation
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -22,7 +35,6 @@ jobs:
           flutter-version: '3.35.7'
           cache: true
       - name: Prepare private signing (never print secrets)
-        shell: bash
         env:
           KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           STORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -30,22 +42,28 @@ jobs:
           KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           set -euo pipefail
-          for var in KEYSTORE_B64 STORE_PASS KEY_ALIAS KEY_PASS; do
-            if [[ -z "${!var}" ]]; then echo "::error::Missing required signing secret: $var"; exit 1; fi
-          done
-          printf '%s' "$KEYSTORE_B64" | base64 --decode > app/android/luckyscan50-upload.jks
-          chmod 600 app/android/luckyscan50-upload.jks
-          {
-            echo "storeFile=luckyscan50-upload.jks"
-            echo "storePassword=$STORE_PASS"
-            echo "keyAlias=$KEY_ALIAS"
-            echo "keyPassword=$KEY_PASS"
-          } > app/android/key.properties
-          chmod 600 app/android/key.properties
-          keytool -list -keystore app/android/luckyscan50-upload.jks -storepass "$STORE_PASS" -alias "$KEY_ALIAS" > /dev/null
+          python3 - <<'PYTHON'
+          import base64, os
+          from pathlib import Path
+          for key in ('KEYSTORE_B64', 'STORE_PASS', 'KEY_ALIAS', 'KEY_PASS'):
+              if not os.environ.get(key):
+                  raise SystemExit('Missing required signing secret: ' + key)
+          keyfile = Path(os.environ['RUNNER_TEMP']) / 'luckyscan50-private.jks'
+          keyfile.write_bytes(base64.b64decode(os.environ['KEYSTORE_B64'], validate=True))
+          keyfile.chmod(0o600)
+          def escape(value):
+              return ''.join(('\\u%04x' % ord(c)) if c in '\\:=#! \n\r\t' or ord(c) > 126 else c for c in value)
+          properties = Path('app/android/key.properties')
+          properties.write_text(''.join(k + '=' + escape(v) + '\n' for k, v in {
+              'storeFile': str(keyfile), 'storePassword': os.environ['STORE_PASS'],
+              'keyAlias': os.environ['KEY_ALIAS'], 'keyPassword': os.environ['KEY_PASS']}.items()))
+          properties.chmod(0o600)
+          PYTHON
+          CERT_SHA=$(keytool -exportcert -keystore "$RUNNER_TEMP/luckyscan50-private.jks" -storepass:env STORE_PASS -alias "$KEY_ALIAS" | sha256sum | cut -d' ' -f1)
+          echo "EXPECTED_CERT_SHA=$CERT_SHA" >> "$GITHUB_ENV"
       - name: Flutter dependencies
         working-directory: app
-        run: flutter pub get
+        run: flutter pub get --enforce-lockfile
       - name: Generate Android launcher icons from LuckyScan50 logo
         shell: bash
         run: |
@@ -60,20 +78,26 @@ jobs:
               output.parent.mkdir(parents=True, exist_ok=True)
               image.resize((size, size), Image.Resampling.LANCZOS).save(output)
           PY
-      - name: Build signed arm64 APK only
+      - name: Build private signed ARM64 release APK
         working-directory: app
         run: flutter build apk --release --target-platform android-arm64
-      - name: Verify APK signature and stage artifact
-        shell: bash
+      - name: Verify certificate, ABI, integrity and 16 KB alignment
         run: |
           set -euo pipefail
-          APK="app/build/app/outputs/flutter-apk/app-release.apk"
-          test -s "$APK"
-          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
-          test -n "$APKSIGNER"
-          "$APKSIGNER" verify --verbose "$APK"
           mkdir -p signed-output
-          cp "$APK" signed-output/LuckyScan50-signed-arm64.apk
+          cp app/build/app/outputs/flutter-apk/app-release.apk signed-output/LuckyScan50-signed-arm64.apk
+          BUILD_TOOLS=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)
+          python3 tools/verify_apk.py signed-output/LuckyScan50-signed-arm64.apk --build-tools "$(dirname "$BUILD_TOOLS")" --require-private-signature --expected-certificate-sha256 "$EXPECTED_CERT_SHA" > "$RUNNER_TEMP/apk-verification.log"
+          python3 - <<'PYTHON'
+          import json, os
+          from pathlib import Path
+          report = json.loads(Path('signed-output/LuckyScan50-signed-arm64.verification.json').read_text())
+          fields = ('apk', 'versionName', 'bytes', 'sha256', 'certificateSha256', 'abi', 'signatureVerified', 'elf16KbAligned', 'zip16KbAligned', 'realPhotoOcrValidated')
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
+              summary.write('Commit: ' + os.environ['GITHUB_SHA'] + '\n\n')
+              for field in fields:
+                  summary.write(f'- {field}: {report[field]}\n')
+          PYTHON
       - uses: actions/upload-artifact@v4
         with:
           name: LuckyScan50-signed-arm64-APK
@@ -82,5 +106,4 @@ jobs:
           retention-days: 14
       - name: Remove signing files
         if: always()
-        shell: bash
-        run: rm -f app/android/luckyscan50-upload.jks app/android/key.properties
+        run: rm -f "$RUNNER_TEMP/luckyscan50-private.jks" app/android/key.properties

@@ -316,3 +316,38 @@ force push, preservando alterações Android/CI e imagens feitas em paralelo.
 A árvore `api-python`, documentação e empacotador permaneceu idêntica ao commit
 validado `66368c8`; o ZIP dessa implementação continua a corresponder ao código
 backend integrado. Não foram reescritas alterações alheias ou criado/publicado APK.
+
+## 2026-10-18 — Estabilização geométrica N/E e release privada
+
+Base remota preservada: `feb9c45e553a0beee7277c51e82e1fcfbee76508`.
+Reprodução inicial: 78 testes Flutter aprovados e seis falhas. Corrigida a
+associação geométrica com coordenadas compensadas pela inclinação, índices
+impressos independentes da posição, passo normalizado pela diferença entre
+índices e limites N/E por aposta. Valores equidistantes ou associações ambíguas
+ficam pendentes; uma linha E parcial conserva os valores efetivamente lidos.
+Nenhuma expectativa dos testes foi enfraquecida e nenhum valor foi inferido.
+
+Validação local: `flutter pub get --enforce-lockfile`, formatação dos cinco
+diretórios pedidos e verificação sem alterações, `flutter analyze` sem problemas,
+84 testes Flutter aprovados; 76 testes Python API, 10 testes Node e typecheck,
+um teste SQLite isolado e três testes de segurança do verificador APK aprovados.
+Corrigido o preparador SQLite para copiar apenas os assets públicos de branding,
+sem fotografias ou ficheiros de assinatura. Sem dependências Android adicionais.
+
+Versão preparada: 0.2.4+6. `signed-apk.yml` executa a validação reutilizável antes
+da release ARM64. Exige os quatro secrets Android existentes, não admite fallback
+para chave debug, verifica certificado contra o keystore configurado, CRC, ABI,
+alinhamento ELF/ZIP de 16 KB e assets. Publica apenas
+`LuckyScan50-signed-arm64.apk`. Branding permitido apenas quando corresponde
+byte a byte ao ficheiro público versionado; outros assets de imagem/modelos
+Tesseract são recusados. A tarefa Gradle sem chave privada foi testada e falhou
+explicitamente, como previsto. Não se gerou uma chave alternativa local.
+
+`gh` 2.46.0 disponível. O proxy recusa CONNECT a `api.github.com` (domínio fora da
+política permitida), antes da autenticação: a validade/permissões do token não
+pôde ser determinada. A página pública de Actions em `github.com` é acessível e
+será usada para consultar as execuções. Não houve contorno de proxy.
+O estado final do run/artifact deve ser confirmado após o push; esta entrada não
+constitui prova de APK compilada ou descarregada. OCR real em Android com as
+fotografias nas duas orientações continua sem validação neste ambiente.
+Backend, SQLite de produção e Cron não foram modificados.

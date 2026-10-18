@@ -64,12 +64,8 @@ android {
             }
         }
         release {
-            // Preserve existing diagnostic builds; private signing is used when configured.
-            signingConfig = if (hasPrivateSigning) {
-                signingConfigs.getByName("privateRelease")
-            } else {
-                signingConfigs.getByName("debug")
-            }
+            // A release must never silently fall back to the Android debug key.
+            signingConfig = if (hasPrivateSigning) signingConfigs.getByName("privateRelease") else null
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
@@ -83,4 +79,17 @@ flutter {
 
 dependencies {
     implementation("androidx.exifinterface:exifinterface:1.3.7")
+}
+
+val requirePrivateReleaseSigning = tasks.register("requirePrivateReleaseSigning") {
+    doLast {
+        check(hasPrivateSigning) {
+            "Private release signing is required. Configure all four Android signing secrets; no debug fallback is allowed."
+        }
+    }
+}
+tasks.configureEach {
+    if (name == "assembleRelease" || name == "packageRelease" || name == "validateSigningRelease") {
+        dependsOn(requirePrivateReleaseSigning)
+    }
 }

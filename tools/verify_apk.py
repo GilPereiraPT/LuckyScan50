@@ -10,7 +10,33 @@ import subprocess
 import zipfile
 
 
-def verify(apk, build_tools):
+def verify_assets(archive):
+    root = Path(__file__).resolve().parents[1] / 'app/assets/branding'
+    allowed = {f'assets/flutter_assets/assets/branding/{name}': root / name
+               for name in ('luckyscan50-logo.webp', 'luckyscan50-banner.webp')}
+    for name in archive.namelist():
+        if name in allowed:
+            if archive.read(name) != allowed[name].read_bytes():
+                raise ValueError('Modified branding asset: ' + name)
+        elif ('private_receipts/' in name or name.endswith('.traineddata') or
+              (name.startswith('assets/') and name.lower().endswith(('.jpg', '.jpeg', '.png', '.webp', '.heic')))):
+            raise ValueError('Private/test or unsupported OCR asset: ' + name)
+
+
+def verify_certificate(output, expected=None, require_private=False):
+    match = re.search(r'Signer #1 certificate SHA-256 digest: ([0-9a-fA-F]+)', output)
+    if not match:
+        raise ValueError('Missing signing certificate digest')
+    digest = match[1].lower()
+    if require_private and ('android debug' in output.lower() or digest ==
+            '0695a638827b0ffa1725698204080edd8b76d65971cbe30ff2d5219d2d0ee860'):
+        raise ValueError('Debug signing certificate is forbidden')
+    if expected and digest != expected.lower().replace(':', ''):
+        raise ValueError('APK signing certificate differs from configured private key')
+    return digest
+
+
+def verify(apk, build_tools, expected=None, require_private=False):
     apk=apk.resolve()
     if not apk.is_file() or apk.stat().st_size==0:
         raise ValueError('APK missing or empty')
@@ -21,10 +47,7 @@ def verify(apk, build_tools):
         names=archive.namelist()
         if not {'AndroidManifest.xml','classes.dex'}.issubset(names):
             raise ValueError('Missing Android manifest or bytecode')
-        forbidden = [n for n in names if 'private_receipts/' in n or n.endswith('.traineddata')
-                     or (n.startswith('assets/') and n.lower().endswith(('.jpg', '.jpeg', '.png', '.webp', '.heic')))]
-        if forbidden:
-            raise ValueError('Private/test or unsupported OCR assets in APK: '+str(forbidden))
+        verify_assets(archive)
         inventory = [{'path': n, 'bytes': archive.getinfo(n).file_size,
                       'compressedBytes': archive.getinfo(n).compress_size,
                       'sha256': hashlib.sha256(archive.read(n)).hexdigest()}
@@ -62,10 +85,10 @@ def verify(apk, build_tools):
     if "package: name='com.gilpereira.luckyscan50'" not in outputs['package']:
         raise ValueError('Unexpected application ID')
     version=re.search(r"versionName='([^']+)'",outputs['package'])
-    certificate=re.search(r'Signer #1 certificate SHA-256 digest: (.+)',outputs['signature'])
+    certificate=verify_certificate(outputs['signature'], expected, require_private)
     report={'apk':apk.name,'bytes':apk.stat().st_size,'sha256':hashlib.sha256(apk.read_bytes()).hexdigest(),
             'versionName':version[1] if version else None,'abi':'arm64-v8a',
-            'signatureVerified':True,'certificateSha256':certificate[1] if certificate else None,
+            'signatureVerified':True,'certificateSha256':certificate,
             'nativeLibraries':len(libraries),'packagedFiles':inventory,'elf16KbAligned':True,'zip16KbAligned':True,
             'realPhotoOcrValidated':False}
     target=apk.with_suffix('.verification.json')
@@ -78,8 +101,10 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('apk',type=Path)
     parser.add_argument('--build-tools',required=True,type=Path)
+    parser.add_argument('--expected-certificate-sha256')
+    parser.add_argument('--require-private-signature', action='store_true')
     args=parser.parse_args()
-    verify(args.apk,args.build_tools)
+    verify(args.apk,args.build_tools,args.expected_certificate_sha256,args.require_private_signature)
 
 if __name__=='__main__':
     main()

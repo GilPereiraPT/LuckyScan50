@@ -143,65 +143,150 @@ double _median(List<double> values) {
 }
 
 List<ParsedBet> _parseAnchoredTokens(List<ReceiptToken> tokens) {
-  final nAnchors =
-      tokens
-          .where(
-            (t) =>
-                t.height > 0 &&
-                t.x.isFinite &&
-                t.y.isFinite &&
-                RegExp(
-                  r'^[0-9]{1,2}[.]?N$',
-                  caseSensitive: false,
-                ).hasMatch(t.text.trim()),
-          )
-          .toList()
-        ..sort((a, b) => a.y.compareTo(b.y));
-  final eAnchors = tokens
+  final horizontal = tokens
       .where(
         (t) =>
             t.height > 0 &&
+            t.height.isFinite &&
             t.x.isFinite &&
             t.y.isFinite &&
-            t.text.trim().toUpperCase() == 'E',
+            t.angle.isFinite &&
+            (((t.angle % 180) + 180) % 180 - 90).abs() > 20,
       )
       .toList();
-  final bets = <ParsedBet>[];
-  for (var i = 0; i < nAnchors.length && i < maxReceiptBets; i++) {
-    final n = nAnchors[i];
-    final nextY = i + 1 < nAnchors.length ? nAnchors[i + 1].y : double.infinity;
-    final es = eAnchors.where((t) => t.y > n.y && t.y < nextY).toList()
-      ..sort((a, b) => a.y.compareTo(b.y));
-    final e = es.isEmpty ? null : es.first;
-    List<int> values(ReceiptToken anchor, int maxValue) {
-      final matches =
-          tokens
-              .where(
-                (t) =>
-                    t.x - t.width / 2 > anchor.x + anchor.width / 2 &&
-                    (t.y - anchor.y).abs() < anchor.height * 0.6 &&
-                    RegExp(r'^[0-9]{1,2}$').hasMatch(t.text.trim()),
-              )
-              .toList()
-            ..sort((a, b) => a.x.compareTo(b.x));
-      return matches
-          .map((t) => int.parse(t.text.trim()))
-          .where((v) => v >= 1 && v <= maxValue)
+  if (horizontal.isEmpty) return [];
+  final angles = horizontal
+      .map((t) => t.angle)
+      .where((a) => a.abs() <= 20)
+      .toList();
+  final radians = (angles.isEmpty ? 0.0 : _median(angles)) * math.pi / 180;
+  double x(ReceiptToken t) => t.x * math.cos(radians) + t.y * math.sin(radians);
+  double y(ReceiptToken t) =>
+      -t.x * math.sin(radians) + t.y * math.cos(radians);
+  final ns = <({ReceiptToken token, int? index})>[];
+  for (final t in horizontal) {
+    final m = RegExp(
+      r'^\s*(?:(\d{1,2})\s*[.)]?\s*)?N\.?\s*$',
+      caseSensitive: false,
+    ).firstMatch(t.text);
+    if (m == null) continue;
+    int? index = int.tryParse(m[1] ?? '');
+    if (index == null) {
+      final ids = horizontal
+          .where(
+            (id) =>
+                RegExp(r'^\d{1,2}[.)]?$').hasMatch(id.text.trim()) &&
+                x(id) < x(t) &&
+                x(t) - x(id) <= t.height * 2 &&
+                (y(id) - y(t)).abs() <= t.height * .5,
+          )
           .toList();
+      if (ids.length == 1) {
+        index = int.parse(
+          ids.single.text.replaceAll(RegExp(r'[.)]'), '').trim(),
+        );
+      }
+    }
+    ns.add((token: t, index: index));
+  }
+  if (ns.isEmpty) return [];
+  ns.sort((a, b) => y(a.token).compareTo(y(b.token)));
+  final es = horizontal
+      .where(
+        (t) => RegExp(
+          r'^E(?:\s+\d{1,2}){0,2}$',
+          caseSensitive: false,
+        ).hasMatch(t.text.trim()),
+      )
+      .toList();
+  final pitches = <double>[
+    for (var i = 1; i < ns.length; i++)
+      if (ns[i].index != null &&
+          ns[i - 1].index != null &&
+          ns[i].index! > ns[i - 1].index!)
+        (y(ns[i].token) - y(ns[i - 1].token)) /
+            (ns[i].index! - ns[i - 1].index!),
+  ];
+  final pitch = pitches.isEmpty ? null : _median(pitches);
+  final bets = <ParsedBet>[];
+  for (var i = 0; i < ns.length && i < maxReceiptBets; i++) {
+    final n = ns[i].token;
+    final index = ns[i].index ?? (bets.isEmpty ? 1 : bets.last.index + 1);
+    final next = i + 1 < ns.length ? y(ns[i + 1].token) : double.infinity;
+    final end = math.min(
+      next - n.height * .25,
+      y(n) + (pitch ?? n.height * 3) * .85,
+    );
+    final candidates = es.where((e) {
+      final dy = y(e) - y(n), dx = x(e) - x(n);
+      final inline = dy.abs() <= n.height * .35 && dx > n.width / 2;
+      final beneath =
+          dy > n.height * .35 &&
+          dx.abs() <= math.max(n.height * .8, n.width * .5);
+      return y(e) < end && (inline || beneath);
+    }).toList();
+    final e = candidates.length == 1 ? candidates.single : null;
+    final inline = e != null && (y(e) - y(n)).abs() <= n.height * .35;
+    final issues = <String>[
+      if (ns[i].index == null) 'Índice geométrico por confirmar',
+      if (candidates.length > 1) 'Linha E ambígua; confirmar associação',
+    ];
+    List<int> values(ReceiptToken anchor, String kind) {
+      final found = horizontal.where((t) {
+        if (!RegExp(r'^\d{1,2}$').hasMatch(t.text.trim())) return false;
+        if (x(t) - t.width / 2 <= x(anchor) + anchor.width / 2) return false;
+        if (y(t) > end ||
+            (y(t) - y(anchor)).abs() >
+                math.min(t.height, anchor.height) * .55) {
+          return false;
+        }
+        if (e != null) {
+          if (inline) {
+            if (kind == 'N' && x(t) >= x(e) - e.width / 2) return false;
+          } else {
+            final own = (y(t) - y(anchor)).abs();
+            final other = (y(t) - y(kind == 'N' ? e : n)).abs();
+            if (own >= other) {
+              return false; // Equidistant values remain unassigned.
+            }
+          }
+        }
+        return true;
+      }).toList()..sort((a, b) => x(a).compareTo(x(b)));
+      return found.map((t) => int.parse(t.text.trim())).toList();
     }
 
-    final ns = values(n, 50);
-    final ss = e == null ? <int>[] : values(e, 12);
-    final issues = <String>[];
-    if (ns.length != 5 || ns.toSet().length != 5) {
-      issues.add('N: quantidade ou duplicados por confirmar');
+    final numbers = values(n, 'N');
+    final embedded = e == null
+        ? <int>[]
+        : e.text.trim().split(RegExp(r'\s+')).skip(1).map(int.parse).toList();
+    final stars = e == null
+        ? <int>[]
+        : embedded.isEmpty
+        ? values(e, 'E')
+        : embedded;
+    if (numbers.length != 5 ||
+        numbers.toSet().length != 5 ||
+        numbers.any((v) => v < 1 || v > 50)) {
+      issues.add('Cinco números distintos entre 1 e 50 em falta');
     }
-    if (ss.length != 2 || ss.toSet().length != 2) {
-      issues.add('E: quantidade ou duplicados por confirmar');
+    if (stars.length != 2 ||
+        stars.toSet().length != 2 ||
+        stars.any((v) => v < 1 || v > 12)) {
+      issues.add('Duas estrelas distintas entre 1 e 12 em falta');
     }
-    bets.add(ParsedBet(i + 1, ns, ss, issues));
+    bets.add(ParsedBet(index, numbers, stars, issues));
   }
-  return bets;
+  return bets
+      .map(
+        (b) => bets.where((other) => other.index == b.index).length > 1
+            ? ParsedBet(b.index, b.numbers, b.stars, [
+                ...b.issues,
+                'Identificador de aposta repetido',
+              ])
+            : b,
+      )
+      .toList();
 }
 
 ScannedReceipt parseReceiptObservations({

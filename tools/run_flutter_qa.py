@@ -32,7 +32,12 @@ def main():
         app = Path(directory) / 'app'
         shutil.copytree(ROOT / 'app', app, ignore=shutil.ignore_patterns(
             'build', '.dart_tool', '.gradle', '.kotlin', '.cxx',
-            '.flutter-plugins-dependencies', 'assets', '*.log'))
+            '.flutter-plugins-dependencies', 'assets', '*.log', '*.jks', '*.keystore', 'key.properties'))
+        # Keep declared public branding assets; never copy private receipt photos
+        # or signing material into the disposable QA workspace.
+        branding = ROOT / 'app/assets/branding'
+        if branding.is_dir():
+            shutil.copytree(branding, app / 'assets/branding', dirs_exist_ok=True)
         spec = (app / 'pubspec.yaml').read_text()
         extra = '  sqflite_common_ffi: ^2.3.6\n'
         if args.mode == 'android':
