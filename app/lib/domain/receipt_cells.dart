@@ -348,13 +348,52 @@ CellGrid planVisualBetCells(
   )) {
     return const CellGrid([], [], ['Alinhamento das colunas incerto.']);
   }
-  final cells = <BetCrop>[];
+  // E is an isolated printed marker beneath each N (not an inline number).
+  // Match the ACTUAL isolated E before the next N; never read the N row
+  // twice or use a constant fraction of the pitch as a verified E position.
+  final eAnchors = <int, ReceiptToken>{};
+  final eOffsets = <double>[];
+  for (var j = 0; j < ordered.length; j++) {
+    final entry = ordered[j], n = entry.value;
+    final nextY = j + 1 < ordered.length
+        ? ordered[j + 1].value.y
+        : n.y + pitch;
+    final found = tokens.where((t) =>
+        !verticalReceiptToken(t) &&
+        t.text.trim().toUpperCase() == 'E' &&
+        (t.x - n.x).abs() <= h * 1.25 &&
+        t.y > n.y + h * .35 &&
+        t.y < nextY - h * .25).toList();
+    if (found.length == 1) {
+      eAnchors[entry.key] = found.single;
+      eOffsets.add(found.single.y - n.y);
+    } else if (found.length > 1) {
+      warnings.add('Aposta ${entry.key}: várias âncoras E; estrelas por confirmar.');
+    }
+  }
+  final eOffset = eOffsets.isEmpty ? null : _median(eOffsets);
+  final cells = <BetCrop>[], markers = <BetCrop>[];
   for (final entry in ordered) {
-    final n = entry.value;
+    final n = entry.value, e = eAnchors[entry.key];
+    // With no E visible in the first pass, use the observed N-to-N pitch
+    // solely to place an E-label OCR probe. Never treat that estimate as
+    // verification or accept nearby stars until the probe actually reads E.
+    final eY = e?.y ?? n.y + (eOffset ?? pitch * .45);
+    if (e == null) {
+      final marker = CropBox(
+        math.max(0, n.x - h * .5),
+        math.max(0, eY - h * .55),
+        math.min(width, n.x + h * 1.4),
+        math.min(height, eY + h * .55),
+      );
+      markers.add(BetCrop(entry.key, marker, kind: 'marker', printedIndex: true));
+    }
     for (final kind in ['N', 'E']) {
       for (var i = 0; i < (kind == 'N' ? 5 : 2); i++) {
         final x = xs[i];
-        final y = n.y + slope * (x - n.x) + (kind == 'E' ? pitch * .45 : 0);
+        final y = kind == 'E'
+            ? eY + slope * (x - (e?.x ?? n.x))
+            : n.y + slope * (x - n.x);
         final halfHeight = math.min(pitch * .33, h * (kind == 'N' ? .58 : .50));
         final box = CropBox(
           math.max(0, x - step * .46),
@@ -374,5 +413,5 @@ CellGrid planVisualBetCells(
       'Índices N incompletos: verificação manual das apostas não localizadas.',
     );
   }
-  return CellGrid(cells, const [], warnings);
+  return CellGrid(cells, markers, warnings);
 }
