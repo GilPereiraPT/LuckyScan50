@@ -3,6 +3,7 @@ import 'receipt_cells.dart';
 import 'receipt_evidence.dart';
 import 'receipt_cell_consensus.dart';
 import 'receipt_parser.dart';
+import 'receipt_ne_lines.dart';
 
 Future<MultiPassResult> recoverReceiptCells({
   required OcrFrame initial,
@@ -109,6 +110,50 @@ Future<MultiPassResult> recoverReceiptCells({
   observations.addAll(
     projectCellObservations(initial, grid.cells, 'full-frame'),
   );
+  // First read each complete numeric line with ML Kit. Crop bounds come from
+  // the current image's observed/validated grid, never fixed image pixels.
+  // Individual cells remain the fallback and detect contradictory readings.
+  for (final index in plan.rows.map((r) => r.index)) {
+    for (final kind in ['N', 'E']) {
+      final parts = grid.cells
+          .where((c) => c.index == index && c.kind == kind)
+          .toList()
+        ..sort((a, b) => a.position!.compareTo(b.position!));
+      final count = kind == 'N' ? 5 : 2;
+      if (parts.length != count ||
+          List.generate(count, (i) => i).any((i) => parts[i].position != i)) {
+        continue;
+      }
+      final left = parts.map((c) => c.box.left).reduce((a, b) => a < b ? a : b);
+      final right = parts.map((c) => c.box.right).reduce((a, b) => a > b ? a : b);
+      final top = parts.map((c) => c.box.top).reduce((a, b) => a < b ? a : b);
+      final bottom = parts.map((c) => c.box.bottom).reduce((a, b) => a > b ? a : b);
+      final entire = BetCrop(
+        index,
+        CropBox(left, top, right, bottom),
+        kind: kind,
+        printedIndex: true,
+      );
+      final frame = await read(entire, 1, 'line-$index-$kind@1x');
+      if (frame == null) continue;
+      final values = NeLineDigits.parse(frame.text.trim(), stars: kind == 'E');
+      if (values == null) continue;
+      for (var i = 0; i < values.length; i++) {
+        observations.add(ValueEvidence(
+          kind,
+          i,
+          values[i],
+          values[i].toString().padLeft(2, '0'),
+          'line-$index-$kind@1x',
+          betIndex: index,
+          bounds: parts[i].box,
+          // Full-line reading remains one ML Kit observation, not two votes.
+          requiresConfirmation: true,
+        ));
+      }
+    }
+  }
+
   var skipped = 0;
   // Vertical whole-frame tokens require re-reading the original image cells.
   final contaminatedFullFrame =
