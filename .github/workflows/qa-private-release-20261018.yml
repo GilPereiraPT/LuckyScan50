@@ -1,0 +1,12 @@
+# Isolated single-branch QA build. Do not merge this trigger into the release branches.
+name: QA private release APK - audit core 2026-10-18
+on:
+  push:
+    branches:
+      - build/luckyscan50-audit-core-20261018
+permissions:
+  contents: read
+jobs:
+  private-release:
+    uses: ./.github/workflows/signed-apk.yml
+    secrets: inherit
