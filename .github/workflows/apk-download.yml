@@ -8,6 +8,9 @@ on:
       - .github/workflows/apk-download.yml
       - 'app/lib/**'
       - 'app/test/**'
+      - 'app/android/**'
+      - 'app/pubspec.yaml'
+      - 'app/pubspec.lock'
 permissions:
   contents: read
 jobs:
