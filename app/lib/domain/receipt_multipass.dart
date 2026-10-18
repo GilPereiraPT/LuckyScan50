@@ -171,6 +171,7 @@ Future<MultiPassResult> recoverReceiptRows({
   required RecognizeBetCrop recognizeCrop,
   ScannedReceipt? metadata,
   List<CropBox> rules = const [],
+  bool visualCells = false,
 }) async {
   final clock = Stopwatch()..start();
   final geometryClock = Stopwatch()..start();
@@ -181,7 +182,9 @@ Future<MultiPassResult> recoverReceiptRows({
   // Whole-frame ML Kit can collapse the first two N/E columns into long
   // vertical words. Recover values from original-image numeric cell crops,
   // with spatial anchors, BEFORE attempting legacy row/text recovery.
-  if (meta.game == 'euromilhoes' && plan.verticalElements.isNotEmpty) {
+  if (visualCells &&
+      meta.game == 'euromilhoes' &&
+      plan.verticalElements.isNotEmpty) {
     final visual = planVisualBetCells(initial.tokens, plan, width, height);
     if (visual.cells.length == plan.rows.length * 7 && plan.rows.isNotEmpty) {
       final result = await recoverReceiptCells(
