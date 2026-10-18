@@ -288,9 +288,9 @@ def ingest(store, payload, kind, draw_dates=None):
             conflicts = []
             if kind != 'portal':
                 if connection.execute("SELECT 1 FROM rss_observations WHERE game=? AND draw_id=? "
-                                      "AND status='conflict' AND detail LIKE '%announced_draw_date%' LIMIT 1",
+                                      "AND status='conflict' AND (detail LIKE '%announced_draw_date%' OR detail LIKE '%official_cartaz%') LIMIT 1",
                                       (game, identity)).fetchone():
-                    conflicts.append('announced_draw_date_conflict')
+                    conflicts.append('announced_draw_date_or_official_cartaz_conflict')
                 if old and key(json.loads(old[0])) != key(record):
                     conflicts.append('existing_draw')
                 if old and (draw_dates or {}).get((game, identity), json.loads(old[0])['date']) != json.loads(old[0])['date']:

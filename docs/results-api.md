@@ -1,6 +1,6 @@
 # API pública v1
 
-A implementação de produção é Python nativo WSGI em `api-python/`. Só distribui resultados importados administrativamente; não valida comprovativos ou credenciais de jogadores. Não existe escrita HTTP.
+A implementação de produção é Python nativo WSGI em `api-python/`. Distribui resultados administrativos e resultados oficiais validados pelos coletores RSS/cartaz; não valida comprovativos ou credenciais de jogadores. Não existe escrita HTTP.
 
 Todos os endpoints devolvem JSON UTF-8, `X-Content-Type-Options: nosniff` e cache de 120 segundos para 200; RSS e estatísticas usam `no-cache` para revalidação; erros usam `no-store`. Métodos diferentes de GET devolvem 405 e `Allow: GET`. Falhas de dados devolvem 503 `results_unavailable`, sem detalhes internos.
 
@@ -51,3 +51,5 @@ histórico integral; não há carga histórica nesta entrega.
 
 A preparação de Cron e os limites de promoção RSS estão em
 [rss-cron-cpanel.md](rss-cron-cpanel.md).
+
+A confirmação automática dos 13 escalões e a promoção com revisão estão documentadas em [official-results-cpanel.md](official-results-cpanel.md). Os endpoints e as formas de resposta mantêm-se.

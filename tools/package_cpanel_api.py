@@ -29,10 +29,11 @@ def build(destination):
     fixture = 'euromilhoes-083-2026.json'
     files['validacao/backend/fixtures/' + fixture] = (ROOT / 'backend/fixtures' / fixture).read_bytes()
     for name in ('rss-cron-cpanel.md', 'rss-integration.md', 'historical-results-sources.md',
-                 'results-api.md', 'validation/rss-source-audit-20261017.json'):
+                 'results-api.md', 'official-results-cpanel.md', 'validation/rss-source-audit-20261017.json'):
         files['documentacao/' + name] = (ROOT / 'docs' / name).read_bytes()
     files['INSTALAR_RSS.md'] = (ROOT / 'docs/rss-cron-cpanel.md').read_text().replace(
-        '(historical-results-sources.md)', '(documentacao/historical-results-sources.md)').encode()
+        '(historical-results-sources.md)', '(documentacao/historical-results-sources.md)').replace(
+        '(official-results-cpanel.md)', '(documentacao/official-results-cpanel.md)').encode()
     commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
     files['build-info.json'] = (json.dumps({'commit': commit, 'createdAt': datetime.now(timezone.utc).isoformat(),
         'python': '3.12', 'remoteCollectionEnabledByDefault': False,

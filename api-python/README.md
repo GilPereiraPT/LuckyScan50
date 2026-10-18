@@ -76,3 +76,12 @@ Ver [instalação, comando Cron e rollback](../docs/rss-cron-cpanel.md) e
 `backup_results.py` cria backups SQLite consistentes sem sobrescrever ficheiros.
 Estatísticas acrescentam `coverage` para distinguir a amostra guardada de um
 histórico integral não auditado.
+
+## Cartaz oficial e prémios automáticos
+
+O coletor CLI passa a consultar o cartaz Euromilhões com o mesmo lock do RSS,
+por omissão (`cartaz: true`, opcional). Datas explícitas e os 13 escalões completos
+permitem promover parciais compatíveis com revisão; divergências ficam em quarentena.
+Não usa pubDate como data, jackpot como prémio unitário ou valores Portal como escalões.
+
+Ver [ficheiros a atualizar e instalação sem mudar Cron](../docs/official-results-cpanel.md).

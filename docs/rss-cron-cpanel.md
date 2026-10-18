@@ -5,6 +5,8 @@ ficheiros no alojamento, não configura Cron e não executa recolhas remotas.
 Todos os testes novos são offline, com os XML reais já guardados no repositório.
 Android, dependências e dados de produção ficam intactos.
 
+Atualização 18/10/2026: ver [cartaz oficial e ficheiros a atualizar](official-results-cpanel.md). O comando Cron existente mantém-se.
+
 ## Auditoria
 
 - `rss_import.py`: já tinha HTTPS direto, validação dos três XML reais,
@@ -13,7 +15,7 @@ Android, dependências e dados de produção ficam intactos.
   datas divergentes. O registo de erro deixa de interromper outros feeds se a
   própria auditoria de falha estiver indisponível.
 - `store.py`: mantido. Importações transacionais e revisões, chave única
-  `(game,drawId)`. O coletor nunca atualiza um concurso existente, mesmo parcial.
+  `(game,drawId)`. O coletor não substitui concursos confirmados. O cartaz oficial pode promover um parcial compatível com uma nova revisão.
 - `collect_results.py`: o modo `--inbox` continua compatível e sem HTTP. Novo
   `--rss` consulta as três fontes, usando o mesmo bloqueio `database.sqlite3.lock`.
 - `app.py`: mantido; só serve desenvolvimento. O ponto de entrada de produção
@@ -54,7 +56,7 @@ relevantes entre execuções, também exige confirmação administrativa da data
 Datas anunciadas divergentes não são escolhidas automaticamente: ambas ficam
 registadas, os anúncios são ocultados do overview e o concurso não é promovido.
 
-Novos resultados são `numbers_confirmed`, com prémios por categoria desconhecidos.
+Resultados RSS sem cartaz completo são `numbers_confirmed`, com prémios por categoria desconhecidos. O cartaz oficial, quando integralmente validado, permite `complete`.
 O Android existente exige `complete` para calcular prémios; RSS não substitui a
 validação administrativa dos valores efetivos das 13 categorias.
 

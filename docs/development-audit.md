@@ -276,3 +276,36 @@ Android do utilizador. O APK é entregue para permitir esse teste; não se decla
 OCR real validado por passar nos testes automatizados. O relatório exportado pela
 aplicação identifica `0.2.3+5` e `a2abf69`, preservando a primeira passagem e a
 análise dinâmica de recortes/identificadores, sem fotos incluídas por defeito.
+
+## 2026-10-18 — Confirmação automática do cartaz Euromilhões
+
+Base preservada `e29937db18a4802adcab7500080f68b3bf97c678`. Acrescentado
+`official_cartaz.py`, ligado ao coletor CLI existente sem mudar o comando Cron.
+O cartaz fornece explicitamente identificador, data, chave e 13 escalões; os três
+RSS mantêm papéis independentes. Não se atribui pubDate ao sorteio, não se infere
+uma data M1lhão a partir do Euromilhões e não se usam jackpots ou Portal como
+montantes unitários. Na falta de confirmação, mantêm-se estados pendentes.
+
+Reconciliação sob o lock atual e transação partilhada com `Store.import_rows()`:
+novos concursos, promoção de parcial compatível para completo com nova revisão,
+repetições sem revisões extras e conflitos sem substituição silenciosa.
+Concursos completos nunca são automaticamente corrigidos. Auditoria aditiva em
+`official_observations`, com URL, hash, primeira importação, candidato e motivos;
+publicação HTML desconhecida permanece null. Nenhuma migração destrutiva.
+
+**76 testes Python passam**, incluindo o cartaz real integral guardado na auditoria
+anterior e os três XML reais; 13 escalões verificados contra o fixture, casos de
+montantes/vencedores em falta, notas de prémios não atribuídos, concursos novos,
+repetição, duas revisões na promoção, conflitos e contratos latest/sync/overview.
+Nenhuma dependência adicional: produção continua só com biblioteca padrão.
+
+A tentativa de leitura pública do cartaz M1lhão foi bloqueada pelo proxy com 403.
+Sem contorno de rede ou parser desse HTML não verificado: datas M1lhão continuam
+através de anúncio oficial guardado ou ficheiro administrativo verificado.
+Não se comprovou acesso atual ao cartaz a partir do cPanel nesta tarefa.
+
+Não alterados Android, dependências, endpoints, SQLite de produção, instalação
+Passenger ou Cron existente. Não foi feito deploy ou executada recolha contra a
+base de produção. Documentação e ficheiros a atualizar em
+`docs/official-results-cpanel.md`. Empacotamento cPanel mantém módulos na raiz,
+configuração privada e dados fora do ZIP, com testes separados.

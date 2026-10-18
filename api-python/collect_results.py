@@ -13,6 +13,7 @@ from urllib.parse import urlsplit
 
 from store import Store
 import rss_import as rss
+import official_cartaz
 
 log = logging.getLogger('luckyscan50.collect')
 
@@ -82,12 +83,12 @@ def announced_dates(store, manual):
             {key: sorted(days) for key, days in candidates.items() if len(days) > 1})
 
 
-def run_rss(database, *, fixtures=None, dates=None):
+def run_rss(database, *, fixtures=None, dates=None, cartaz=False):
     """One bounded collection cycle. Called remotely only by explicit --rss.
 
     All feeds are staged before promoting any new result, so same-cycle source
     conflicts cannot create a new historical draw. Never initializes an unknown
-    or absent production database and never changes an existing result.
+    or absent production database. Compatible pending results may become complete.
     """
     store = Store(database)
     if not store.path.is_absolute() or not store.path.is_file():
@@ -132,6 +133,21 @@ def run_rss(database, *, fixtures=None, dates=None):
                     fingerprint = 'date-conflict-' + hashlib.sha256(detail.encode()).hexdigest()
                     connection.execute('INSERT OR IGNORE INTO rss_imports(source_url,fingerprint,imported_at,status,detail) VALUES(?,?,?,?,?)',
                                        (rss.FEEDS['jackpots'], fingerprint, now, 'conflict', detail))
+        if cartaz:
+            try:
+                if fixtures is None:
+                    html = official_cartaz.fetch()
+                else:
+                    with (Path(fixtures).parent / 'official/euromilhoes.html').open('rb') as source:
+                        html = source.read(official_cartaz.MAX_BYTES + 1)
+                outcomes['cartaz'] = official_cartaz.reconcile(store, html, known_dates, date_conflicts)
+            except (OSError, ValueError, sqlite3.Error) as exc:
+                outcomes['cartaz'] = {'error': type(exc).__name__}
+                try:
+                    official_cartaz.initialize(store)
+                    official_cartaz.record(store, str(type(exc).__name__).encode(), 'failed', [type(exc).__name__])
+                except (OSError, ValueError, sqlite3.Error):
+                    outcomes['cartaz']['auditError'] = 'storage_unavailable'
         if 'results' in payloads:
             # The results feed is complementary. Jackpots alone never inserts
             # a past result; its future announcement can supply the exact date.
@@ -163,7 +179,7 @@ def main():
     logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
     try:
         config = json.loads(args.config.read_text(encoding='utf-8')) if args.config else {}
-        if not isinstance(config, dict) or set(config) - {'database', 'enabled', 'datesFile'}:
+        if not isinstance(config, dict) or set(config) - {'database', 'enabled', 'datesFile', 'cartaz'}:
             raise ValueError('Invalid collector configuration')
         database = args.database or config.get('database')
         if not isinstance(database, str) or not Path(database).is_absolute():
@@ -177,7 +193,10 @@ def main():
         dates_path = config.get('datesFile')
         if dates_path is not None and (not isinstance(dates_path, str) or not Path(dates_path).is_absolute()):
             raise ValueError('datesFile must be an absolute path')
-        report = run_rss(database, fixtures=args.fixtures, dates=verified_dates(dates_path))
+        if type(config.get('cartaz', True)) is not bool:
+            raise ValueError('cartaz must be a boolean')
+        report = run_rss(database, fixtures=args.fixtures, dates=verified_dates(dates_path),
+                         cartaz=config.get('cartaz', True))
         print(json.dumps(report, ensure_ascii=False))
         return report['exitCode']
     except (OSError, ValueError, TypeError, sqlite3.Error) as exc:

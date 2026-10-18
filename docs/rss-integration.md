@@ -3,6 +3,8 @@
 Implementação local de validação, sem instalação no cPanel, Cron remoto, migração
 ou alteração de dados de produção. Nenhuma alteração Android ou dependência nova.
 
+Atualização 18/10/2026: [leitura automática do cartaz e revisões](official-results-cpanel.md); os detalhes abaixo conservam a auditoria inicial.
+
 ## Auditoria dos prémios efetivos
 
 A API instalada respondeu a GET `/health` com versão `0.1.1` e a
