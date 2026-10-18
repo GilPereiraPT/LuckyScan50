@@ -66,6 +66,11 @@ void main() {
     );
     await tester.tap(find.text('Importar imagem'));
     await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Aposta 4 incompleta — confirmar'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Aposta 4 incompleta — confirmar'), findsOneWidget);
     // The action is now outside the scrollable form, in its own safe area.
     expect(find.text('Confirmar e guardar'), findsOneWidget);
@@ -88,7 +93,7 @@ void main() {
     expect(safeArea.top, isFalse);
     expect(safeArea.minimum.bottom, greaterThanOrEqualTo(12));
     expect(find.text('Confirmar e guardar'), findsOneWidget);
-    expect(find.byType(FilledButton), findsOneWidget);
+    expect(find.byWidgetPredicate((w) => w is FilledButton), findsOneWidget);
     expect(find.byWidgetPredicate((w) => w is Image && w.image is AssetImage),
         findsOneWidget);
     await tester.scrollUntilVisible(
