@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:luckyscan50/domain/receipt_cells.dart';
-import 'package:luckyscan50/domain/receipt_geometry.dart';
 import 'package:luckyscan50/domain/receipt_multipass.dart';
 import 'package:luckyscan50/domain/receipt_parser.dart';
 
