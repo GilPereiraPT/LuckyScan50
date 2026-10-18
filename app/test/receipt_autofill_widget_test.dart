@@ -67,11 +67,8 @@ void main() {
     await tester.tap(find.text('Importar imagem'));
     await tester.pumpAndSettle();
     expect(find.text('Aposta 4 incompleta — confirmar'), findsOneWidget);
-    await tester.scrollUntilVisible(
-      find.text('Confirmar e guardar'),
-      500,
-      scrollable: find.byType(Scrollable).first,
-    );
+    // The action is now outside the scrollable form, in its own safe area.
+    expect(find.text('Confirmar e guardar'), findsOneWidget);
     await tester.pump(const Duration(seconds: 5));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Confirmar e guardar'));
@@ -81,6 +78,29 @@ void main() {
       findsOneWidget,
     );
   });
+  testWidgets('confirmation button remains in the safe bottom action bar', (
+    tester,
+  ) async {
+    await open(tester, (_) async => null);
+    final scaffold = tester.widget<Scaffold>(find.byType(Scaffold));
+    expect(scaffold.bottomNavigationBar, isA<SafeArea>());
+    final safeArea = scaffold.bottomNavigationBar! as SafeArea;
+    expect(safeArea.top, isFalse);
+    expect(safeArea.minimum.bottom, greaterThanOrEqualTo(12));
+    expect(find.text('Confirmar e guardar'), findsOneWidget);
+    expect(find.byType(FilledButton), findsOneWidget);
+    expect(find.byWidgetPredicate((w) => w is Image && w.image is AssetImage),
+        findsOneWidget);
+    await tester.scrollUntilVisible(
+      field('Chaves — uma por linha'),
+      400,
+      scrollable: find.byType(Scrollable).first,
+    );
+    final lines = tester.widget<TextField>(field('Chaves — uma por linha'));
+    expect(lines.minLines, 5);
+    expect(lines.maxLines, isNull);
+  });
+
   testWidgets('manual edit during recognition is not overwritten', (
     tester,
   ) async {
