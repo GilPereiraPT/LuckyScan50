@@ -81,13 +81,15 @@ jobs:
       - name: Build private signed ARM64 release APK
         working-directory: app
         run: flutter build apk --release --target-platform android-arm64
+      - name: Install pinned APK verification tools
+        run: '"$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "build-tools;35.0.0"'
       - name: Verify certificate, ABI, integrity and 16 KB alignment
         run: |
           set -euo pipefail
           mkdir -p signed-output
           cp app/build/app/outputs/flutter-apk/app-release.apk signed-output/LuckyScan50-signed-arm64.apk
-          BUILD_TOOLS=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)
-          python3 tools/verify_apk.py signed-output/LuckyScan50-signed-arm64.apk --build-tools "$(dirname "$BUILD_TOOLS")" --require-private-signature --expected-certificate-sha256 "$EXPECTED_CERT_SHA" > >(tee "$RUNNER_TEMP/apk-verification.log")
+          BUILD_TOOLS="$ANDROID_HOME/build-tools/35.0.0"
+          python3 tools/verify_apk.py signed-output/LuckyScan50-signed-arm64.apk --build-tools "$BUILD_TOOLS" --require-private-signature --expected-certificate-sha256 "$EXPECTED_CERT_SHA" > >(tee "$RUNNER_TEMP/apk-verification.log")
           python3 - <<'PYTHON'
           import json, os
           from pathlib import Path

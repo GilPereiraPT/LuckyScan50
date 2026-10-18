@@ -26,7 +26,7 @@ def verify_assets(archive):
 def verify_certificate(output, expected=None, require_private=False):
     match = re.search(r'Signer #1 certificate SHA-256 digest: ([0-9a-fA-F]+)', output)
     if not match:
-        raise ValueError('Missing signing certificate digest')
+        raise ValueError('Missing signing certificate digest; apksigner output: ' + output[-3000:])
     digest = match[1].lower()
     if require_private and ('android debug' in output.lower() or digest ==
             '0695a638827b0ffa1725698204080edd8b76d65971cbe30ff2d5219d2d0ee860'):
