@@ -71,7 +71,10 @@ void main() {
     },
   );
 
-  Future<MultiPassResult> simulatedScan({bool unreadableStar = false}) async {
+  Future<MultiPassResult> simulatedScan({
+    bool unreadableStar = false,
+    bool emptyAt1x = false,
+  }) async {
     final tokens = realGeometryTokens();
     final receipt = const ScannedReceipt(
       bets: [],
@@ -89,6 +92,9 @@ void main() {
       width: 2160,
       height: 3000,
       recognizeCrop: (crop, scale) async {
+        // Full-line probes lack a cell position in this simulated OCR backend.
+        if (crop.position == null) return const OcrFrame('', []);
+        if (emptyAt1x && scale == 1.0) return const OcrFrame('', []);
         if (crop.kind == 'E' &&
             crop.index == 3 &&
             crop.position == 1 &&
@@ -132,6 +138,20 @@ void main() {
       expect(scan.passes.where((p) => p.id.startsWith('cell-')).length, 35);
     },
   );
+
+  test('blank 1x visual cells recover through 2x contrast crop', () async {
+    final scan = await simulatedScan(emptyAt1x: true);
+    expect(scan.receipt.lines, hasLength(5));
+    expect(
+      scan.passes.where((p) => p.id.startsWith('cell-') &&
+          p.id.contains('@2x-contrast')).length,
+      35,
+    );
+    for (var i = 0; i < 5; i++) {
+      expect(scan.receipt.bets[i].numbers, numbers[i]);
+      expect(scan.receipt.bets[i].stars, stars[i]);
+    }
+  });
 
   test('unreadable star stays pending and cannot be manufactured', () async {
     final scan = await simulatedScan(unreadableStar: true);
