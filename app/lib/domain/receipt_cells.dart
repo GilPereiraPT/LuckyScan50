@@ -375,8 +375,10 @@ CellGrid planVisualBetCells(
   final cells = <BetCrop>[], markers = <BetCrop>[];
   for (final entry in ordered) {
     final n = entry.value, e = eAnchors[entry.key];
-    // An absent E needs an independent OCR probe before its stars are accepted.
-    final eY = e?.y ?? (eOffset == null ? null : n.y + eOffset);
+    // With no E visible in the first pass, use the observed N-to-N pitch
+    // solely to place an E-label OCR probe. Never treat that estimate as
+    // verification or accept nearby stars until the probe actually reads E.
+    final eY = e?.y ?? n.y + (eOffset ?? pitch * .45);
     if (e == null && eY != null) {
       final marker = CropBox(
         math.max(0, n.x - h * .5),
