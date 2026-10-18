@@ -1,5 +1,5 @@
 /// Independent, deterministic Euromilhões receipt structure reader.
-/// Format and validate this module through the automated GitHub workflow.
+/// Keep this isolated module formatted by the automated Dart formatter.
 ///
 /// This module does not parse full-frame text or depend on legacy OCR passes.
 /// It receives OCR tokens with image coordinates and returns only unambiguous
