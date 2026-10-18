@@ -184,7 +184,15 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
     ];
     return Scaffold(
       appBar: AppBar(
-        title: Text(titles[index]),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset('assets/branding/luckyscan50-logo.webp',
+                width: 32, height: 32, fit: BoxFit.contain),
+            const SizedBox(width: 10),
+            Flexible(child: Text(titles[index])),
+          ],
+        ),
         actions: [
           IconButton(
             tooltip: 'Sincronizar resultados',
@@ -262,39 +270,19 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
     final totals = finances(tickets, draws);
     if (index == 0) {
       return [
-        Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: const Color(0xff172841),
-            borderRadius: BorderRadius.circular(24),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: Image.asset(
+            'assets/branding/luckyscan50-banner.webp',
+            width: double.infinity,
+            fit: BoxFit.contain,
+            semanticLabel: 'LuckyScan50 — Bilhetes, Prémios e Estatísticas',
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'LUCKYSCAN50',
-                style: TextStyle(
-                  color: Color(0xffe7c77f),
-                  letterSpacing: 3,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 18),
-              const Text(
-                'As suas apostas.\nTudo no seu dispositivo.',
-                style: TextStyle(
-                  fontSize: 28,
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                '${tickets.length} recibos · ${draws.length} concursos guardados',
-                style: const TextStyle(color: Colors.white70),
-              ),
-            ],
-          ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          '${tickets.length} recibos · ${draws.length} concursos guardados',
+          style: Theme.of(context).textTheme.bodyMedium,
         ),
         const SizedBox(height: 12),
         Card(
