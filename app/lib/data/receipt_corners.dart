@@ -107,9 +107,11 @@ class _ReceiptCornersPageState extends State<ReceiptCornersPage> {
                       key: Key('receipt-corner-$i'),
                       behavior: HitTestBehavior.opaque,
                       onPanUpdate: (event) => setState(() {
-                        points[i] = points[i].shifted(
+                        final updated = List<ReceiptCorner>.of(points);
+                        updated[i] = points[i].shifted(
                           event.delta.dx / width, event.delta.dy / height,
                         );
+                        points = updated;
                       }),
                       child: Container(
                         width: 48, height: 48,
