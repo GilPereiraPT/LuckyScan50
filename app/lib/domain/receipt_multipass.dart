@@ -186,6 +186,7 @@ Future<MultiPassResult> recoverReceiptRows({
     if (visual.cells.length == plan.rows.length * 7 && plan.rows.isNotEmpty) {
       final result = await recoverReceiptCells(
         initialGrid: visual,
+        strategy: 'visual-grid-cells',
         initial: initial,
         metadata: meta,
         plan: plan,
