@@ -883,7 +883,9 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
       );
       if (selection == null || !mounted) return;
       final path = selection.files.single.path;
-      if (path == null) throw const FormatException('Ficheiro PDF não disponível.');
+      if (path == null) {
+        throw const FormatException('Ficheiro PDF não disponível.');
+      }
       final count = await const ReceiptCropBackend().pdfPageCount(path);
       if (!mounted) return;
       int? pageIndex = 0;
