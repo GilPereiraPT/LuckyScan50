@@ -183,8 +183,7 @@ Future<MultiPassResult> recoverReceiptRows({
   // with spatial anchors, BEFORE attempting legacy row/text recovery.
   if (meta.game == 'euromilhoes' && plan.verticalElements.isNotEmpty) {
     final visual = planVisualBetCells(initial.tokens, plan, width, height);
-    if (visual.cells.length == plan.rows.length * 7 &&
-        plan.rows.isNotEmpty) {
+    if (visual.cells.length == plan.rows.length * 7 && plan.rows.isNotEmpty) {
       final result = await recoverReceiptCells(
         initialGrid: visual,
         initial: initial,
