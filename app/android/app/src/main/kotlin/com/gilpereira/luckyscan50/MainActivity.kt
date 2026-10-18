@@ -18,6 +18,8 @@ import java.util.UUID
 import java.util.concurrent.Executors
 import kotlin.math.ceil
 import kotlin.math.floor
+import kotlin.math.hypot
+import kotlin.math.sqrt
 
 class MainActivity : FlutterActivity() {
     private val worker = Executors.newSingleThreadExecutor()
@@ -31,6 +33,11 @@ class MainActivity : FlutterActivity() {
                     try {
                         val response: Any? = when (call.method) {
                             "prepare" -> prepare(requireNotNull(call.argument<String>("path")))
+                            "preparePreview" -> prepare(requireNotNull(call.argument<String>("path")), true)
+                            "rectify" -> rectify(
+                                requireNotNull(call.argument<String>("session")),
+                                requireNotNull(call.argument<List<Number>>("corners")).map { it.toDouble() }
+                            )
                             "crop" -> crop(
                                 requireNotNull(call.argument<String>("session")),
                                 requireNotNull(call.argument<Number>("left")).toDouble(),
@@ -65,19 +72,24 @@ class MainActivity : FlutterActivity() {
             }
     }
 
-    private fun prepare(path: String): Map<String, Any> {
+    private fun prepare(path: String, preview: Boolean = false): Map<String, Any> {
         val input = File(path).canonicalFile
         require(input.isFile) { "Image not found" }
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeFile(input.path, bounds)
         require(bounds.outWidth > 0 && bounds.outHeight > 0 &&
-            bounds.outWidth.toLong() * bounds.outHeight <= 32000000L) { "Image size unsupported" }
+            bounds.outWidth.toLong() * bounds.outHeight <= (if (preview) 120000000L else 32000000L)) { "Image size unsupported" }
+        var sample = 1
+        if (preview) {
+            while (bounds.outWidth.toLong() * bounds.outHeight / sample / sample > 10000000L) sample *= 2
+        }
         val directory = File(cacheDir, "receipt-pass-${UUID.randomUUID()}")
         require(directory.mkdirs())
         var source: Bitmap? = null
         var upright: Bitmap? = null
         try {
-            source = requireNotNull(BitmapFactory.decodeFile(input.path))
+            source = requireNotNull(BitmapFactory.decodeFile(input.path,
+                BitmapFactory.Options().apply { inSampleSize = sample }))
             val matrix = Matrix()
             when (ExifInterface(input.path).getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)) {
                 ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> matrix.setScale(-1f, 1f)
@@ -101,6 +113,72 @@ class MainActivity : FlutterActivity() {
         } finally {
             if (upright !== source) upright?.recycle()
             source?.recycle()
+        }
+    }
+
+
+    // Perspective transformation takes the four user-confirmed paper corners,
+    // expressed in normalized coordinates of a prepared EXIF-upright preview.
+    // The corrected JPEG is temporary and is managed by the Flutter screen;
+    // the original gallery/camera image is never overwritten.
+    private fun rectify(session: String, corners: List<Double>): String {
+        require(corners.size == 8 && corners.all { it.isFinite() && it in 0.0..1.0 }) { "Invalid corners" }
+        var signedArea = 0.0
+        var winding = 0.0
+        for (i in 0 until 4) {
+            val a = i * 2
+            val b = ((i + 1) % 4) * 2
+            val d = ((i + 2) % 4) * 2
+            signedArea += corners[a] * corners[b + 1] - corners[a + 1] * corners[b]
+            val cross = (corners[b] - corners[a]) * (corners[d + 1] - corners[b + 1]) -
+                (corners[b + 1] - corners[a + 1]) * (corners[d] - corners[b])
+            require(kotlin.math.abs(cross) >= .0001) { "Degenerate corners" }
+            if (i == 0) winding = cross else require(winding * cross > 0) { "Crossed corners" }
+        }
+        require(kotlin.math.abs(signedArea) >= .12) { "Receipt outline too small" }
+        val input = File(requireNotNull(sessions[session]), "upright.png")
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(input.path, bounds)
+        require(bounds.outWidth > 0 && bounds.outHeight > 0)
+        var sample = 1
+        while (bounds.outWidth.toLong() * bounds.outHeight / sample / sample > 10000000L) sample *= 2
+        val source = requireNotNull(BitmapFactory.decodeFile(input.path,
+            BitmapFactory.Options().apply { inSampleSize = sample }))
+        var target: Bitmap? = null
+        val output = File(cacheDir, "receipt-rectified-${UUID.randomUUID()}.jpg")
+        try {
+            val src = FloatArray(8) { index ->
+                (corners[index] * (if (index % 2 == 0) source.width else source.height)).toFloat()
+            }
+            val top = hypot((src[2] - src[0]).toDouble(), (src[3] - src[1]).toDouble())
+            val bottom = hypot((src[4] - src[6]).toDouble(), (src[5] - src[7]).toDouble())
+            val left = hypot((src[6] - src[0]).toDouble(), (src[7] - src[1]).toDouble())
+            val right = hypot((src[4] - src[2]).toDouble(), (src[5] - src[3]).toDouble())
+            val width = maxOf(top, bottom)
+            val height = maxOf(left, right)
+            require(width >= 160 && height >= 240) { "Receipt is too small for OCR" }
+            val scale = minOf(1.0, 2600.0 / width, 4000.0 / height,
+                sqrt(8000000.0 / (width * height)))
+            val w = (width * scale).toInt().coerceAtLeast(1)
+            val h = (height * scale).toInt().coerceAtLeast(1)
+            val dst = floatArrayOf(0f, 0f, w.toFloat(), 0f,
+                w.toFloat(), h.toFloat(), 0f, h.toFloat())
+            val matrix = Matrix()
+            require(matrix.setPolyToPoly(src, 0, dst, 0, 4)) { "Perspective transform unavailable" }
+            val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.RGB_565)
+            target = bitmap
+            Canvas(bitmap).apply {
+                drawColor(android.graphics.Color.WHITE)
+                drawBitmap(source, matrix, Paint(Paint.FILTER_BITMAP_FLAG))
+            }
+            output.outputStream().use { require(bitmap.compress(Bitmap.CompressFormat.JPEG, 94, it)) }
+            return output.path
+        } catch (error: Throwable) {
+            output.delete()
+            throw error
+        } finally {
+            target?.recycle()
+            source.recycle()
         }
     }
 
