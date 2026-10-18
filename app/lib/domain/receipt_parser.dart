@@ -271,10 +271,16 @@ ScannedReceipt parseReceiptObservations({
         r'^\s*([A-Z]{3})\s+(\d{5})\s*$',
         caseSensitive: false,
       ).firstMatch(_label(line));
-      final explicitlyLabeled = RegExp(
-        r'^\\s*CODIGO\\s+M1LHAO\\s*:\\s*([A-Z]{3})\\s+(\\d{5})\\s*
+      final labeled = RegExp(
+        r'^\s*CODIGO\s+M1LHAO\s*:\s*([A-Z]{3})\s+(\d{5})\s*$',
+        caseSensitive: false,
+      ).firstMatch(_label(line));
+      final recognized = match ?? labeled;
+      if (recognized != null) {
+        final code = recognized[1]!.toUpperCase() + ' ' + recognized[2]!;
         if (seen.add(code)) milhaoCodes.add(code);
       }
+
     }
     final printedCodes = RegExp(r'\b(\d{1,2})\s+CODIGO\(S\)').firstMatch(raw);
     if (printedCodes != null) {
