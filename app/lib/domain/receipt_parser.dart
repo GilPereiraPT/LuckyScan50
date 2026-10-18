@@ -144,9 +144,51 @@ double _median(List<double> values) {
 
 
 List<ParsedBet> _parseAnchoredTokens(List<ReceiptToken> tokens) {
-  final anchors = tokens.where((t) =>
-      t.height > 0 && t.y.isFinite && t.x.isFinite &&
-      (RegExp(r'^\d{1,2}[.)]?N
+  final nAnchors = tokens.where((t) =>
+      t.height > 0 &&
+      t.x.isFinite &&
+      t.y.isFinite &&
+      RegExp(r'^[0-9]{1,2}[.]?N$', caseSensitive: false)
+          .hasMatch(t.text.trim())).toList()
+    ..sort((a, b) => a.y.compareTo(b.y));
+  final eAnchors = tokens.where((t) =>
+      t.height > 0 &&
+      t.x.isFinite &&
+      t.y.isFinite &&
+      t.text.trim().toUpperCase() == 'E').toList();
+  final bets = <ParsedBet>[];
+  for (var i = 0; i < nAnchors.length && i < maxReceiptBets; i++) {
+    final n = nAnchors[i];
+    final nextY = i + 1 < nAnchors.length
+        ? nAnchors[i + 1].y
+        : double.infinity;
+    final es = eAnchors.where((t) => t.y > n.y && t.y < nextY).toList()
+      ..sort((a, b) => a.y.compareTo(b.y));
+    final e = es.isEmpty ? null : es.first;
+    List<int> values(ReceiptToken anchor, int maxValue) {
+      final matches = tokens.where((t) =>
+          t.x - t.width / 2 > anchor.x + anchor.width / 2 &&
+          (t.y - anchor.y).abs() < anchor.height * 0.6 &&
+          RegExp(r'^[0-9]{1,2}$').hasMatch(t.text.trim())).toList()
+        ..sort((a, b) => a.x.compareTo(b.x));
+      return matches.map((t) => int.parse(t.text.trim()))
+          .where((v) => v >= 1 && v <= maxValue).toList();
+    }
+    final ns = values(n, 50);
+    final ss = e == null ? <int>[] : values(e, 12);
+    final issues = <String>[];
+    if (ns.length != 5 || ns.toSet().length != 5) {
+      issues.add('N: quantidade ou duplicados por confirmar');
+    }
+    if (ss.length != 2 || ss.toSet().length != 2) {
+      issues.add('E: quantidade ou duplicados por confirmar');
+    }
+    bets.add(ParsedBet(i + 1, ns, ss, issues));
+  }
+  return bets;
+}
+
+ScannedReceipt parseReceiptObservations({
   required String text,
   List<String>? textRows,
   List<ReceiptToken> tokens = const [],
