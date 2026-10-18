@@ -83,6 +83,7 @@ void main() {
       drawDate: '2026-10-09',
     );
     final scan = await recoverReceiptRows(
+      visualCells: true,
       initial: OcrFrame('', tokens),
       metadata: receipt,
       width: 2160,
