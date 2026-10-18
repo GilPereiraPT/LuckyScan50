@@ -1,0 +1,35 @@
+name: Validate administrative results
+on:
+  workflow_dispatch:
+    inputs:
+      result_path:
+        description: Reviewed JSON path already in this repository (never personal tickets)
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Validate and import into a temporary database
+        env:
+          RESULT_PATH: ${{ inputs.result_path }}
+        run: |
+          python - <<'PY'
+          import os, pathlib, subprocess
+          root = pathlib.Path.cwd().resolve()
+          path = (root / os.environ['RESULT_PATH']).resolve()
+          if not path.is_relative_to(root) or not path.is_file() or path.suffix != '.json':
+              raise SystemExit('Expected an existing JSON inside the repository')
+          subprocess.run(['python', 'api-python/import_result.py', str(path), '--database', '/tmp/validated-results.sqlite3'], check=True)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: validated-results-database
+          path: /tmp/validated-results.sqlite3
+          retention-days: 7

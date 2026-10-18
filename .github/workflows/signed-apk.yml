@@ -1,0 +1,111 @@
+name: Signed ARM64 release APK
+on:
+  workflow_dispatch:
+  workflow_call:
+    secrets:
+      ANDROID_KEYSTORE_BASE64:
+        required: true
+      ANDROID_KEYSTORE_PASSWORD:
+        required: true
+      ANDROID_KEY_ALIAS:
+        required: true
+      ANDROID_KEY_PASSWORD:
+        required: true
+  push:
+    branches: ['codex/luckyscan50-android-wallet']
+    paths: ['app/**', 'qa/**', 'tools/**', '.github/workflows/**']
+permissions:
+  contents: read
+jobs:
+  validation:
+    uses: ./.github/workflows/ci-flutter.yml
+  signed-apk:
+    needs: validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.35.7'
+          cache: true
+      - name: Prepare private signing (never print secrets)
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PYTHON'
+          import base64, os
+          from pathlib import Path
+          for key in ('KEYSTORE_B64', 'STORE_PASS', 'KEY_ALIAS', 'KEY_PASS'):
+              if not os.environ.get(key):
+                  raise SystemExit('Missing required signing secret: ' + key)
+          keyfile = Path(os.environ['RUNNER_TEMP']) / 'luckyscan50-private.jks'
+          keyfile.write_bytes(base64.b64decode(''.join(os.environ['KEYSTORE_B64'].split()), validate=True))
+          keyfile.chmod(0o600)
+          def escape(value):
+              return ''.join(('\\u%04x' % ord(c)) if c in '\\:=#! \n\r\t' or ord(c) > 126 else c for c in value)
+          properties = Path('app/android/key.properties')
+          properties.write_text(''.join(k + '=' + escape(v) + '\n' for k, v in {
+              'storeFile': str(keyfile), 'storePassword': os.environ['STORE_PASS'],
+              'keyAlias': os.environ['KEY_ALIAS'], 'keyPassword': os.environ['KEY_PASS']}.items()))
+          properties.chmod(0o600)
+          PYTHON
+          CERT_SHA=$(keytool -exportcert -keystore "$RUNNER_TEMP/luckyscan50-private.jks" -storepass:env STORE_PASS -alias "$KEY_ALIAS" | sha256sum | cut -d' ' -f1)
+          echo "EXPECTED_CERT_SHA=$CERT_SHA" >> "$GITHUB_ENV"
+      - name: Flutter dependencies
+        working-directory: app
+        run: flutter pub get --enforce-lockfile
+      - name: Generate Android launcher icons from LuckyScan50 logo
+        shell: bash
+        run: |
+          python -m pip install --quiet pillow
+          python - <<'PY'
+          from PIL import Image
+          from pathlib import Path
+          source = Path("app/assets/branding/luckyscan50-logo.webp")
+          image = Image.open(source).convert("RGBA")
+          for density, size in {"mdpi": 48, "hdpi": 72, "xhdpi": 96, "xxhdpi": 144, "xxxhdpi": 192}.items():
+              output = Path(f"app/android/app/src/main/res/mipmap-{density}/ic_launcher.png")
+              output.parent.mkdir(parents=True, exist_ok=True)
+              image.resize((size, size), Image.Resampling.LANCZOS).save(output)
+          PY
+      - name: Build private signed ARM64 release APK
+        working-directory: app
+        run: flutter build apk --release --target-platform android-arm64
+      - name: Install pinned APK verification tools
+        run: '"$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "build-tools;35.0.0"'
+      - name: Verify certificate, ABI, integrity and 16 KB alignment
+        run: |
+          set -euo pipefail
+          mkdir -p signed-output
+          cp app/build/app/outputs/flutter-apk/app-release.apk signed-output/LuckyScan50-signed-arm64.apk
+          BUILD_TOOLS="$ANDROID_HOME/build-tools/35.0.0"
+          python3 tools/verify_apk.py signed-output/LuckyScan50-signed-arm64.apk --build-tools "$BUILD_TOOLS" --require-private-signature --expected-certificate-sha256 "$EXPECTED_CERT_SHA" > >(tee "$RUNNER_TEMP/apk-verification.log")
+          python3 - <<'PYTHON'
+          import json, os
+          from pathlib import Path
+          report = json.loads(Path('signed-output/LuckyScan50-signed-arm64.verification.json').read_text())
+          fields = ('apk', 'versionName', 'bytes', 'sha256', 'certificateSha256', 'abi', 'signatureVerified', 'elf16KbAligned', 'zip16KbAligned', 'realPhotoOcrValidated')
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
+              summary.write('Commit: ' + os.environ['GITHUB_SHA'] + '\n\n')
+              for field in fields:
+                  summary.write(f'- {field}: {report[field]}\n')
+          PYTHON
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LuckyScan50-signed-arm64-APK
+          path: signed-output/LuckyScan50-signed-arm64.apk
+          if-no-files-found: error
+          retention-days: 14
+      - name: Remove signing files
+        if: always()
+        run: rm -f "$RUNNER_TEMP/luckyscan50-private.jks" app/android/key.properties

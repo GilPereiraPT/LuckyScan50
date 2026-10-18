@@ -1,0 +1,9 @@
+name: APK diagnostico descarregavel
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verified-private-apk:
+    uses: ./.github/workflows/signed-apk.yml
+    secrets: inherit

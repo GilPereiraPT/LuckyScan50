@@ -1,0 +1,41 @@
+[
+  {
+    "feed": "results",
+    "url": "https://www.jogossantacasa.pt/web/SCRss/rssFeedCartRes",
+    "httpStatus": 200,
+    "redirects": 0,
+    "sha256": "01c88fb6f291559110af17cb2a547d07045bdb9aca29a8191dffda7826a4f261",
+    "bytes": 4624,
+    "encoding": "ISO-8859-1",
+    "itemPublicationTimes": [
+      "2026-10-16T19:51:19+00:00",
+      "2026-10-16T19:51:19+00:00"
+    ]
+  },
+  {
+    "feed": "jackpots",
+    "url": "https://www.jogossantacasa.pt/web/SCRss/rssFeedJackpots",
+    "httpStatus": 200,
+    "redirects": 0,
+    "sha256": "62d3d49a4e326e8414e9d13f6cc1119145279f301b03e68190e3050d983527bc",
+    "bytes": 5568,
+    "encoding": "ISO-8859-1",
+    "itemPublicationTimes": [
+      "2026-10-16T20:01:29+00:00",
+      "2026-10-16T20:01:29+00:00"
+    ]
+  },
+  {
+    "feed": "portal",
+    "url": "https://www.jogossantacasa.pt/web/SCRss/rssFeedPremiosPortal",
+    "httpStatus": 200,
+    "redirects": 0,
+    "sha256": "fd5354d52cdf9bea50a876a8a56d0a9f160a94bd019aaffe9d0002cf895c6c7b",
+    "bytes": 5767,
+    "encoding": "ISO-8859-1",
+    "itemPublicationTimes": [
+      "2026-10-17T03:00:19+00:00",
+      "2026-10-17T03:00:19+00:00"
+    ]
+  }
+]

@@ -18,4 +18,4 @@ API: resultados + prémios oficiais + regras versionadas
   Alertas / datas / histórico / estatísticas
 ```
 
-App Flutter Android; armazenamento local-first; API Node.js/TypeScript; dados centrais PostgreSQL. Push anuncia disponibilidade de resultados; chaves privadas permanecem no aparelho. Não existe integração autorizada direta com contas JSC no âmbito inicial.
+App Flutter Android; armazenamento local-first; API de produção Python 3.12 Passenger/WSGI nativo; resultados centrais SQLite com revisões e importação administrativa. TypeScript permanece como referência. Push ainda não implementado; chaves privadas permanecem no aparelho. Não existe integração autorizada direta com contas JSC no âmbito inicial.

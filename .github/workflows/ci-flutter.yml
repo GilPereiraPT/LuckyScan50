@@ -1,0 +1,56 @@
+name: Flutter Android CI
+on:
+  workflow_dispatch:
+  workflow_call:
+  push:
+    branches: ['codex/luckyscan50-android-wallet']
+    paths: ['app/**', 'qa/**', 'tools/run_flutter_qa.py', 'tools/verify_apk.py', 'tools/test_verify_apk.py', '.github/workflows/ci-flutter.yml']
+  pull_request:
+    paths: ['app/**', 'qa/**', 'tools/run_flutter_qa.py', 'tools/verify_apk.py', 'tools/test_verify_apk.py', '.github/workflows/ci-flutter.yml']
+permissions:
+  contents: read
+concurrency:
+  group: validation-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  test-and-apk:
+    name: Validate Flutter, SQLite, Python and backend
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.35.7'
+          channel: stable
+          cache: true
+      - run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
+      - run: flutter pub get --enforce-lockfile
+      - run: dart format --output=none --set-exit-if-changed lib test ../qa/android/integration_test ../qa/android/test_driver ../qa/host
+      - run: flutter analyze
+      - run: flutter test --reporter expanded
+      - name: Test SQLite persistence in an isolated desktop workspace
+        run: python3 ../tools/run_flutter_qa.py host
+      - name: Python API regression tests (offline, temporary databases)
+        run: python3 -m unittest discover -s ../api-python -v
+      - name: APK asset security regressions
+        run: python3 -m unittest discover -s ../tools -p test_verify_apk.py -v
+      - name: Backend typecheck and tests
+        working-directory: backend
+        run: |
+          npm install --no-audit --no-fund
+          npm run lint
+          npm test

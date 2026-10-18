@@ -1,0 +1,437 @@
+{
+  "sourceCommit": "a4598650b9f3629b79c1efb0600149ec4938e2d1",
+  "baselineSourceCommit": "e5a43e8d123b1046068edb6079e285ed41120821",
+  "branch": "codex/luckyscan50-android-wallet",
+  "realAndroidOcrValidated": false,
+  "realPhotoVisibleInConversation": true,
+  "sourcePhotoBinaryInWorkspace": false,
+  "deviceStatus": {
+    "adbDevices": 0,
+    "emulatorInstalled": false,
+    "kvmAvailable": false
+  },
+  "recordedDiagnosticReplay": {
+    "newVisualRecognition": false,
+    "beforeAssociatedNumbersPerBet": [
+      3,
+      3,
+      3,
+      3,
+      2
+    ],
+    "afterAssociatedNumbersPerBet": [
+      3,
+      3,
+      3,
+      3,
+      3
+    ],
+    "beforeCompleteBets": 0,
+    "afterCompleteBets": 0,
+    "confirmedStars": 0,
+    "newAssociation": {
+      "bet": 5,
+      "kind": "N",
+      "position": 3,
+      "value": 20,
+      "source": "row-5@1x"
+    }
+  },
+  "timings": {
+    "baselineInitialOcrMs": 450,
+    "baselineRecoveryMs": 6306,
+    "baselineTotalMs": 9235,
+    "baselineTotalIncludesCleanup": false,
+    "newRealAndroidTotalMs": null,
+    "newTotalWillIncludeCleanup": true,
+    "newPerBetAccuracy": null,
+    "speedupDemonstrated": false
+  },
+  "tests": {
+    "flutterAnalyze": "passed: no issues",
+    "flutter": {
+      "passed": 66,
+      "failed": 0,
+      "skipped": 0
+    },
+    "isolatedSqliteFfi": {
+      "passed": 1,
+      "failed": 0
+    },
+    "pythonApi": {
+      "passed": 13,
+      "failed": 0
+    },
+    "realAndroidAcceptance": "not executed"
+  },
+  "dependencies": {
+    "added": [],
+    "removedThisContinuation": [],
+    "manifestHashesUnchanged": {
+      "app/pubspec.yaml": "8de38caeae1197a2452a5dcdee911222a30a20952e7dd631f3e5d6ca8b09875f",
+      "app/pubspec.lock": "34fd7b7d53e5fb6ac1d82c6497e65bd4067a774091ef641a33704d33f446f21f",
+      "app/android/app/build.gradle.kts": "5afcc53950cc4500be946c2cfb3c917653c1a7b5eb0d3999d6aaf8dd8cd88fae",
+      "app/android/settings.gradle.kts": "f822f8653a25b632ea3334473d8e9964e7d7da73e3ec33448f17e8600834b063"
+    },
+    "resolvedReleaseModulesUnchanged": true,
+    "resolvedReleaseModules": [
+      "androidx.activity:activity:1.12.4",
+      "androidx.annotation:annotation-experimental:1.4.1",
+      "androidx.annotation:annotation-jvm:1.9.1",
+      "androidx.annotation:annotation:1.9.1",
+      "androidx.appcompat:appcompat-resources:1.6.1",
+      "androidx.appcompat:appcompat:1.6.1",
+      "androidx.arch.core:core-common:2.2.0",
+      "androidx.arch.core:core-runtime:2.2.0",
+      "androidx.collection:collection-jvm:1.4.2",
+      "androidx.collection:collection:1.4.2",
+      "androidx.compose.runtime:runtime-annotation-android:1.9.0",
+      "androidx.compose.runtime:runtime-annotation:1.9.0",
+      "androidx.concurrent:concurrent-futures:1.1.0",
+      "androidx.core:core-ktx:1.18.0",
+      "androidx.core:core-viewtree:1.0.0",
+      "androidx.core:core:1.18.0",
+      "androidx.cursoradapter:cursoradapter:1.0.0",
+      "androidx.customview:customview:1.0.0",
+      "androidx.drawerlayout:drawerlayout:1.0.0",
+      "androidx.emoji2:emoji2-views-helper:1.2.0",
+      "androidx.emoji2:emoji2:1.2.0",
+      "androidx.exifinterface:exifinterface:1.4.2",
+      "androidx.fragment:fragment:1.7.1",
+      "androidx.interpolator:interpolator:1.0.0",
+      "androidx.lifecycle:lifecycle-common-java8:2.8.7",
+      "androidx.lifecycle:lifecycle-common-jvm:2.8.7",
+      "androidx.lifecycle:lifecycle-common:2.8.7",
+      "androidx.lifecycle:lifecycle-livedata-core-ktx:2.8.7",
+      "androidx.lifecycle:lifecycle-livedata-core:2.8.7",
+      "androidx.lifecycle:lifecycle-livedata:2.8.7",
+      "androidx.lifecycle:lifecycle-process:2.8.7",
+      "androidx.lifecycle:lifecycle-runtime-android:2.8.7",
+      "androidx.lifecycle:lifecycle-runtime:2.8.7",
+      "androidx.lifecycle:lifecycle-viewmodel-android:2.8.7",
+      "androidx.lifecycle:lifecycle-viewmodel-savedstate:2.8.7",
+      "androidx.lifecycle:lifecycle-viewmodel:2.8.7",
+      "androidx.loader:loader:1.0.0",
+      "androidx.navigationevent:navigationevent-android:1.0.2",
+      "androidx.navigationevent:navigationevent:1.0.2",
+      "androidx.profileinstaller:profileinstaller:1.4.0",
+      "androidx.resourceinspection:resourceinspection-annotation:1.0.1",
+      "androidx.savedstate:savedstate:1.2.1",
+      "androidx.startup:startup-runtime:1.1.1",
+      "androidx.tracing:tracing:1.2.0",
+      "androidx.vectordrawable:vectordrawable-animated:1.1.0",
+      "androidx.vectordrawable:vectordrawable:1.1.0",
+      "androidx.versionedparcelable:versionedparcelable:1.1.1",
+      "androidx.viewpager:viewpager:1.0.0",
+      "androidx.window.extensions.core:core:1.0.0",
+      "androidx.window:window-java:1.2.0",
+      "androidx.window:window:1.2.0",
+      "com.getkeepsafe.relinker:relinker:1.4.5",
+      "com.google.android.datatransport:transport-api:2.2.1",
+      "com.google.android.datatransport:transport-backend-cct:2.3.3",
+      "com.google.android.datatransport:transport-runtime:2.2.6",
+      "com.google.android.gms:play-services-base:18.5.0",
+      "com.google.android.gms:play-services-basement:18.4.0",
+      "com.google.android.gms:play-services-mlkit-text-recognition-common:19.1.0",
+      "com.google.android.gms:play-services-mlkit-text-recognition:19.0.1",
+      "com.google.android.gms:play-services-tasks:18.2.0",
+      "com.google.android.odml:image:1.0.0-beta1",
+      "com.google.firebase:firebase-annotations:16.0.0",
+      "com.google.firebase:firebase-components:16.1.0",
+      "com.google.firebase:firebase-encoders-json:17.1.0",
+      "com.google.firebase:firebase-encoders:16.1.0",
+      "com.google.guava:listenablefuture:1.0",
+      "com.google.mlkit:common:18.11.0",
+      "com.google.mlkit:text-recognition-bundled-common:17.0.0",
+      "com.google.mlkit:text-recognition:16.0.1",
+      "com.google.mlkit:vision-common:17.3.0",
+      "com.google.mlkit:vision-interfaces:16.3.0",
+      "commons-io:commons-io:2.20.0",
+      "io.flutter:arm64_v8a_release:1.0.0-035316565ad77281a75305515e4682e6c4c6f7ca",
+      "io.flutter:armeabi_v7a_release:1.0.0-035316565ad77281a75305515e4682e6c4c6f7ca",
+      "io.flutter:flutter_embedding_release:1.0.0-035316565ad77281a75305515e4682e6c4c6f7ca",
+      "io.flutter:x86_64_release:1.0.0-035316565ad77281a75305515e4682e6c4c6f7ca",
+      "javax.inject:javax.inject:1",
+      "org.apache.tika:tika-core:3.2.3",
+      "org.jetbrains.kotlin:kotlin-stdlib:2.1.20",
+      "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0",
+      "org.jetbrains.kotlinx:kotlinx-coroutines-bom:1.9.0",
+      "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.9.0",
+      "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0",
+      "org.jetbrains:annotations:23.0.0",
+      "org.jspecify:jspecify:1.0.0",
+      "org.slf4j:slf4j-api:2.0.17"
+    ]
+  },
+  "build": {
+    "flutter": "3.35.7",
+    "jdk": "21.0.12.1",
+    "variant": "release",
+    "abi": "arm64-v8a",
+    "minify": true,
+    "shrinkResources": true,
+    "command": "flutter build apk --release --target-platform android-arm64 --dart-define=LUCKYSCAN_BUILD_SHA=a459865",
+    "baselineCommand": "flutter build apk --release --target-platform android-arm64 --dart-define=LUCKYSCAN_BUILD_SHA=e5a43e8",
+    "sameLocalTestCertificate": true,
+    "identityFoundInAot": true,
+    "compilationPassed": true,
+    "gradleBuildSeconds": 102.0,
+    "beforeBytes": 31729912,
+    "afterBytes": 31860984,
+    "deltaBytes": 131072,
+    "deltaPercent": 0.41308655378558884,
+    "afterSha256": "69786dc008391a4c53d5de173d23989cfd7a2e5ec7e378c3bd046e62a1db63e8",
+    "nativeLibraries": [
+      {
+        "path": "lib/arm64-v8a/libapp.so",
+        "before": {
+          "bytes": 6554544,
+          "compressedBytes": 6554544,
+          "sha256": "46cb95ba77a8198df93270137cf414a26891ced4571939687a84fdc4d7742abf"
+        },
+        "after": {
+          "bytes": 6685616,
+          "compressedBytes": 6685616,
+          "sha256": "90291f778f03a243fbfb67638dd0b5d55c1b976706eac0c720b25772c5a57b9b"
+        }
+      },
+      {
+        "path": "lib/arm64-v8a/libdartjni.so",
+        "before": {
+          "bytes": 131240,
+          "compressedBytes": 131240,
+          "sha256": "1ae40bd68e03a491c2c34cd915d184862455cbbf76bbc1a24eac3a8960298e9a"
+        },
+        "after": {
+          "bytes": 131240,
+          "compressedBytes": 131240,
+          "sha256": "1ae40bd68e03a491c2c34cd915d184862455cbbf76bbc1a24eac3a8960298e9a"
+        }
+      },
+      {
+        "path": "lib/arm64-v8a/libflutter.so",
+        "before": {
+          "bytes": 11037032,
+          "compressedBytes": 11037032,
+          "sha256": "ee37eb8be8e01a0d840558f75e0a09c4ca135d721c2ca6145c050e4f89785129"
+        },
+        "after": {
+          "bytes": 11037032,
+          "compressedBytes": 11037032,
+          "sha256": "ee37eb8be8e01a0d840558f75e0a09c4ca135d721c2ca6145c050e4f89785129"
+        }
+      },
+      {
+        "path": "lib/arm64-v8a/libmlkit_google_ocr_pipeline.so",
+        "before": {
+          "bytes": 11064544,
+          "compressedBytes": 11064544,
+          "sha256": "fa41d509a661e8aa8b3e3ac1a28541f8823f308414fcad733fe26d61feea2646"
+        },
+        "after": {
+          "bytes": 11064544,
+          "compressedBytes": 11064544,
+          "sha256": "fa41d509a661e8aa8b3e3ac1a28541f8823f308414fcad733fe26d61feea2646"
+        }
+      }
+    ],
+    "ocrModelsUnchanged": true,
+    "ocrModelBytes": 1486803,
+    "ocrModels": [
+      {
+        "path": "assets/mlkit-google-ocr-models/aksara/aksara_page_layout_analysis_rpn_gcn.binarypb",
+        "bytes": 276,
+        "compressedBytes": 208,
+        "sha256": "b2963b78c7e55fdfd5ed82ca60f045aace7a7e373b5d93254e9ac979dcb5bb67"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/aksara/aksara_page_layout_analysis_ti_rpn_gcn.binarypb",
+        "bytes": 278,
+        "compressedBytes": 209,
+        "sha256": "d448c5de8d480d491ac128657926e6253a770baa90afb0e97a67740c93c1e9f3"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/gocr/gocr_models/line_recognition_legacy_mobile/Latn_ctc/optical/assets.extra/LabelMap.pb",
+        "bytes": 3809,
+        "compressedBytes": 1521,
+        "sha256": "c6d345043a561f9dfdb1472cfca7cdda0128b19cb6909c67032c5783077c92b3"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/gocr/gocr_models/line_recognition_legacy_mobile/Latn_ctc/optical/conv_model.fb",
+        "bytes": 40848,
+        "compressedBytes": 30829,
+        "sha256": "64aba719b4ed1ee5b3d4886c5aaf0b1ac051bf5879e9b08e861e0e29e20a08a7"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/gocr/gocr_models/line_recognition_legacy_mobile/Latn_ctc/optical/lstm_model.fb",
+        "bytes": 309568,
+        "compressedBytes": 181609,
+        "sha256": "0ed62e4fbe0fc5c4090aec473b136e188f828590765c028382358daddb3ccb6e"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/gocr/gocr_models/line_recognition_legacy_mobile/Latn_ctc_cpu.binarypb",
+        "bytes": 333,
+        "compressedBytes": 259,
+        "sha256": "a1dce9a376905a597366f6c9a0b3723205486880e176869e1ad65e92d68e068b"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/gocr/gocr_models/line_recognition_legacy_mobile/tflite_langid.tflite",
+        "bytes": 315520,
+        "compressedBytes": 315520,
+        "sha256": "7f931f6f7c1dd0ec591ace7780df91645a450fafc83505f3ff45ce5ef7c8441b"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/gocr/layout/line_clustering_custom_ops/model.tflite",
+        "bytes": 129612,
+        "compressedBytes": 129612,
+        "sha256": "ecda697ed244c5762410e0497878eabcda5f8b0682fb7c3800cd88a7f45dd8e6"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/gocr/layout/line_splitting_custom_ops/model.tflite",
+        "bytes": 114384,
+        "compressedBytes": 114384,
+        "sha256": "f42197e656972c330bb9f092edbe298b4a6c2fcd808ff6d614381311f8dd22a7"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/taser/detector/region_proposal_text_detector_tflite_vertical_mbv2_v1.bincfg",
+        "bytes": 452,
+        "compressedBytes": 381,
+        "sha256": "7ac2d4c04fb2fe0cd5c33e3030d9276c40286c73f97c2daa3ab94ea8c3f314c3"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/taser/detector/rpn_text_detector_mobile_space_to_depth_quantized_mbv2_v1.tflite",
+        "bytes": 340760,
+        "compressedBytes": 340760,
+        "sha256": "eb811a1290738f131e4005d8a1d63ef21770866414b847190a932f0b56c0d18f"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/taser/rpn_text_detection_tflite_mobile_mbv2.binarypb",
+        "bytes": 194,
+        "compressedBytes": 143,
+        "sha256": "86660be29934bdd123a65ea30ec09eaa66481a7ac2def8e8f376e78484f8774a"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/taser/segmenter/tflite_script_detector_0.3.bincfg",
+        "bytes": 1118,
+        "compressedBytes": 487,
+        "sha256": "d4223c23cd8ee3d3d4999d4e10bb16ec0b8119f8812e5e66e64e907c5508f21b"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/taser/segmenter/tflite_script_detector_0.3.conv_model",
+        "bytes": 40808,
+        "compressedBytes": 30535,
+        "sha256": "16be9fc0c0c9429cc3714d5d2e8662c53bd28cf0031375e237db288dc8da8d5f"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/taser/segmenter/tflite_script_detector_0.3.lstm_model",
+        "bytes": 161448,
+        "compressedBytes": 119566,
+        "sha256": "2281a01686f9ff9164f2a12ed743818e2b8e0af6ae7c73240924d70342d3f2cb"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/taser/taser_script_identification_tflite_mobile.binarypb",
+        "bytes": 136,
+        "compressedBytes": 114,
+        "sha256": "a3ebf2720f86e1440e42604f8bd48194111e152fa93886f987655f01a9336d32"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/taser_tflite_gocrlatin_mbv2_scriptid_aksara_layout_gcn_mobile_engine.binarypb",
+        "bytes": 13178,
+        "compressedBytes": 2764,
+        "sha256": "78210a92ad8ff692898e15d37718094c179149c9546a8fd53759b22939d39348"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/taser_tflite_gocrlatin_mbv2_scriptid_aksara_layout_gcn_mobile_engine_ti.binarypb",
+        "bytes": 13183,
+        "compressedBytes": 2769,
+        "sha256": "bfd6e9cb8ed0536d03fc9c06a31bc79de3996bc7dcfbe9f4cc19f819231b7d0a"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/taser_tflite_gocrlatin_mbv2_scriptid_aksara_layout_gcn_mobile_recognizer.binarypb",
+        "bytes": 233,
+        "compressedBytes": 188,
+        "sha256": "e80538539371576a5ad7dd58ed314a4f4d9fd9fca7ad73efdac476a6c3eb1ab4"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/taser_tflite_gocrlatin_mbv2_scriptid_aksara_layout_gcn_mobile_runner.binarypb",
+        "bytes": 331,
+        "compressedBytes": 233,
+        "sha256": "32c2c1b72ba32605c23a96a8b7bf4ebf8f5a916df6cd672724556a17d3d6c59e"
+      },
+      {
+        "path": "assets/mlkit-google-ocr-models/taser_tflite_gocrlatin_mbv2_scriptid_aksara_layout_gcn_mobile_runner_ti.binarypb",
+        "bytes": 334,
+        "compressedBytes": 234,
+        "sha256": "2c8581869ebb972a2d82403c9cd871a1d4c8d6419ae371fc1d859ad2bce2d5dc"
+      }
+    ],
+    "changedZipPayloads": [
+      {
+        "path": "assets/dexopt/baseline.profm",
+        "before": {
+          "bytes": 179,
+          "compressedBytes": 179,
+          "sha256": "8a777eb8f18dc4011506d5fda6669f43cee40105c43eebfd14821199cc0c73e1"
+        },
+        "after": {
+          "bytes": 178,
+          "compressedBytes": 178,
+          "sha256": "7f0b2ec7ef127d5087f189d19240a5201bf3a6b11d25101c27055340a1a64a49"
+        }
+      },
+      {
+        "path": "lib/arm64-v8a/libapp.so",
+        "before": {
+          "bytes": 6554544,
+          "compressedBytes": 6554544,
+          "sha256": "46cb95ba77a8198df93270137cf414a26891ced4571939687a84fdc4d7742abf"
+        },
+        "after": {
+          "bytes": 6685616,
+          "compressedBytes": 6685616,
+          "sha256": "90291f778f03a243fbfb67638dd0b5d55c1b976706eac0c720b25772c5a57b9b"
+        }
+      },
+      {
+        "path": "assets/dexopt/baseline.prof",
+        "before": {
+          "bytes": 813,
+          "compressedBytes": 813,
+          "sha256": "3e29f7e52a9f7b3999a95e3fb1c6f496bdb4ca99f890511f84eee5f13521e95b"
+        },
+        "after": {
+          "bytes": 926,
+          "compressedBytes": 926,
+          "sha256": "319d81628e97bf6c34a5f7fd028cf241a69fedb953e924663d1a8e48f24295df"
+        }
+      },
+      {
+        "path": "classes.dex",
+        "before": {
+          "bytes": 2243596,
+          "compressedBytes": 966510,
+          "sha256": "0f2445bc65ad4c88aefd17a2c69fb9a8b630137c81aff50301d89eef2aeebf85"
+        },
+        "after": {
+          "bytes": 2244808,
+          "compressedBytes": 967044,
+          "sha256": "d6abc12c499957d902467ecf300c41f6bad45097a1288d4eb89399d523f9659d"
+        }
+      }
+    ],
+    "addedZipEntries": [],
+    "removedZipEntries": [],
+    "signatureVerified": true,
+    "elf16KbAligned": true,
+    "zip16KbAligned": true
+  },
+  "publication": {
+    "newAndroidArtifactPublished": false,
+    "workflowAndroidUploadRemoved": true,
+    "existingApkUntouched": true,
+    "appVersionUnchanged": "0.2.2+4",
+    "productionMerge": false,
+    "cpanelChanged": false,
+    "productionDataMigrated": false
+  }
+}
