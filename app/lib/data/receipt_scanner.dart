@@ -153,6 +153,7 @@ Future<ReceiptScan> scanReceiptFile(String path) async {
       imageGeometry['horizontalRuleCount'] = rules.length;
       stage = 'reconhecimento das regiões numéricas';
       final recovered = await recoverReceiptRows(
+        visualCells: true,
         initial: workingFrame,
         metadata: first,
         rules: rules,
