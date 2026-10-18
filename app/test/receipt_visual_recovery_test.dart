@@ -142,11 +142,15 @@ void main() {
   test('blank 1x visual cells recover through 2x contrast crop', () async {
     final scan = await simulatedScan(emptyAt1x: true);
     expect(scan.receipt.lines, hasLength(5));
-    expect(
-      scan.passes.where((p) => p.id.startsWith('cell-') &&
-          p.id.contains('@2x-contrast')).length,
-      35,
-    );
+    final blankFirstPasses = scan.passes.where(
+      (p) => p.id.startsWith('cell-') && p.id.contains('@1x'),
+    ).length;
+    final enlargedRetries = scan.passes.where(
+      (p) => p.id.startsWith('cell-') && p.id.contains('@2x-contrast'),
+    ).length;
+    // Cells with trustworthy full-frame evidence need not be reprocessed.
+    expect(blankFirstPasses, greaterThan(0));
+    expect(enlargedRetries, blankFirstPasses);
     for (var i = 0; i < 5; i++) {
       expect(scan.receipt.bets[i].numbers, numbers[i]);
       expect(scan.receipt.bets[i].stars, stars[i]);
