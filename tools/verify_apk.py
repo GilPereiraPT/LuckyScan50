@@ -104,7 +104,17 @@ def main():
     parser.add_argument('--expected-certificate-sha256')
     parser.add_argument('--require-private-signature', action='store_true')
     args=parser.parse_args()
-    verify(args.apk,args.build_tools,args.expected_certificate_sha256,args.require_private_signature)
+    try:
+        verify(args.apk,args.build_tools,args.expected_certificate_sha256,args.require_private_signature)
+    except (ValueError, OSError, subprocess.CalledProcessError) as error:
+        detail = str(error)
+        if isinstance(error, subprocess.CalledProcessError):
+            detail += ': ' + (error.stdout or '')[-1500:]
+        # GitHub annotations remain visible when detailed logs require login.
+        # These tools process only the generated APK, never signing secrets.
+        detail = detail.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+        print('::error::APK verification failed: ' + detail, flush=True)
+        raise
 
 if __name__=='__main__':
     main()
