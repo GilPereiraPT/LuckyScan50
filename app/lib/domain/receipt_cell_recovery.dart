@@ -109,6 +109,8 @@ Future<MultiPassResult> recoverReceiptCells({
     projectCellObservations(initial, grid.cells, 'full-frame'),
   );
   var skipped = 0;
+  // Vertical whole-frame tokens require re-reading the original image cells.
+  final contaminatedFullFrame = plan.verticalElements.isNotEmpty;
   for (final cell in grid.cells) {
     final known = observations.where(
       (v) =>
@@ -117,7 +119,8 @@ Future<MultiPassResult> recoverReceiptCells({
           v.position == cell.position &&
           v.validation != 'rejected-range',
     );
-    if (known.isNotEmpty &&
+    if (!contaminatedFullFrame &&
+        known.isNotEmpty &&
         known.map((v) => v.value).toSet().length == 1 &&
         known.any((v) => v.correction == null && !v.requiresConfirmation)) {
       skipped++;
@@ -142,7 +145,7 @@ Future<MultiPassResult> recoverReceiptCells({
         after.map((v) => v.value).toSet().length == 1 &&
         after.map((v) => v.pass).toSet().length < 2 &&
         after.every((v) => v.correction != null || v.requiresConfirmation);
-    if (needsConfirmation || (after.isEmpty && cell.box.height < 48)) {
+    if (needsConfirmation || after.isEmpty) {
       final retry = BetCrop(
         cell.index,
         cell.box,
@@ -150,7 +153,7 @@ Future<MultiPassResult> recoverReceiptCells({
         kind: cell.kind,
         position: cell.position,
         deskewDegrees: cell.deskewDegrees,
-        contrast: needsConfirmation,
+        contrast: needsConfirmation || after.isEmpty,
       );
       final scale = cell.box.height < 48 ? 2.0 : 1.0;
       final retryId =
