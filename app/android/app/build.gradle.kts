@@ -1,9 +1,19 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
+
+val privateSigning = Properties()
+val privateSigningFile = rootProject.file("key.properties")
+if (privateSigningFile.isFile) {
+    privateSigningFile.inputStream().use { privateSigning.load(it) }
+}
+val hasPrivateSigning = listOf("storeFile", "storePassword", "keyAlias", "keyPassword")
+    .all { !privateSigning.getProperty(it).isNullOrBlank() }
 
 android {
     namespace = "com.gilpereira.luckyscan50"
@@ -32,6 +42,17 @@ android {
 
     }
 
+    signingConfigs {
+        if (hasPrivateSigning) {
+            create("privateRelease") {
+                storeFile = rootProject.file(privateSigning.getProperty("storeFile"))
+                storePassword = privateSigning.getProperty("storePassword")
+                keyAlias = privateSigning.getProperty("keyAlias")
+                keyPassword = privateSigning.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         // Flutter 3.35 sets broad filters on build types. Override there, rather
         // than in defaultConfig, and leave split-per-ABI builds untouched.
@@ -43,9 +64,12 @@ android {
             }
         }
         release {
-            // INTERNAL TESTING ONLY: sign the optimized release with the debug key.
-            // Replace with private signing credentials before any publication.
-            signingConfig = signingConfigs.getByName("debug")
+            // Preserve existing diagnostic builds; private signing is used when configured.
+            signingConfig = if (hasPrivateSigning) {
+                signingConfigs.getByName("privateRelease")
+            } else {
+                signingConfigs.getByName("debug")
+            }
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
