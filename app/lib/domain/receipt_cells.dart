@@ -228,3 +228,164 @@ CellGrid planBetCells(
     correction: normal == raw ? null : '$raw→$normal',
   );
 }
+
+
+/// Prefer spatial cell recognition when whole-frame OCR collapses the first
+/// columns of several bets into tall, 90-degree text elements.
+///
+/// Geometry is inferred from printed N anchors and at least three numeric
+/// columns actually observed on those N rows. NO lottery values are inferred.
+/// An E row is positioned between adjacent N rows; its stars must still be
+/// independently recognized in the original image by the crop callback.
+CellGrid planVisualBetCells(
+  List<ReceiptToken> tokens,
+  CropPlan plan,
+  double width,
+  double height,
+) {
+  final labels = <int, ReceiptToken>{};
+  final warnings = <String>[];
+  final label = RegExp(
+    r'^\s*(\d{1,2})\s*[.)]?\s*N\s*\.?\s*$',
+    caseSensitive: false,
+  );
+  for (final t in tokens.where((t) => !verticalReceiptToken(t))) {
+    final match = label.firstMatch(t.text);
+    if (match == null) continue;
+    final index = int.parse(match[1]!);
+    if (!plan.rows.any((row) => row.index == index && row.printedIndex)) {
+      continue;
+    }
+    if (labels.containsKey(index)) {
+      return const CellGrid([], [], ['Âncoras N duplicadas.']);
+    }
+    labels[index] = t;
+  }
+  if (labels.length < 2) return const CellGrid([], [], []);
+  final ordered = labels.entries.toList()
+    ..sort((a, b) => a.key.compareTo(b.key));
+  final h = _median(ordered.map((e) => e.value.height).toList());
+  final pitches = <double>[];
+  for (var i = 1; i < ordered.length; i++) {
+    final previous = ordered[i - 1], current = ordered[i];
+    if (current.value.y <= previous.value.y) {
+      return const CellGrid([], [], ['Ordem geométrica N ambígua.']);
+    }
+    pitches.add(
+      (current.value.y - previous.value.y) /
+          (current.key - previous.key),
+    );
+  }
+  final pitch = _median(pitches);
+  if (pitch <= h * 1.1 || pitch > height / 2) {
+    return const CellGrid([], [], ['Espaçamento N não fiável.']);
+  }
+  final numeric = RegExp(r'^[0-9OIS]{1,2}$', caseSensitive: false);
+  final angles = tokens
+      .where((t) =>
+          !verticalReceiptToken(t) &&
+          numeric.hasMatch(t.text.trim()) &&
+          horizontalReceiptAngle(t.angle).abs() <= 10)
+      .map((t) => horizontalReceiptAngle(t.angle))
+      .toList();
+  final slope = math.tan(
+    (angles.isEmpty ? 0.0 : _median(angles)) * math.pi / 180,
+  );
+
+  // Work from the printed horizontal numbers, not the erroneous vertical
+  // digit strings. Three rightmost columns suffice to locate the other two.
+  final samples = <double>[];
+  for (final t in tokens) {
+    if (verticalReceiptToken(t) ||
+        !numeric.hasMatch(t.text.trim()) ||
+        t.width <= 0) {
+      continue;
+    }
+    for (final entry in ordered) {
+      final n = entry.value;
+      if (t.x <= n.x + h ||
+          t.x >= width * .95 ||
+          (t.y - n.y - slope * (t.x - n.x)).abs() > h * .65) {
+        continue;
+      }
+      samples.add(t.x);
+      break;
+    }
+  }
+  samples.sort();
+  final clusters = <List<double>>[];
+  for (final x in samples) {
+    if (clusters.isEmpty ||
+        x - _median(clusters.last) > h * 1.2) {
+      clusters.add([x]);
+    } else {
+      clusters.last.add(x);
+    }
+  }
+  if (clusters.length < 3 || clusters.length > 5) {
+    return const CellGrid([], [], ['Colunas N insuficientes ou ambíguas.']);
+  }
+  final observed = clusters.map(_median).toList();
+  final distances = <double>[
+    for (var i = 1; i < observed.length; i++)
+      observed[i] - observed[i - 1],
+  ];
+  final step = _median(distances);
+  if (step <= h * 1.1 ||
+      step >= width / 4 ||
+      distances.any((d) => d < step * .55 || d > step * 1.65)) {
+    return const CellGrid([], [], ['Grelha de colunas inconsistente.']);
+  }
+  final last = observed.last;
+  final first = last - 4 * step;
+  final nX = _median(ordered.map((e) => e.value.x).toList());
+  if (first <= nX + h * .6 ||
+      first >= nX + h * 6 ||
+      last + step * .46 >= width) {
+    return const CellGrid([], [], ['Primeira coluna N sem posição segura.']);
+  }
+  final xs = [for (var i = 0; i < 5; i++) first + i * step];
+  if (observed.any(
+    (x) => xs.map((v) => (x - v).abs()).reduce(math.min) > step * .31,
+  )) {
+    return const CellGrid([], [], ['Alinhamento das colunas incerto.']);
+  }
+  final cells = <BetCrop>[];
+  for (final entry in ordered) {
+    final n = entry.value;
+    for (final kind in ['N', 'E']) {
+      for (var i = 0; i < (kind == 'N' ? 5 : 2); i++) {
+        final x = xs[i];
+        final y = n.y +
+            slope * (x - n.x) +
+            (kind == 'E' ? pitch * .45 : 0);
+        final halfHeight = math.min(
+          pitch * .33,
+          h * (kind == 'N' ? .58 : .50),
+        );
+        final box = CropBox(
+          math.max(0, x - step * .46),
+          math.max(0, y - halfHeight),
+          math.min(width, x + step * .46),
+          math.min(height, y + halfHeight),
+        );
+        if (box.width < h || box.height < h * .75) continue;
+        cells.add(
+          BetCrop(
+            entry.key,
+            box,
+            kind: kind,
+            position: i,
+            printedIndex: true,
+          ),
+        );
+      }
+    }
+  }
+  if (plan.expectedLines != null && labels.length != plan.expectedLines) {
+    warnings.add(
+      'Índices N incompletos: verificação manual das apostas não localizadas.',
+    );
+  }
+  return CellGrid(cells, const [], warnings);
+}
