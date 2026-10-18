@@ -1113,14 +1113,14 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        FilledButton.tonalIcon(
+                        OutlinedButton.icon(
                           onPressed: busy || saving
                               ? null
                               : () => scan(ImageSource.camera, guided: true),
                           icon: const Icon(Icons.crop_free),
                           label: const Text('Fotografar com moldura'),
                         ),
-                        FilledButton.tonalIcon(
+                        OutlinedButton.icon(
                           onPressed: busy || saving
                               ? null
                               : () => scan(ImageSource.gallery, guided: true),
@@ -1135,6 +1135,7 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
             ),
             const SizedBox(height: 8),
             ExpansionTile(
+              initiallyExpanded: true,
               title: const Text('OCR direto, sem corrigir perspetiva'),
               children: [
                 Wrap(
