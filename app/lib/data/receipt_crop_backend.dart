@@ -24,7 +24,19 @@ class ReceiptCropBackend {
     );
   }
 
-  /// Produces a bounded JPEG from an upright preview using four normalized corners.\n  /// Caller owns the temporary returned file; it is not deleted with the session.\n  Future<String> rectify(PreparedReceiptImage image, List<double> corners) async {\n    if (corners.length != 8) throw ArgumentError('Four corners required');\n    final path = await channel.invokeMethod<String>('rectify', {\n      'session': image.session,\n      'corners': corners,\n    });\n    if (path == null) throw StateError('No rectified image');\n    return path;\n  }\n\n  Future<PreparedReceiptImage> rotate(
+  /// Produces a bounded JPEG from an upright preview using four normalized corners.
+  /// Caller owns the temporary returned file; it is not deleted with the session.
+  Future<String> rectify(PreparedReceiptImage image, List<double> corners) async {
+    if (corners.length != 8) throw ArgumentError('Four corners required');
+    final path = await channel.invokeMethod<String>('rectify', {
+      'session': image.session,
+      'corners': corners,
+    });
+    if (path == null) throw StateError('No rectified image');
+    return path;
+  }
+
+  Future<PreparedReceiptImage> rotate(
     PreparedReceiptImage image,
     int turns,
   ) async {
