@@ -61,8 +61,13 @@ Map<String, Object?> receiptDiagnosticReport(
   final incomplete = finalBets.where((b) => !b.complete).length;
   final passes = recovery?.passes ?? <CropPass>[];
   final failedPasses = passes.where((p) => p.error != null).length;
-  final emptyPasses = passes.where((p) => p.frame == null ||
-      (p.frame!.text.trim().isEmpty && p.frame!.tokens.isEmpty)).length;
+  final emptyPasses = passes
+      .where(
+        (p) =>
+            p.frame == null ||
+            (p.frame!.text.trim().isEmpty && p.frame!.tokens.isEmpty),
+      )
+      .length;
   final unresolved = <String>[];
   if (scan.recoveryError != null) unresolved.add('recovery_exception');
   if (recovery == null) unresolved.add('no_recovery_result');
@@ -91,8 +96,10 @@ Map<String, Object?> receiptDiagnosticReport(
       'failedCropPasses': failedPasses,
       'emptyCropPasses': emptyPasses,
       'orientationAttempts': scan.orientationPasses.length,
-      'manualConfirmationRequired': incomplete > 0 ||
-          scan.receipt.warnings.isNotEmpty || unresolved.isNotEmpty,
+      'manualConfirmationRequired':
+          incomplete > 0 ||
+          scan.receipt.warnings.isNotEmpty ||
+          unresolved.isNotEmpty,
       'note': 'Heuristic diagnostic only; not proof of correct photo OCR.',
     },
     'build': build,

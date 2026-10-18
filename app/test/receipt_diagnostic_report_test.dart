@@ -112,7 +112,10 @@ void main() {
       version: 'test',
     );
     expect(report['errors'], ['crop: PlatformException']);
-    expect((report['analysis'] as Map)['flags'], contains('recovery_exception'));
+    expect(
+      (report['analysis'] as Map)['flags'],
+      contains('recovery_exception'),
+    );
     expect(report['cropPasses'], isEmpty);
     expect((report['initialPass'] as Map)['parsed'], isNotNull);
   });

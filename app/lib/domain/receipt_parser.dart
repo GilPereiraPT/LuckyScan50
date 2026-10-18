@@ -142,38 +142,54 @@ double _median(List<double> values) {
   );
 }
 
-
 List<ParsedBet> _parseAnchoredTokens(List<ReceiptToken> tokens) {
-  final nAnchors = tokens.where((t) =>
-      t.height > 0 &&
-      t.x.isFinite &&
-      t.y.isFinite &&
-      RegExp(r'^[0-9]{1,2}[.]?N$', caseSensitive: false)
-          .hasMatch(t.text.trim())).toList()
-    ..sort((a, b) => a.y.compareTo(b.y));
-  final eAnchors = tokens.where((t) =>
-      t.height > 0 &&
-      t.x.isFinite &&
-      t.y.isFinite &&
-      t.text.trim().toUpperCase() == 'E').toList();
+  final nAnchors =
+      tokens
+          .where(
+            (t) =>
+                t.height > 0 &&
+                t.x.isFinite &&
+                t.y.isFinite &&
+                RegExp(
+                  r'^[0-9]{1,2}[.]?N$',
+                  caseSensitive: false,
+                ).hasMatch(t.text.trim()),
+          )
+          .toList()
+        ..sort((a, b) => a.y.compareTo(b.y));
+  final eAnchors = tokens
+      .where(
+        (t) =>
+            t.height > 0 &&
+            t.x.isFinite &&
+            t.y.isFinite &&
+            t.text.trim().toUpperCase() == 'E',
+      )
+      .toList();
   final bets = <ParsedBet>[];
   for (var i = 0; i < nAnchors.length && i < maxReceiptBets; i++) {
     final n = nAnchors[i];
-    final nextY = i + 1 < nAnchors.length
-        ? nAnchors[i + 1].y
-        : double.infinity;
+    final nextY = i + 1 < nAnchors.length ? nAnchors[i + 1].y : double.infinity;
     final es = eAnchors.where((t) => t.y > n.y && t.y < nextY).toList()
       ..sort((a, b) => a.y.compareTo(b.y));
     final e = es.isEmpty ? null : es.first;
     List<int> values(ReceiptToken anchor, int maxValue) {
-      final matches = tokens.where((t) =>
-          t.x - t.width / 2 > anchor.x + anchor.width / 2 &&
-          (t.y - anchor.y).abs() < anchor.height * 0.6 &&
-          RegExp(r'^[0-9]{1,2}$').hasMatch(t.text.trim())).toList()
-        ..sort((a, b) => a.x.compareTo(b.x));
-      return matches.map((t) => int.parse(t.text.trim()))
-          .where((v) => v >= 1 && v <= maxValue).toList();
+      final matches =
+          tokens
+              .where(
+                (t) =>
+                    t.x - t.width / 2 > anchor.x + anchor.width / 2 &&
+                    (t.y - anchor.y).abs() < anchor.height * 0.6 &&
+                    RegExp(r'^[0-9]{1,2}$').hasMatch(t.text.trim()),
+              )
+              .toList()
+            ..sort((a, b) => a.x.compareTo(b.x));
+      return matches
+          .map((t) => int.parse(t.text.trim()))
+          .where((v) => v >= 1 && v <= maxValue)
+          .toList();
     }
+
     final ns = values(n, 50);
     final ss = e == null ? <int>[] : values(e, 12);
     final issues = <String>[];
@@ -329,7 +345,6 @@ ScannedReceipt parseReceiptObservations({
         final code = recognized[1]!.toUpperCase() + ' ' + recognized[2]!;
         if (seen.add(code)) milhaoCodes.add(code);
       }
-
     }
     final printedCodes = RegExp(r'\b(\d{1,2})\s+CODIGO\(S\)').firstMatch(raw);
     if (printedCodes != null) {
