@@ -177,6 +177,36 @@ Future<MultiPassResult> recoverReceiptRows({
   final plan = planBetCrops(initial.tokens, width, height, rules: rules);
   final first = _boundedInitial(initial, plan);
   final meta = withBetLayout(metadata ?? first, plan.expectedLines);
+
+  // Whole-frame ML Kit can collapse the first two N/E columns into long
+  // vertical words. Recover values from original-image numeric cell crops,
+  // with spatial anchors, BEFORE attempting legacy row/text recovery.
+  if (meta.game == 'euromilhoes' && plan.verticalElements.isNotEmpty) {
+    final visual = planVisualBetCells(initial.tokens, plan, width, height);
+    if (visual.cells.length == plan.rows.length * 7 &&
+        plan.rows.isNotEmpty) {
+      final result = await recoverReceiptCells(
+        initialGrid: visual,
+        initial: initial,
+        metadata: meta,
+        plan: plan,
+        width: width,
+        height: height,
+        recognizeCrop: recognizeCrop,
+      );
+      return MultiPassResult(
+        result.initial,
+        result.receipt,
+        result.plan,
+        result.passes,
+        result.evidence,
+        clock.elapsedMilliseconds,
+        geometryMs: geometryClock.elapsedMilliseconds + result.geometryMs,
+        cellMs: result.cellMs,
+        skippedKnownCells: result.skippedKnownCells,
+      );
+    }
+  }
   final grid = planBetCells(initial.tokens, plan, width, height);
   final projected = projectCellObservations(initial, grid.cells, 'full-frame');
   bool covered(ParsedBet bet, String kind, List<int> values) => values.every(
