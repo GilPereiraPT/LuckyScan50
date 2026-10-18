@@ -581,8 +581,7 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
       ),
       const SizedBox(height: 20),
       const Text(
-        'LuckyScan50 · Gil Pereira · versão $appVersion · $buildSha
-Aplicação não oficial. Nunca utilize estatísticas como previsão de prémios.',
+        'LuckyScan50 · Gil Pereira · versão $appVersion · $buildSha\nAplicação não oficial. Nunca utilize estatísticas como previsão de prémios.',
       ),
     ];
   }
@@ -599,8 +598,7 @@ Aplicação não oficial. Nunca utilize estatísticas como previsão de prémios
               : receipt.code,
         ),
         subtitle: Text(
-          '${receipt.drawIds.join(', ')}
-${receiptStatus(receipt, check)} · ${euro(receipt.costCents)}',
+          '${receipt.drawIds.join(', ')}\n${receiptStatus(receipt, check)} · ${euro(receipt.costCents)}',
         ),
         isThreeLine: true,
         trailing: const Icon(Icons.chevron_right),
@@ -693,8 +691,7 @@ ${receiptStatus(receipt, check)} · ${euro(receipt.costCents)}',
       final file = File(
         p.join((await getTemporaryDirectory()).path, 'luckyscan50.csv'),
       );
-      await file.writeAsString('\uFEFF${rows.join('\r
-')}');
+      await file.writeAsString('\uFEFF${rows.join('\r\n')}');
       await SharePlus.instance.share(ShareParams(files: [XFile(file.path)]));
     } catch (_) {
       if (mounted) message(context, 'Não foi possível exportar.');
@@ -855,9 +852,13 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
     try {
       if (!mounted) return null;
       final corners = await Navigator.of(context).push<List<ReceiptCorner>>(
-        MaterialPageRoute(builder: (_) => ReceiptCornersPage(
-          path: preview.path, width: preview.width, height: preview.height,
-        )),
+        MaterialPageRoute(
+          builder: (_) => ReceiptCornersPage(
+            path: preview.path,
+            width: preview.width,
+            height: preview.height,
+          ),
+        ),
       );
       if (corners == null || !mounted) return null;
       if (corners.isEmpty) return scanReceiptFile(picked.path);
@@ -869,7 +870,11 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
         _temporaryRectified.add(corrected);
         return scan;
       } catch (_) {
-        try { await File(corrected).delete(); } catch (_) { /* Temp cache cleanup. */ }
+        try {
+          await File(corrected).delete();
+        } catch (_) {
+          // Temporary cache cleanup will also occur on next app start.
+        }
         rethrow;
       }
     } finally {
@@ -913,9 +918,7 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
           milhaoDeferred = false;
           expectedBets = result.receipt.expectedLines;
         } else {
-          ocrText = '$ocrText
---- M1LHÃO ---
-${result.rawText}';
+          ocrText = '$ocrText\n--- M1LHÃO ---\n${result.rawText}';
         }
         if (!additionalMilhao) lastScan = result;
         for (final entry in updates.entries) {
@@ -961,8 +964,7 @@ ${result.rawText}';
       }
       final parsed = lines.text
           .trim()
-          .split('
-')
+          .split('\n')
           .where((l) => l.trim().isNotEmpty)
           .map((l) {
             final parts = l.split('+');
@@ -1005,8 +1007,7 @@ ${result.rawText}';
         drawIds: ids(draws.text),
         milhaoDrawIds: ids(milhaoDraws.text),
         milhaoCodes: milhaoCodes.text
-            .split(RegExp(r'[,;
-]+'))
+            .split(RegExp(r'[,;\n]+'))
             .map((s) => s.trim().toUpperCase())
             .where((s) => s.isNotEmpty)
             .toList(),
@@ -1260,10 +1261,8 @@ ${result.rawText}';
                 children: [
                   SelectableText(
                     'Antes: ${(lastScan!.initialReceipt ?? lastScan!.multiPass!.initial).lines.length} apostas completas; '
-                    'depois: ${lastScan!.receipt.lines.length}. OCR inicial ${lastScan!.ocrMs} ms; recuperação ${lastScan!.multiPass!.elapsedMs} ms.
-'
-                    'Zona das apostas: ${lastScan!.multiPass!.plan.zone?.toJson()}
-'
+                    'depois: ${lastScan!.receipt.lines.length}. OCR inicial ${lastScan!.ocrMs} ms; recuperação ${lastScan!.multiPass!.elapsedMs} ms.\n'
+                    'Zona das apostas: ${lastScan!.multiPass!.plan.zone?.toJson()}\n'
                     'Elementos verticais intersectantes: ${lastScan!.multiPass!.plan.verticalElements.map((v) => '${v.text} (${v.height.toStringAsFixed(1)} px, ${v.angle.toStringAsFixed(1)}°)').join('; ')}',
                   ),
                   if (lastScan!.initialReceipt != null)
@@ -1273,32 +1272,26 @@ ${result.rawText}';
                       ),
                       children: [
                         SelectableText(
-                          '${lastScan!.rawText}
-'
-                          '${lastScan!.initialReceipt!.observations.map((t) => '${t.text} @ x=${t.x}, y=${t.y}, w=${t.width}, h=${t.height}, a=${t.angle}').join('
-')}',
+                          '${lastScan!.rawText}\n'
+                          '${lastScan!.initialReceipt!.observations.map((t) => '${t.text} @ x=${t.x}, y=${t.y}, w=${t.width}, h=${t.height}, a=${t.angle}').join('\n')}',
                         ),
                       ],
                     ),
                   for (final pass in lastScan!.orientationPasses)
                     SelectableText(
-                      'Orientação ${pass.turns * 90}°: ${pass.rows} linhas observadas, ${pass.elapsedMs} ms
-${pass.frame.text}',
+                      'Orientação ${pass.turns * 90}°: ${pass.rows} linhas observadas, ${pass.elapsedMs} ms\n${pass.frame.text}',
                     ),
                   for (final pass in lastScan!.multiPass!.passes)
                     SelectableText(
                       '${pass.id}: recorte ${pass.crop.box.toJson()}, ${pass.elapsedMs} ms totais; '
-                      'motor ${pass.frame?.elapsedMs ?? 0} ms; erro ${pass.error ?? 'nenhum'}
-${pass.frame?.text ?? ''}',
+                      'motor ${pass.frame?.elapsedMs ?? 0} ms; erro ${pass.error ?? 'nenhum'}\n${pass.frame?.text ?? ''}',
                     ),
                   for (final bet in lastScan!.multiPass!.evidence)
                     ListTile(
                       title: Text('Aposta ${bet.index} — proveniência'),
                       subtitle: SelectableText(
-                        'Valores aceites: ${bet.acceptedValues.map((v) => v.description).join('; ')}
-'
-                        'Observações de todas as passagens: ${bet.candidates.map((v) => v.description).join('; ')}
-'
+                        'Valores aceites: ${bet.acceptedValues.map((v) => v.description).join('; ')}\n'
+                        'Observações de todas as passagens: ${bet.candidates.map((v) => v.description).join('; ')}\n'
                         'Incertezas: ${bet.issues.join('; ')}',
                       ),
                     ),
@@ -1313,29 +1306,19 @@ ${pass.frame?.text ?? ''}',
               ))
                 ListTile(
                   title: Text('Aposta ${bet.index} incompleta — confirmar'),
-                  subtitle: Text('${bet.formLine}
-${bet.issues.join('; ')}'),
+                  subtitle: Text('${bet.formLine}\n${bet.issues.join('; ')}'),
                 ),
               for (final warning in lastScan!.receipt.warnings) Text(warning),
               ExpansionTile(
                 title: const Text('Diagnóstico local da leitura'),
                 children: [
                   SelectableText(
-                    'Imagem → ML Kit local; moldura de quatro cantos quando selecionada, com retificação anterior ao OCR
-'
-                    'ML Kit: ${lastScan!.rawText.length} caracteres, ${lastScan!.receipt.tokenCount} elementos, ${lastScan!.ocrMs} ms
-'
-                    'Reconstrução: ${lastScan!.receipt.strategy}, inclinação ${lastScan!.receipt.skewDegrees.toStringAsFixed(1)}°
-'
-                    'Interpretação e recuperação: ${lastScan!.receipt.lines.length} apostas completas, ${lastScan!.parseMs} ms
-'
-                    'Elementos (x,y,altura,ângulo):
-${lastScan!.receipt.observations.map((t) => '${t.text} @ ${t.x.toStringAsFixed(1)},${t.y.toStringAsFixed(1)},${t.height.toStringAsFixed(1)},${t.angle.toStringAsFixed(1)}').join('
-')}
-'
-                    'Linhas reconstruídas:
-${lastScan!.receipt.rows.join('
-')}',
+                    'Imagem → ML Kit local; retificação de perspetiva quando selecionada\n'
+                    'ML Kit: ${lastScan!.rawText.length} caracteres, ${lastScan!.receipt.tokenCount} elementos, ${lastScan!.ocrMs} ms\n'
+                    'Reconstrução: ${lastScan!.receipt.strategy}, inclinação ${lastScan!.receipt.skewDegrees.toStringAsFixed(1)}°\n'
+                    'Interpretação e recuperação: ${lastScan!.receipt.lines.length} apostas completas, ${lastScan!.parseMs} ms\n'
+                    'Elementos (x,y,altura,ângulo):\n${lastScan!.receipt.observations.map((t) => '${t.text} @ ${t.x.toStringAsFixed(1)},${t.y.toStringAsFixed(1)},${t.height.toStringAsFixed(1)},${t.angle.toStringAsFixed(1)}').join('\n')}\n'
+                    'Linhas reconstruídas:\n${lastScan!.receipt.rows.join('\n')}',
                   ),
                 ],
               ),
@@ -1539,9 +1522,7 @@ class ReceiptPage extends ConsumerWidget {
           ),
           if (r.milhaoCodes.isNotEmpty)
             Text(
-              'M1lhão ${r.milhaoDrawIds.join(', ')}
-${r.milhaoCodes.join('
-')}',
+              'M1lhão ${r.milhaoDrawIds.join(', ')}\n${r.milhaoCodes.join('\n')}',
             ),
           if (r.imagePath != null && File(r.imagePath!).existsSync())
             Image.file(File(r.imagePath!), height: 300),
