@@ -6,6 +6,7 @@ import '../domain/receipt_ocr.dart';
 import '../domain/receipt_rules.dart';
 import '../domain/receipt_multipass.dart';
 import 'receipt_crop_backend.dart';
+import '../domain/online_pdf_receipt.dart';
 
 class OrientationPass {
   const OrientationPass(this.turns, this.frame, this.elapsedMs, this.rows);
@@ -62,7 +63,19 @@ Future<ReceiptScan?> scanReceiptImage(ImageSource source) async {
   }
 }
 
-Future<ReceiptScan> scanReceiptFile(String path) async {
+Future<ReceiptScan> scanReceiptPdf(String path, {int pageIndex = 0}) async {
+  try {
+    const backend = ReceiptCropBackend();
+    final rendered = await backend.renderPdfPage(path, pageIndex);
+    return await scanReceiptFile(rendered, onlinePdf: true);
+  } on ReceiptScanFailure {
+    rethrow;
+  } catch (error) {
+    throw ReceiptScanFailure('renderização do PDF', error.runtimeType.toString());
+  }
+}
+
+Future<ReceiptScan> scanReceiptFile(String path, {bool onlinePdf = false}) async {
   final total = Stopwatch()..start();
   final phaseTimings = <String, int>{};
   final imageGeometry = <String, num>{};
@@ -80,10 +93,24 @@ Future<ReceiptScan> scanReceiptFile(String path) async {
       await engine.processImage(InputImage.fromFilePath(path)),
     );
     final ocrMs = timer.elapsedMilliseconds;
-    final first = initial.parse();
+    final first = onlinePdf && looksLikeOnlinePdf(initial.text)
+        ? parseOnlinePdfReceipt(initial.text, initial.tokens, textRows: initial.rows)
+        : initial.parse();
     final initialParseMs = timer.elapsedMilliseconds - ocrMs;
     timer.reset();
     final orientationPasses = <OrientationPass>[];
+    if (onlinePdf && first.strategy == 'online-pdf-table') {
+      return ReceiptScan(
+        first,
+        initial.text,
+        imagePath: path,
+        ocrMs: ocrMs,
+        initialParseMs: initialParseMs,
+        totalMs: total.elapsedMilliseconds,
+        phaseTimings: phaseTimings,
+        initialReceipt: first,
+      );
+    }
     try {
       stage = 'normalização EXIF e preparação dos recortes';
       final preparationClock = Stopwatch()..start();

@@ -15,6 +15,7 @@ Map<String, String> receiptAutofill(
     'date': scan.drawDate,
     'expected': scan.expectedLines?.toString(),
     'lines': scan.bets.isEmpty ? null : scan.formLines.join('\n'),
+    'milhaoDraws': scan.milhaoDrawId,
     'milhaoCodes': scan.milhaoCodes.isEmpty
         ? null
         : scan.milhaoCodes.join('\n'),

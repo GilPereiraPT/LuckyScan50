@@ -1,6 +1,9 @@
 package com.gilpereira.luckyscan50
 
 import android.graphics.Bitmap
+import android.graphics.Color
+import android.graphics.pdf.PdfRenderer
+import android.os.ParcelFileDescriptor
 import android.graphics.BitmapFactory
 import android.graphics.BitmapRegionDecoder
 import android.graphics.Rect
@@ -30,6 +33,11 @@ class MainActivity : FlutterActivity() {
                 worker.execute {
                     try {
                         val response: Any? = when (call.method) {
+                            "pdfInfo" -> pdfInfo(requireNotNull(call.argument<String>("path")))
+                            "renderPdfPage" -> renderPdfPage(
+                                requireNotNull(call.argument<String>("path")),
+                                requireNotNull(call.argument<Number>("page")).toInt()
+                            )
                             "prepare" -> prepare(requireNotNull(call.argument<String>("path")))
                             "crop" -> crop(
                                 requireNotNull(call.argument<String>("session")),
@@ -63,6 +71,69 @@ class MainActivity : FlutterActivity() {
                     }
                 }
             }
+    }
+
+
+    // The Android framework renderer needs no third-party PDF library.
+    // Documents arrive via the OS document picker as local cached files.
+    private fun checkedPdf(path: String): File {
+        val input = File(path).canonicalFile
+        require(input.isFile && input.length() in 5L..(25L * 1024 * 1024)) {
+            "PDF file size unsupported"
+        }
+        input.inputStream().use { stream ->
+            val magic = ByteArray(5)
+            require(stream.read(magic) == 5 &&
+                magic.contentEquals("%PDF-".toByteArray(Charsets.US_ASCII))) {
+                "Invalid PDF signature"
+            }
+        }
+        return input
+    }
+
+    private fun pdfInfo(path: String): Map<String, Any> {
+        ParcelFileDescriptor.open(checkedPdf(path), ParcelFileDescriptor.MODE_READ_ONLY).use { fd ->
+            PdfRenderer(fd).use { renderer ->
+                require(renderer.pageCount in 1..20) { "PDF page count unsupported" }
+                return mapOf("pages" to renderer.pageCount)
+            }
+        }
+    }
+
+    private fun renderPdfPage(path: String, pageIndex: Int): String {
+        ParcelFileDescriptor.open(checkedPdf(path), ParcelFileDescriptor.MODE_READ_ONLY).use { fd ->
+            PdfRenderer(fd).use { renderer ->
+                require(renderer.pageCount in 1..20 && pageIndex in 0 until renderer.pageCount) {
+                    "PDF page out of range"
+                }
+                renderer.openPage(pageIndex).use { page ->
+                    require(page.width in 1..1800 && page.height in 1..1800) {
+                        "PDF page dimensions unsupported"
+                    }
+                    val multiplier = minOf(4.0, 2450.0 / page.width, 3450.0 / page.height)
+                    val w = ceil(page.width * multiplier).toInt()
+                    val h = ceil(page.height * multiplier).toInt()
+                    require(w.toLong() * h <= 10000000L) { "PDF page too large" }
+                    val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+                    val directory = File(cacheDir, "receipt-pdf-${UUID.randomUUID()}")
+                    try {
+                        Canvas(bitmap).drawColor(Color.WHITE)
+                        page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                        require(directory.mkdirs())
+                        val output = File(directory, "page.png")
+                        output.outputStream().use {
+                            require(bitmap.compress(Bitmap.CompressFormat.PNG, 100, it))
+                        }
+                        return output.absolutePath
+                    } catch (error: Throwable) {
+                        directory.deleteRecursively()
+                        throw error
+                    } finally {
+                        bitmap.recycle()
+                    }
+                }
+            }
+        }
     }
 
     private fun prepare(path: String): Map<String, Any> {

@@ -66,6 +66,11 @@ void main() {
     );
     await tester.tap(find.text('Importar imagem'));
     await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Aposta 4 incompleta — confirmar'),
+      150,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Aposta 4 incompleta — confirmar'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.text('Confirmar e guardar'),
