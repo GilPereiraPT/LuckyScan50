@@ -49,7 +49,7 @@ jobs:
               if not os.environ.get(key):
                   raise SystemExit('Missing required signing secret: ' + key)
           keyfile = Path(os.environ['RUNNER_TEMP']) / 'luckyscan50-private.jks'
-          keyfile.write_bytes(base64.b64decode(os.environ['KEYSTORE_B64'], validate=True))
+          keyfile.write_bytes(base64.b64decode(''.join(os.environ['KEYSTORE_B64'].split()), validate=True))
           keyfile.chmod(0o600)
           def escape(value):
               return ''.join(('\\u%04x' % ord(c)) if c in '\\:=#! \n\r\t' or ord(c) > 126 else c for c in value)

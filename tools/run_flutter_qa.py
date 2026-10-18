@@ -42,7 +42,10 @@ def main():
         extra = '  sqflite_common_ffi: ^2.3.6\n'
         if args.mode == 'android':
             extra = '  integration_test:\n    sdk: flutter\n'
-            spec += '  assets:\n    - assets/private_receipts/\n'
+            if '  assets:\n' in spec:
+                spec = spec.replace('  assets:\n', '  assets:\n    - assets/private_receipts/\n', 1)
+            else:
+                spec += '  assets:\n    - assets/private_receipts/\n'
             shutil.copytree(ROOT / 'qa/android/integration_test', app / 'integration_test', dirs_exist_ok=True)
             shutil.copytree(ROOT / 'qa/android/test_driver', app / 'test_driver', dirs_exist_ok=True)
             target = app / 'assets/private_receipts'

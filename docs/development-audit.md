@@ -351,3 +351,10 @@ O estado final do run/artifact deve ser confirmado após o push; esta entrada n�
 constitui prova de APK compilada ou descarregada. OCR real em Android com as
 fotografias nas duas orientações continua sem validação neste ambiente.
 Backend, SQLite de produção e Cron não foram modificados.
+
+Verificação adicional: a preparação QA Android foi corrigida para acrescentar
+as fotografias privadas na secção assets existente, sem duplicar a chave YAML.
+`python3 tools/run_flutter_qa.py android --resolve-only` passou; não executa OCR.
+O descodificador do secret base64 aceita quebras de linha sem deixar de validar
+os caracteres. A execução remota `39126707826` aprovou a validação completa e
+iniciou o job de assinatura; aguarda-se o seu resultado e artefacto.
