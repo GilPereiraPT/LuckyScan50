@@ -1,0 +1,11 @@
+name: QA private release LuckyScan50 0.2.5 four corners
+on:
+  push:
+    branches:
+      - build/luckyscan50-four-corners-025
+permissions:
+  contents: read
+jobs:
+  private-release:
+    uses: ./.github/workflows/signed-apk.yml
+    secrets: inherit
