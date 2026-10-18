@@ -27,7 +27,7 @@ jobs:
           channel: stable
           cache: true
       - name: Dependencias
-        run: flutter pub get --enforce-lockfile
+        run: flutter pub get
       - name: Compilar APK ARM64 diagnostico
         run: flutter build apk --release --target-platform android-arm64 --dart-define=LUCKYSCAN_BUILD_SHA="${GITHUB_SHA}"
       - name: Verificar APK
