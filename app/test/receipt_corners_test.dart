@@ -17,24 +17,33 @@ void main() {
   });
 
   test('crossed corners, tiny areas and off-image points are rejected', () {
-    expect(validReceiptQuadrilateral(const [
-      ReceiptCorner(.1, .1),
-      ReceiptCorner(.9, .9),
-      ReceiptCorner(.9, .1),
-      ReceiptCorner(.1, .9),
-    ]), isFalse);
-    expect(validReceiptQuadrilateral(const [
-      ReceiptCorner(.45, .45),
-      ReceiptCorner(.55, .45),
-      ReceiptCorner(.55, .55),
-      ReceiptCorner(.45, .55),
-    ]), isFalse);
-    expect(validReceiptQuadrilateral(const [
-      ReceiptCorner(-.1, .1),
-      ReceiptCorner(.9, .1),
-      ReceiptCorner(.9, .9),
-      ReceiptCorner(.1, .9),
-    ]), isFalse);
+    expect(
+      validReceiptQuadrilateral(const [
+        ReceiptCorner(.1, .1),
+        ReceiptCorner(.9, .9),
+        ReceiptCorner(.9, .1),
+        ReceiptCorner(.1, .9),
+      ]),
+      isFalse,
+    );
+    expect(
+      validReceiptQuadrilateral(const [
+        ReceiptCorner(.45, .45),
+        ReceiptCorner(.55, .45),
+        ReceiptCorner(.55, .55),
+        ReceiptCorner(.45, .55),
+      ]),
+      isFalse,
+    );
+    expect(
+      validReceiptQuadrilateral(const [
+        ReceiptCorner(-.1, .1),
+        ReceiptCorner(.9, .1),
+        ReceiptCorner(.9, .9),
+        ReceiptCorner(.1, .9),
+      ]),
+      isFalse,
+    );
   });
 
   test('corner dragging clamps positions to the image boundaries', () {

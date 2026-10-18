@@ -1098,27 +1098,37 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Captura com moldura de quatro cantos',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
+                    const Text(
+                      'Captura com moldura de quatro cantos',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     const SizedBox(height: 6),
-                    const Text('Fotografe o talão completo e ajuste os cantos '
+                    const Text(
+                      'Fotografe o talão completo e ajuste os cantos '
                       'do papel antes de iniciar o OCR. A correção é opcional '
-                      'e pode ser dispensada para usar a fotografia original.'),
+                      'e pode ser dispensada para usar a fotografia original.',
+                    ),
                     const SizedBox(height: 8),
-                    Wrap(spacing: 8, runSpacing: 8, children: [
-                      FilledButton.tonalIcon(
-                        onPressed: busy || saving ? null
-                            : () => scan(ImageSource.camera, guided: true),
-                        icon: const Icon(Icons.crop_free),
-                        label: const Text('Fotografar com moldura'),
-                      ),
-                      FilledButton.tonalIcon(
-                        onPressed: busy || saving ? null
-                            : () => scan(ImageSource.gallery, guided: true),
-                        icon: const Icon(Icons.photo_size_select_large),
-                        label: const Text('Importar com moldura'),
-                      ),
-                    ]),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        FilledButton.tonalIcon(
+                          onPressed: busy || saving
+                              ? null
+                              : () => scan(ImageSource.camera, guided: true),
+                          icon: const Icon(Icons.crop_free),
+                          label: const Text('Fotografar com moldura'),
+                        ),
+                        FilledButton.tonalIcon(
+                          onPressed: busy || saving
+                              ? null
+                              : () => scan(ImageSource.gallery, guided: true),
+                          icon: const Icon(Icons.photo_size_select_large),
+                          label: const Text('Importar com moldura'),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -1126,24 +1136,27 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
             const SizedBox(height: 8),
             ExpansionTile(
               title: const Text('OCR direto, sem corrigir perspetiva'),
-              children: [Wrap(
-              spacing: 8,
               children: [
-                OutlinedButton.icon(
-                  onPressed: busy || saving
-                      ? null
-                      : () => scan(ImageSource.camera),
-                  icon: const Icon(Icons.camera_alt),
-                  label: const Text('Fotografar'),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: busy || saving
+                          ? null
+                          : () => scan(ImageSource.camera),
+                      icon: const Icon(Icons.camera_alt),
+                      label: const Text('Fotografar'),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: busy || saving
+                          ? null
+                          : () => scan(ImageSource.gallery),
+                      icon: const Icon(Icons.image),
+                      label: const Text('Importar imagem'),
+                    ),
+                  ],
                 ),
-                OutlinedButton.icon(
-                  onPressed: busy || saving
-                      ? null
-                      : () => scan(ImageSource.gallery),
-                  icon: const Icon(Icons.image),
-                  label: const Text('Importar imagem'),
-                ),
-              ])],
+              ],
             ),
             if (busy) const LinearProgressIndicator(),
             if (image != null)
