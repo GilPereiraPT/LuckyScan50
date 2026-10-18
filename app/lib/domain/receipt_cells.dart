@@ -379,7 +379,7 @@ CellGrid planVisualBetCells(
     // solely to place an E-label OCR probe. Never treat that estimate as
     // verification or accept nearby stars until the probe actually reads E.
     final eY = e?.y ?? n.y + (eOffset ?? pitch * .45);
-    if (e == null && eY != null) {
+    if (e == null) {
       final marker = CropBox(
         math.max(0, n.x - h * .5),
         math.max(0, eY - h * .55),
@@ -387,15 +387,12 @@ CellGrid planVisualBetCells(
         math.min(height, eY + h * .55),
       );
       markers.add(BetCrop(entry.key, marker, kind: 'marker', printedIndex: true));
-    } else if (e == null) {
-      warnings.add('Aposta ${entry.key}: sem E de referência; estrelas pendentes.');
     }
     for (final kind in ['N', 'E']) {
-      if (kind == 'E' && eY == null) continue;
       for (var i = 0; i < (kind == 'N' ? 5 : 2); i++) {
         final x = xs[i];
         final y = kind == 'E'
-            ? eY! + slope * (x - (e?.x ?? n.x))
+            ? eY + slope * (x - (e?.x ?? n.x))
             : n.y + slope * (x - n.x);
         final halfHeight = math.min(pitch * .33, h * (kind == 'N' ? .58 : .50));
         final box = CropBox(
