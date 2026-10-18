@@ -795,7 +795,7 @@ ScannedReceipt withBetLayout(
     List<int> read(ReceiptToken anchor, int maximum) {
       final selected = tokens.where((t) =>
           t.x - t.width / 2 > anchor.x + anchor.width / 2 &&
-          (t.y - anchor.y).abs() < anchor.height &&
+          (t.y - anchor.y).abs() < anchor.height * 0.6 &&
           RegExp(r'^[0-9]{1,2}
   required String text,
   List<String>? textRows,
