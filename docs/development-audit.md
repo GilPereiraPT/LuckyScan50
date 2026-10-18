@@ -309,3 +309,10 @@ Passenger ou Cron existente. Não foi feito deploy ou executada recolha contra a
 base de produção. Documentação e ficheiros a atualizar em
 `docs/official-results-cpanel.md`. Empacotamento cPanel mantém módulos na raiz,
 configuração privada e dados fora do ZIP, com testes separados.
+
+Na entrega, o primeiro push foi recusado porque a branch remota tinha avançado
+até `95a6781`. Integrado esse histórico pelo merge `2c1ee93`, sem conflitos e sem
+force push, preservando alterações Android/CI e imagens feitas em paralelo.
+A árvore `api-python`, documentação e empacotador permaneceu idêntica ao commit
+validado `66368c8`; o ZIP dessa implementação continua a corresponder ao código
+backend integrado. Não foram reescritas alterações alheias ou criado/publicado APK.
