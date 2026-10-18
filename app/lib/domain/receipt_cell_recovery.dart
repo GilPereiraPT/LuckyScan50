@@ -13,6 +13,7 @@ Future<MultiPassResult> recoverReceiptCells({
   required RecognizeBetCrop recognizeCrop,
   int? maxPasses,
   CellGrid? initialGrid,
+  String strategy = 'geometric-cells',
 }) async {
   // Each observed bet has seven fields and may need a marker probe and retries.
   // Scale the budget with the actual layout instead of starving bets after #5.
@@ -212,7 +213,7 @@ Future<MultiPassResult> recoverReceiptCells({
     observations: initial.tokens,
     tokenCount: first.tokenCount,
     skewDegrees: first.skewDegrees,
-    strategy: 'geometric-cells',
+    strategy: strategy,
   );
   return MultiPassResult(
     first,
