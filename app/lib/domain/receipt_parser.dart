@@ -340,8 +340,11 @@ ScannedReceipt parseReceiptObservations({
   final codes = identifiers
       .where((s) => RegExp(r'-\d{3}$').hasMatch(s))
       .toList();
+  // The official physical receipt separates TOTAL A PAGAR and the amount
+  // onto different OCR lines, or prints them on the same line.
+  // Never collect arbitrary monetary values outside this anchored label.
   final amounts = RegExp(
-    r'\bTOTAL\s*:?\s*(?:€\s*)?(\d{1,5}[,.]\d{2})(?:\s*€)?',
+    r'\bTOTAL\s*(?:A\s+PAGAR\s*)?:?\s*(?:€\s*)?(\d{1,5}[,.]\d{2})(?:\s*€)?',
   ).allMatches(raw).map((m) => m[1]!.replaceAll('.', ',')).toSet();
   if (amounts.length > 1) {
     warnings.add('Mais de um valor TOTAL; confirme o valor pago.');
@@ -386,9 +389,16 @@ ScannedReceipt parseReceiptObservations({
   if (dates.length > 1) {
     warnings.add('Várias datas reconhecidas; confirmar a data do sorteio.');
   }
-  final contests = RegExp(
-    r'\b(?:CONCURSO|CONC\.)\s*(?:N[.º°]*\s*)?:?\s*(\d{3})(?:/(\d{4}))?\b',
-  ).allMatches(raw).map((m) => (number: m[1]!, year: m[2])).toSet();
+  // Euromilhões physical tickets often label the draw "AUT SORT 081",
+  // rather than "CONCURSO 081". Only use an unequivocal anchored number.
+  final contests = <({String number, String? year})>{
+    ...RegExp(
+      r'\b(?:CONCURSO|CONC\.)\s*(?:N[.º°]*\s*)?:?\s*(\d{3})(?:/(\d{4}))?\b',
+    ).allMatches(raw).map((m) => (number: m[1]!, year: m[2])),
+    ...RegExp(r'\bAUT\s+SORT\s+([0-9O]{3})\b')
+        .allMatches(raw)
+        .map((m) => (number: m[1]!.replaceAll('O', '0'), year: null)),
+  };
   String? drawId;
   if (contests.length == 1) {
     final contest = contests.single;
