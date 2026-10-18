@@ -78,6 +78,45 @@ void main() {
       expect(parsed.fullyParsed, isTrue);
     },
   );
+  test('real physical ticket footer/header fields fill from spatial OCR rows', () {
+    // ML Kit reports the separated footer tokens out of reading order.
+    // Text alone cannot associate TOTAL A PAGAR with its € value.
+    final p = parseReceiptObservations(
+      text:
+          'EUROMILHÕES\n5 AP SIMPLES AUT SORT O81\n'
+          '2026/10/09\n1.N\nE\nTOTAL A PAGAR\n2026/10/09\n'
+          '€ 11.00',
+      tokens: [
+        const ReceiptToken('1.N', 235, 490, 50, width: 70),
+        const ReceiptToken('E', 258, 540, 45, width: 18),
+        const ReceiptToken('TOTAL', 192, 1248, 54, width: 117),
+        const ReceiptToken('A', 285, 1245, 54, width: 40),
+        const ReceiptToken('PAGAR', 390, 1243, 54, width: 118),
+        const ReceiptToken('€', 1121, 1233, 45, width: 23),
+        const ReceiptToken('11.00', 1222, 1232, 46, width: 113),
+      ],
+    );
+    expect(p.amount, '11,00');
+    expect(p.drawId, '081/2026');
+    expect(p.drawDate, '2026-10-09');
+    final fields = receiptAutofill(
+      p, current: {}, atStart: {}, previousOcr: {},
+    );
+    expect(fields['cost'], '11,00');
+    expect(fields['draws'], '081/2026');
+    expect(fields['date'], '2026-10-09');
+  });
+
+  test('uncertain ticket metadata never becomes a guessed amount or contest', () {
+    final p = parseReceiptObservations(
+      text: 'SORT O81\nSORT O82\n2026/10/09\n'
+          'TOTAL A PAGAR € 11.00\nTOTAL 12,00 €',
+    );
+    expect(p.drawId, isNull);
+    expect(p.amount, isNull);
+    expect(p.drawDate, '2026-10-09');
+  });
+
   test('three of five preserve two missing slots', () {
     final rows = List.generate(
       3,
