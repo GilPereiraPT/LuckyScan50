@@ -29,9 +29,24 @@ jobs:
       - name: Analyze Flutter sources
         working-directory: app
         run: flutter analyze
-      - name: Run N/E unit tests
+      - name: Run all Flutter unit and widget regressions
         working-directory: app
-        run: flutter test test/receipt_ne_lines_test.dart
+        run: flutter test
+      - name: Generate launcher icons from the bundled LuckyScan50 logo
+        shell: bash
+        run: |
+          python3 -m pip install --quiet pillow
+          python3 - <<'PY'
+          from PIL import Image
+          from pathlib import Path
+          source = Path('app/assets/branding/luckyscan50-logo.webp')
+          if not source.is_file():
+              raise SystemExit('Missing LuckyScan50 brand asset')
+          image = Image.open(source).convert('RGBA')
+          for density, size in {'mdpi': 48, 'hdpi': 72, 'xhdpi': 96, 'xxhdpi': 144, 'xxxhdpi': 192}.items():
+              target = Path(f'app/android/app/src/main/res/mipmap-{density}/ic_launcher.png')
+              image.resize((size, size), Image.Resampling.LANCZOS).save(target)
+          PY
       - name: Build diagnostic arm64 APK
         working-directory: app
         run: flutter build apk --debug --target-platform android-arm64
