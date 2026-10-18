@@ -150,7 +150,8 @@ Future<MultiPassResult> recoverReceiptCells({
     if (needsConfirmation ||
         (strategy == 'visual-grid-cells' && after.isEmpty) ||
         (strategy != 'visual-grid-cells' &&
-            after.isEmpty && cell.box.height < 48)) {
+            after.isEmpty &&
+            cell.box.height < 48)) {
       final retry = BetCrop(
         cell.index,
         cell.box,
@@ -158,7 +159,8 @@ Future<MultiPassResult> recoverReceiptCells({
         kind: cell.kind,
         position: cell.position,
         deskewDegrees: cell.deskewDegrees,
-        contrast: needsConfirmation ||
+        contrast:
+            needsConfirmation ||
             (strategy == 'visual-grid-cells' && after.isEmpty),
       );
       final scale = cell.box.height < 48 ? 2.0 : 1.0;
