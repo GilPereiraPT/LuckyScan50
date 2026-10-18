@@ -340,8 +340,11 @@ ScannedReceipt parseReceiptObservations({
   final codes = identifiers
       .where((s) => RegExp(r'-\d{3}$').hasMatch(s))
       .toList();
+  // A physical Portuguese receipt often prints TOTAL A PAGAR on the left
+  // and the currency/amount at the far right of the same optical row.
+  // reconstructed token rows preserve that association; no unlabelled prices.
   final amounts = RegExp(
-    r'\bTOTAL\s*:?\s*(?:€\s*)?(\d{1,5}[,.]\d{2})(?:\s*€)?',
+    r'\bTOTAL(?:\s+A\s+PAGAR)?\s*:?\s*(?:€\s*)?(\d{1,5}[,.]\d{2})(?:\s*€)?',
   ).allMatches(raw).map((m) => m[1]!.replaceAll('.', ',')).toSet();
   if (amounts.length > 1) {
     warnings.add('Mais de um valor TOTAL; confirme o valor pago.');
@@ -373,22 +376,37 @@ ScannedReceipt parseReceiptObservations({
       : math.max(observed, printed ?? observed);
   if (counts.length > 1) warnings.add('Número de apostas ambíguo.');
   final dates = <String>{};
-  for (final m in RegExp(r'\b(\d{2})/(\d{2})/(\d{4})\b').allMatches(raw)) {
-    final d = int.parse(m[1]!),
-        month = int.parse(m[2]!),
-        year = int.parse(m[3]!);
-    final date = DateTime(year, month, d);
-    if (date.year == year && date.month == month && date.day == d) {
-      dates.add('${m[3]}-${m[2]}-${m[1]}');
+  void addDate(int year, int month, int day) {
+    if (year < 2000 || year > 2100) return;
+    final date = DateTime(year, month, day);
+    if (date.year == year && date.month == month && date.day == day) {
+      dates.add(
+        '${year.toString().padLeft(4, '0')}-'
+        '${month.toString().padLeft(2, '0')}-'
+        '${day.toString().padLeft(2, '0')}',
+      );
     }
+  }
+  for (final m in RegExp(r'\b(\d{2})/(\d{2})/(\d{4})\b').allMatches(raw)) {
+    addDate(int.parse(m[3]!), int.parse(m[2]!), int.parse(m[1]!));
+  }
+  // The printed physical receipt uses yyyy/mm/dd; it is not necessarily
+  // emitted in dd/mm/yyyy order by ML Kit.
+  for (final m in RegExp(r'\b(\d{4})[/.-](\d{2})[/.-](\d{2})\b').allMatches(raw)) {
+    addDate(int.parse(m[1]!), int.parse(m[2]!), int.parse(m[3]!));
   }
   final day = dates.length == 1 ? dates.single : null;
   if (dates.length > 1) {
     warnings.add('Várias datas reconhecidas; confirmar a data do sorteio.');
   }
+  // SORT on a physical Euromilhões ticket introduces a draw number.
+  // Allow the specific OCR O/0 confusion only inside that anchored field.
   final contests = RegExp(
-    r'\b(?:CONCURSO|CONC\.)\s*(?:N[.º°]*\s*)?:?\s*(\d{3})(?:/(\d{4}))?\b',
-  ).allMatches(raw).map((m) => (number: m[1]!, year: m[2])).toSet();
+    r'\b(?:CONCURSO|CONC\.|SORTEIO|SORT\.?)\s*(?:N[.º°]*\s*)?:?\s*([0O]?[0-9]{2,3})(?:/(\d{4}))?\b',
+  ).allMatches(raw).map((m) {
+    final digits = m[1]!.replaceAll('O', '0');
+    return (number: digits, year: m[2]);
+  }).where((m) => m.number.length == 3 && int.parse(m.number) > 0).toSet();
   String? drawId;
   if (contests.length == 1) {
     final contest = contests.single;
