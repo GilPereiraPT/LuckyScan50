@@ -150,7 +150,9 @@ void main() {
     ).length;
     // Cells with trustworthy full-frame evidence need not be reprocessed.
     expect(blankFirstPasses, greaterThan(0));
-    expect(enlargedRetries, blankFirstPasses);
+    // First-pass crops already corroborated by the full frame need no retry.
+    expect(enlargedRetries, greaterThan(0));
+    expect(enlargedRetries, lessThanOrEqualTo(blankFirstPasses));
     for (var i = 0; i < 5; i++) {
       expect(scan.receipt.bets[i].numbers, numbers[i]);
       expect(scan.receipt.bets[i].stars, stars[i]);
