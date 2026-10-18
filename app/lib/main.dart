@@ -1092,6 +1092,31 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
               'Agrupe as secções Euromilhões e M1lhão do mesmo comprovativo. Confirme os campos antes de guardar.',
             ),
             const SizedBox(height: 16),
+            ExpansionTile(
+              initiallyExpanded: true,
+              title: const Text('OCR direto, sem corrigir perspetiva'),
+              children: [
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: busy || saving
+                          ? null
+                          : () => scan(ImageSource.camera),
+                      icon: const Icon(Icons.camera_alt),
+                      label: const Text('Fotografar'),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: busy || saving
+                          ? null
+                          : () => scan(ImageSource.gallery),
+                      icon: const Icon(Icons.image),
+                      label: const Text('Importar imagem'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(12),
@@ -1134,31 +1159,6 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
               ),
             ),
             const SizedBox(height: 8),
-            ExpansionTile(
-              initiallyExpanded: true,
-              title: const Text('OCR direto, sem corrigir perspetiva'),
-              children: [
-                Wrap(
-                  spacing: 8,
-                  children: [
-                    OutlinedButton.icon(
-                      onPressed: busy || saving
-                          ? null
-                          : () => scan(ImageSource.camera),
-                      icon: const Icon(Icons.camera_alt),
-                      label: const Text('Fotografar'),
-                    ),
-                    OutlinedButton.icon(
-                      onPressed: busy || saving
-                          ? null
-                          : () => scan(ImageSource.gallery),
-                      icon: const Icon(Icons.image),
-                      label: const Text('Importar imagem'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
             if (busy) const LinearProgressIndicator(),
             if (image != null)
               Padding(
