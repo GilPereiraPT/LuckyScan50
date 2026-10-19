@@ -50,6 +50,8 @@ void main() {
     expect((table.rows.first.cells[2].child as Text).data, '2');
     await tester.tap(find.text('Saídas'));
     await tester.pump();
+    await tester.tap(find.text('Saídas'));
+    await tester.pump();
     table = tester.widget<DataTable>(find.byType(DataTable));
     expect((table.rows.first.cells[0].child as Text).data, '7');
     await tester.tap(find.text('Estrelas'));
