@@ -93,8 +93,9 @@ Map<String, String> manualDrawOptions(
       day.year == year;
       day = day.add(const Duration(days: 1))
     ) {
-      if (day.weekday != DateTime.tuesday && day.weekday != DateTime.friday)
+      if (day.weekday != DateTime.tuesday && day.weekday != DateTime.friday) {
         continue;
+      }
       sequence++;
       options['${sequence.toString().padLeft(3, '0')}/$year'] = day
           .toIso8601String()
