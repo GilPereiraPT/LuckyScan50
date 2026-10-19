@@ -1,7 +1,7 @@
 name: luckyscan50
 description: Carteira local independente para apostas portuguesas.
 publish_to: none
-version: 0.2.6+8
+version: 0.2.7+9
 environment:
   sdk: '>=3.9.0 <4.0.0'
 dependencies:
@@ -30,3 +30,4 @@ flutter:
   assets:
     - assets/branding/luckyscan50-logo.webp
     - assets/branding/luckyscan50-banner.webp
+    - assets/results/recent_official.json

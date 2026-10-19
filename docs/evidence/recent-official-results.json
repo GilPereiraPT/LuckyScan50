@@ -1,0 +1,41 @@
+[
+  {
+    "drawId": "081/2026",
+    "date": "2026-10-09",
+    "sourceUrl": "https://www.jogossantacasa.pt/web/SCCartazResult/euroMilhoes",
+    "selection": {
+      "method": "POST",
+      "field": "selectContest",
+      "value": "15231.0"
+    },
+    "sha256": "d8519bf170f3bbadfab22fdc6c896fb544afa29ddfad0b6b477bd97148b7751d",
+    "capture": "docs/evidence/jsc-euromilhoes-081-2026.html",
+    "status": "complete"
+  },
+  {
+    "drawId": "082/2026",
+    "date": "2026-10-13",
+    "sourceUrl": "https://www.jogossantacasa.pt/web/SCCartazResult/euroMilhoes",
+    "selection": {
+      "method": "POST",
+      "field": "selectContest",
+      "value": "15232.0"
+    },
+    "sha256": "04ea72a1020fa8cc2a71a7d0269b5982ad4d671da7deb021857c5c00eb376e6e",
+    "capture": "docs/evidence/jsc-euromilhoes-082-2026.html",
+    "status": "complete"
+  },
+  {
+    "drawId": "083/2026",
+    "date": "2026-10-16",
+    "sourceUrl": "https://www.jogossantacasa.pt/web/SCCartazResult/euroMilhoes",
+    "selection": {
+      "method": "POST",
+      "field": "selectContest",
+      "value": "15233.0"
+    },
+    "sha256": "cf020543fd4ece599dafcebc86298f3f34fdb747f5bbe46e40f9f7a5dfe1950c",
+    "capture": "docs/evidence/jsc-euromilhoes-083-2026.html",
+    "status": "complete"
+  }
+]

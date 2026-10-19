@@ -18,6 +18,8 @@ import 'data/receipt_corners.dart';
 import 'data/receipt_diagnostic_report.dart';
 import 'domain/receipt_autofill.dart';
 import 'data/results_client.dart';
+import 'data/recent_results.dart';
+import 'receipt_draw_result.dart';
 import 'data/api_overview_page.dart';
 import 'data/wallet_store.dart';
 import 'domain/wallet.dart';
@@ -27,7 +29,7 @@ const buildSha = String.fromEnvironment(
   'LUCKYSCAN_BUILD_SHA',
   defaultValue: 'local',
 );
-const appVersion = '0.2.5+7';
+const appVersion = '0.2.7+9';
 
 final receiptScannerProvider = Provider<ReceiptScanner>(
   (ref) => scanReceiptImage,
@@ -40,7 +42,7 @@ final receiptsProvider = FutureProvider(
   (ref) => ref.watch(storeProvider).receipts(),
 );
 final resultsProvider = FutureProvider(
-  (ref) => ref.watch(storeProvider).results(),
+  (ref) async => withRecentResults(await ref.watch(storeProvider).results()),
 );
 final themeProvider = StateProvider<ThemeMode>((ref) => ThemeMode.system);
 final money = NumberFormat.currency(locale: 'pt_PT', symbol: '€');
@@ -1480,106 +1482,119 @@ class ReceiptPage extends ConsumerWidget {
       );
     }
     final r = matching.first;
-    final verification = verify(
-      r,
-      ref.watch(resultsProvider).valueOrNull ?? [],
-    );
+    final results = ref.watch(resultsProvider).valueOrNull ?? [];
+    final verification = verify(r, results);
     return Scaffold(
       appBar: AppBar(title: const Text('Detalhe do recibo')),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          Text(
-            r.code.isEmpty ? 'Recibo local' : r.code,
-            style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-          ),
-          Text('${receiptStatus(r, verification)} · ${r.source}'),
-          const SizedBox(height: 16),
-          metric('Valor pago', r.costCents),
-          metric('Prémios identificados', verification.knownCents),
-          metric('Recebido', r.receivedCents),
-          if (!verification.complete)
+      body: SafeArea(
+        bottom: false,
+        child: ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
             Text(
-              '${verification.pendingDraws} concursos pendentes · ${verification.unknownPrizes} prémios por confirmar',
+              r.code.isEmpty ? 'Recibo local' : r.code,
+              style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
             ),
-          const Text('Euromilhões'),
-          Text(r.drawIds.join(', ')),
-          ...r.lines.map(
-            (l) => Card(
-              child: ListTile(
-                title: Text(l.numbers.join('  ')),
-                subtitle: Text('★ ${l.stars.join('  ')}'),
+            Text('${receiptStatus(r, verification)} · ${r.source}'),
+            const SizedBox(height: 16),
+            metric('Valor pago', r.costCents),
+            if (verification.complete || verification.knownCents > 0)
+              metric('Prémios identificados', verification.knownCents),
+            metric('Recebido', r.receivedCents),
+            if (!verification.complete)
+              Text(
+                'Conferência incompleta: ${verification.pendingDraws} concursos sem resultado disponível · ${verification.unknownPrizes} prémios por confirmar. Não significa ausência de prémio.',
+              ),
+            const Text('Euromilhões'),
+            for (final drawId in r.drawIds)
+              ReceiptDrawResult(receipt: r, drawId: drawId, results: results),
+            ...r.lines.map(
+              (l) => Card(
+                child: ListTile(
+                  title: Text(l.numbers.join('  ')),
+                  subtitle: Text('★ ${l.stars.join('  ')}'),
+                ),
               ),
             ),
-          ),
-          if (r.milhaoCodes.isNotEmpty)
-            Text(
-              'M1lhão ${r.milhaoDrawIds.join(', ')}\n${r.milhaoCodes.join('\n')}',
-            ),
-          if (r.imagePath != null && File(r.imagePath!).existsSync())
-            Image.file(File(r.imagePath!), height: 300),
-          const SizedBox(height: 20),
-          FilledButton(
-            onPressed: () async {
-              final controller = TextEditingController(
-                text: (r.receivedCents / 100).toStringAsFixed(2),
-              );
-              final value = await showDialog<String>(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  title: const Text('Total efetivamente recebido'),
-                  content: TextField(
-                    controller: controller,
-                    decoration: const InputDecoration(labelText: 'Euros'),
+            if (r.milhaoCodes.isNotEmpty)
+              Text(
+                'M1lhão ${r.milhaoDrawIds.join(', ')}\n${r.milhaoCodes.join('\n')}',
+              ),
+            if (r.imagePath != null && File(r.imagePath!).existsSync())
+              Image.file(File(r.imagePath!), height: 300),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+      bottomNavigationBar: SafeArea(
+        minimum: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            FilledButton(
+              onPressed: () async {
+                final controller = TextEditingController(
+                  text: (r.receivedCents / 100).toStringAsFixed(2),
+                );
+                final value = await showDialog<String>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text('Total efetivamente recebido'),
+                    content: TextField(
+                      controller: controller,
+                      decoration: const InputDecoration(labelText: 'Euros'),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text('Cancelar'),
+                      ),
+                      FilledButton(
+                        onPressed: () => Navigator.pop(ctx, controller.text),
+                        child: const Text('Guardar'),
+                      ),
+                    ],
                   ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: const Text('Cancelar'),
-                    ),
-                    FilledButton(
-                      onPressed: () => Navigator.pop(ctx, controller.text),
-                      child: const Text('Guardar'),
-                    ),
-                  ],
-                ),
-              );
-              if (value == null) return;
-              try {
-                await ref
-                    .read(storeProvider)
-                    .save(
-                      Receipt.fromJson({
-                        ...r.toJson(),
-                        'receivedCents': cents(value),
-                      }),
-                    );
+                );
+                if (value == null) return;
+                try {
+                  await ref
+                      .read(storeProvider)
+                      .save(
+                        Receipt.fromJson({
+                          ...r.toJson(),
+                          'receivedCents': cents(value),
+                        }),
+                      );
+                  ref.invalidate(receiptsProvider);
+                } catch (_) {
+                  if (context.mounted) message(context, 'Valor inválido.');
+                }
+              },
+              child: const Text('Registar recebimento'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton(
+              onPressed: () async {
+                if (!await confirm(
+                  context,
+                  'Eliminar este recibo e a respetiva imagem?',
+                )) {
+                  return;
+                }
+                await ref.read(storeProvider).delete(r.id);
+                if (r.imagePath != null) {
+                  final file = File(r.imagePath!);
+                  if (await file.exists()) await file.delete();
+                }
                 ref.invalidate(receiptsProvider);
-              } catch (_) {
-                if (context.mounted) message(context, 'Valor inválido.');
-              }
-            },
-            child: const Text('Registar recebimento'),
-          ),
-          TextButton(
-            onPressed: () async {
-              if (!await confirm(
-                context,
-                'Eliminar este recibo e a respetiva imagem?',
-              )) {
-                return;
-              }
-              await ref.read(storeProvider).delete(r.id);
-              if (r.imagePath != null) {
-                final file = File(r.imagePath!);
-                if (await file.exists()) await file.delete();
-              }
-              ref.invalidate(receiptsProvider);
-              if (context.mounted) context.pop();
-            },
-            child: const Text('Eliminar recibo'),
-          ),
-        ],
+                if (context.mounted) context.pop();
+              },
+              child: const Text('Eliminar recibo'),
+            ),
+          ],
+        ),
       ),
     );
   }
