@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'domain/wallet.dart';
+import 'data/official_frequency_snapshot.dart';
 
 class FrequencyTable extends StatefulWidget {
   const FrequencyTable({
@@ -15,6 +16,7 @@ class FrequencyTable extends StatefulWidget {
 
 class _FrequencyTableState extends State<FrequencyTable> {
   bool stars = false;
+  bool official = true;
   int column = 0;
   bool ascending = true;
   @override
@@ -29,9 +31,11 @@ class _FrequencyTableState extends State<FrequencyTable> {
     }
     final rows = List.generate(stars ? 12 : 50, (i) {
       final value = i + 1;
-      final occurrences = confirmed.values
-          .where((d) => (d[field] as List? ?? []).contains(value))
-          .length;
+      final occurrences = official
+          ? (stars ? officialStarCounts : officialNumberCounts)[i]
+          : confirmed.values
+                .where((d) => (d[field] as List? ?? []).contains(value))
+                .length;
       final played = widget.receipts.fold<int>(
         0,
         (sum, receipt) =>
@@ -63,9 +67,17 @@ class _FrequencyTableState extends State<FrequencyTable> {
           selected: {stars},
           onSelectionChanged: (values) => setState(() => stars = values.first),
         ),
+        SwitchListTile(
+          title: const Text('Estatísticas oficiais'),
+          subtitle: const Text('Jogos Santa Casa · 17/10/2026 às 03:00'),
+          value: official,
+          onChanged: (value) => setState(() => official = value),
+        ),
         const SizedBox(height: 12),
         Text(
-          '${confirmed.length} concursos com chave confirmada guardados. Histórico parcial. Toque num cabeçalho para ordenar.',
+          official
+              ? 'Saídas publicadas pelos Jogos Santa Casa. Fonte: https://www.jogossantacasa.pt/web/SCEstatisticas/ · Atualização fixa de 17/10/2026. Toque num cabeçalho para ordenar.'
+              : '${confirmed.length} concursos com chave confirmada guardados. Histórico parcial. Toque num cabeçalho para ordenar.',
         ),
         const Text(
           'As minhas apostas: combinações simples por concurso, incluindo múltiplas. As frequências não são previsões.',

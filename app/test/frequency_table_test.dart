@@ -45,6 +45,10 @@ void main() {
         ),
       ),
     );
+    var officialTable = tester.widget<DataTable>(find.byType(DataTable));
+    expect((officialTable.rows.first.cells[1].child as Text).data, '187');
+    await tester.tap(find.byType(SwitchListTile));
+    await tester.pump();
     expect(find.textContaining('1 concursos'), findsOneWidget);
     var table = tester.widget<DataTable>(find.byType(DataTable));
     expect((table.rows.first.cells[2].child as Text).data, '2');

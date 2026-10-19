@@ -12,7 +12,7 @@ on:
       ANDROID_KEY_PASSWORD:
         required: true
   push:
-    branches: ['codex/luckyscan50-android-wallet']
+    branches: ['codex/luckyscan50-android-wallet', 'feat/manual-draw-picker']
     paths: ['app/**', 'qa/**', 'tools/**', '.github/workflows/**']
 permissions:
   contents: read
