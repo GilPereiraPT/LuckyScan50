@@ -30,9 +30,9 @@
     "date": "2026-10-16",
     "sourceUrl": "https://www.jogossantacasa.pt/web/SCCartazResult/euroMilhoes",
     "selection": {
-      "method": "POST",
-      "field": "selectContest",
-      "value": "15233.0"
+      "method": "GET",
+      "selectedContestValue": "15233.0",
+      "captureOrigin": "api-python/fixtures/official/euromilhoes.html (previous real official capture; fields cross-checked with live API on 2026-10-19)"
     },
     "sha256": "cf020543fd4ece599dafcebc86298f3f34fdb747f5bbe46e40f9f7a5dfe1950c",
     "capture": "docs/evidence/jsc-euromilhoes-083-2026.html",
