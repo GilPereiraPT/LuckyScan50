@@ -1,0 +1,11 @@
+name: Signed LuckyScan50 0.2.6 manual entry APK
+on:
+  push:
+    branches:
+      - build/luckyscan50-manual-026
+permissions:
+  contents: read
+jobs:
+  private-release:
+    uses: ./.github/workflows/signed-apk.yml
+    secrets: inherit
