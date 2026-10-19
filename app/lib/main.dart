@@ -1,3 +1,4 @@
+import 'frequency_table.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
@@ -474,9 +475,6 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
       ];
     }
     if (index == 3) {
-      final complete = draws
-          .where((d) => d['game'] == 'euromilhoes' && d['status'] == 'complete')
-          .toList();
       return [
         const Text(
           'Finanças e frequências',
@@ -492,27 +490,7 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
                 : '${(totals['identified']! * 100 / totals['spent']!).toStringAsFixed(1)} %',
           ),
         ),
-        Text(
-          '${complete.length} concursos completos em cache. Estas frequências não são previsões.',
-        ),
-        const SizedBox(height: 16),
-        ...List.generate(50, (i) {
-          final n = i + 1;
-          final official = complete
-              .where((d) => (d['numbers'] as List).contains(n))
-              .length;
-          final personal = tickets.fold(
-            0,
-            (sum, r) =>
-                sum + r.lines.where((l) => l.numbers.contains(n)).length,
-          );
-          return ListTile(
-            dense: true,
-            leading: CircleAvatar(child: Text('$n')),
-            title: Text('$official ocorrências nos sorteios guardados'),
-            subtitle: Text('$personal chaves pessoais'),
-          );
-        }),
+        FrequencyTable(draws: draws, receipts: tickets),
       ];
     }
     return [

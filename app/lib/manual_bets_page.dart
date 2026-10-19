@@ -2,7 +2,13 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'domain/wallet.dart';
-import 'main.dart' show storeProvider, receiptsProvider, brandedPageTitle, euro;
+import 'main.dart'
+    show
+        storeProvider,
+        receiptsProvider,
+        resultsProvider,
+        brandedPageTitle,
+        euro;
 
 /// A selected multiple is stored as its distinct five-number/two-star
 /// combinations, so the existing verification and wallet remain compatible.
@@ -74,6 +80,39 @@ List<BetLine> expandManualSelections(List<ManualSelection> selections) {
   return result;
 }
 
+/// Calendar suggestions for the current and preceding year; cached dates override.
+Map<String, String> manualDrawOptions(
+  DateTime now,
+  List<Map<String, dynamic>> results,
+) {
+  final options = <String, String>{};
+  for (final year in [now.year - 1, now.year]) {
+    var sequence = 0;
+    for (
+      var day = DateTime.utc(year);
+      day.year == year;
+      day = day.add(const Duration(days: 1))
+    ) {
+      if (day.weekday != DateTime.tuesday && day.weekday != DateTime.friday)
+        continue;
+      sequence++;
+      options['${sequence.toString().padLeft(3, '0')}/$year'] = day
+          .toIso8601String()
+          .substring(0, 10);
+    }
+  }
+  for (final result in results) {
+    if (result['game'] == 'euromilhoes' &&
+        result['drawId'] is String &&
+        result['date'] is String) {
+      options[result['drawId'] as String] = result['date'] as String;
+    }
+  }
+  return options;
+}
+
+int manualCostCents(int combinations) => combinations * 250;
+
 class ManualBetPage extends ConsumerStatefulWidget {
   const ManualBetPage({super.key});
   @override
@@ -82,19 +121,9 @@ class ManualBetPage extends ConsumerStatefulWidget {
 
 class _ManualBetPageState extends ConsumerState<ManualBetPage> {
   final selections = <ManualSelection>[ManualSelection()];
-  final draw = TextEditingController();
-  final cost = TextEditingController();
-  final date = TextEditingController();
+  String? selectedDraw;
   int active = 0;
   bool saving = false;
-
-  @override
-  void dispose() {
-    draw.dispose();
-    cost.dispose();
-    date.dispose();
-    super.dispose();
-  }
 
   int get total => selections.fold(0, (sum, s) => sum + s.combinations);
   bool get ready =>
@@ -133,19 +162,16 @@ class _ManualBetPageState extends ConsumerState<ManualBetPage> {
     setState(() => saving = true);
     try {
       final lines = expandManualSelections(selections);
-      final drawId = draw.text.trim();
-      if (!RegExp(r'^\d{3}/\d{4}$').hasMatch(drawId)) {
-        throw const FormatException('Indique o concurso no formato 081/2026.');
+      final options = manualDrawOptions(
+        DateTime.now(),
+        ref.read(resultsProvider).valueOrNull ?? [],
+      );
+      final drawId = selectedDraw;
+      if (drawId == null || !options.containsKey(drawId)) {
+        throw const FormatException('Selecione o concurso.');
       }
-      final price = cents(cost.text);
-      final drawDate = date.text.trim();
-      if (drawDate.isNotEmpty) {
-        final parsed = DateTime.tryParse(drawDate);
-        if (parsed == null ||
-            parsed.toIso8601String().substring(0, 10) != drawDate) {
-          throw const FormatException('Data inválida: utilize AAAA-MM-DD.');
-        }
-      }
+      final price = manualCostCents(lines.length);
+      final drawDate = options[drawId]!;
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
@@ -177,7 +203,7 @@ class _ManualBetPageState extends ConsumerState<ManualBetPage> {
         source: 'manual',
         code: '',
         costCents: price,
-        drawDate: drawDate.isEmpty ? null : drawDate,
+        drawDate: drawDate,
         lines: lines,
         drawIds: [drawId],
       );
@@ -273,6 +299,22 @@ class _ManualBetPageState extends ConsumerState<ManualBetPage> {
 
   @override
   Widget build(BuildContext context) {
+    final options = manualDrawOptions(
+      DateTime.now(),
+      ref.watch(resultsProvider).valueOrNull ?? [],
+    );
+    final entries = options.entries.toList()
+      ..sort((a, b) => a.value.compareTo(b.value));
+    selectedDraw ??= entries
+        .firstWhere(
+          (e) =>
+              e.value.compareTo(
+                DateTime.now().toIso8601String().substring(0, 10),
+              ) >=
+              0,
+          orElse: () => entries.last,
+        )
+        .key;
     final s = selection;
     final theme = Theme.of(context);
     return Scaffold(
@@ -491,41 +533,39 @@ class _ManualBetPageState extends ConsumerState<ManualBetPage> {
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     children: [
-                      TextField(
-                        controller: draw,
-                        enabled: !saving,
+                      DropdownButtonFormField<String>(
+                        initialValue: selectedDraw,
+                        isExpanded: true,
                         decoration: const InputDecoration(
                           labelText: 'Concurso Euromilhões',
-                          hintText: '081/2026',
-                          prefixIcon: Icon(Icons.event_available),
                         ),
+                        items: entries
+                            .map(
+                              (e) => DropdownMenuItem(
+                                value: e.key,
+                                child: Text('${e.key} · ${e.value}'),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: saving
+                            ? null
+                            : (value) => setState(() => selectedDraw = value),
                       ),
                       const SizedBox(height: 12),
-                      TextField(
-                        controller: date,
-                        enabled: !saving,
-                        decoration: const InputDecoration(
-                          labelText: 'Data do sorteio (opcional)',
-                          hintText: '2026-10-09',
-                          prefixIcon: Icon(Icons.calendar_month),
+                      ListTile(
+                        leading: const Icon(Icons.calendar_month),
+                        title: const Text('Data do sorteio'),
+                        subtitle: Text(options[selectedDraw] ?? ''),
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.euro),
+                        title: const Text('Valor pago calculado'),
+                        subtitle: Text(
+                          '${euro(manualCostCents(total))} · $total combinações × 2,50 €',
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: cost,
-                        enabled: !saving,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        decoration: const InputDecoration(
-                          labelText: 'Valor total pago (€)',
-                          hintText: '11,00',
-                          prefixIcon: Icon(Icons.euro),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
                       const Text(
-                        'Introduza o valor real do comprovativo. As múltiplas são guardadas como combinações simples para verificação de resultados. Máximo: 500 combinações.',
+                        'Inclui M1lhão. As datas seguem o calendário de terça e sexta-feira; os resultados guardados têm prioridade. Confirme com o comprovativo. Máximo: 500 combinações.',
                       ),
                     ],
                   ),
