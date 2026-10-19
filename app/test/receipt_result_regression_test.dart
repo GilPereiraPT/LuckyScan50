@@ -91,14 +91,23 @@ void main() {
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
+      final container = ProviderContainer(
+        overrides: [
+          storeProvider.overrideWithValue(_EmptyResultsStore()),
+          receiptsProvider.overrideWith(
+            (ref) async => [photographedReceipt(contest: contest)],
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      // Asset IO needs real async; pumpAndSettle only settles scheduled frames.
+      await tester.runAsync(() async {
+        await container.read(resultsProvider.future);
+        await container.read(receiptsProvider.future);
+      });
       await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            storeProvider.overrideWithValue(_EmptyResultsStore()),
-            receiptsProvider.overrideWith(
-              (ref) async => [photographedReceipt(contest: contest)],
-            ),
-          ],
+        UncontrolledProviderScope(
+          container: container,
           child: MaterialApp(
             home: MediaQuery(
               data: const MediaQueryData(
