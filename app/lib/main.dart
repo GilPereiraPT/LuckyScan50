@@ -18,6 +18,7 @@ import 'data/receipt_diagnostic_report.dart';
 import 'domain/receipt_autofill.dart';
 import 'data/results_client.dart';
 import 'data/api_overview_page.dart';
+import 'data/official_statistics_page.dart';
 import 'data/wallet_store.dart';
 import 'domain/wallet.dart';
 import 'manual_bets_page.dart';
@@ -475,12 +476,27 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
     }
     if (index == 3) {
       final complete = draws
-          .where((d) => d['game'] == 'euromilhoes' && d['status'] == 'complete')
+          .where(
+            (d) =>
+                d['game'] == 'euromilhoes' &&
+                ['complete', 'numbers_confirmed'].contains(d['status']),
+          )
           .toList();
       return [
         const Text(
           'Finanças e frequências',
           style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        ),
+        ListTile(
+          leading: const Icon(Icons.public),
+          title: const Text('Estatísticas oficiais e comparação'),
+          subtitle: const Text('Números, estrelas, cobertura e cache offline'),
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) =>
+                  OfficialStatisticsPage(store: ref.read(storeProvider)),
+            ),
+          ),
         ),
         metric('Saldo teórico', totals['theoreticalBalance']!),
         metric('Saldo de caixa', totals['cashBalance']!),
@@ -493,7 +509,7 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
           ),
         ),
         Text(
-          '${complete.length} concursos completos em cache. Estas frequências não são previsões.',
+          '${complete.length} concursos com chave confirmada em cache; histórico integral não verificado. Estas frequências não são previsões.',
         ),
         const SizedBox(height: 16),
         ...List.generate(50, (i) {
