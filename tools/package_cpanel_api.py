@@ -18,7 +18,7 @@ def build(destination, source_commit=None):
         if not path.name.startswith('test_'):
             files[path.name] = path.read_bytes()
     for name in ('requirements.txt', 'rss-collector.example.json', 'verified-draw-dates.example.json',
-                 'gmail.env.example', 'wordpress.env.example', 'claim-deadlines.example.json'):
+                 'gmail.env.example', 'wordpress.env.example', 'claim-deadlines.example.json', 'email-templates.example.json'):
         files[name] = (api / name).read_bytes()
     files['README.md'] = (api / 'README.md').read_text().replace('../docs/', 'documentacao/').encode()
     for path in sorted((api / 'migrations').glob('*.sql')):

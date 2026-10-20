@@ -26,6 +26,7 @@ from urllib.request import Request, HTTPRedirectHandler, build_opener
 from zoneinfo import ZoneInfo
 
 from domain import TIERS, validate_result
+from email_templates import render as render_email
 
 
 class EmailError(Exception):
@@ -46,6 +47,7 @@ class Config:
     provider: str = 'gmail'
     wordpress_url: str = ''
     wordpress_key: str = ''
+    templates_file: str = ''
 
     @classmethod
     def environment(cls):
@@ -61,6 +63,7 @@ class Config:
             os.environ.get('LUCKYSCAN_EMAIL_PROVIDER', 'gmail'),
             os.environ.get('LUCKYSCAN_WORDPRESS_MAIL_URL', ''),
             os.environ.get('LUCKYSCAN_WORDPRESS_MAIL_KEY', ''),
+            os.environ.get('LUCKYSCAN_EMAIL_TEMPLATES_FILE', ''),
         )
 
     @property
@@ -261,11 +264,8 @@ class EmailStore:
                                (secrets.token_hex(16), now + 86400, now, identity))
                     db.execute("UPDATE outbox SET state='cancelled' WHERE subscriber=? AND state='queued'", (identity,))
                     row = db.execute('SELECT * FROM subscribers WHERE id=?', (identity,)).fetchone()
-                self.enqueue(db, row, 'confirm:' + row['version'], 'confirm',
-                             'Confirme os avisos do LuckyScan50',
-                             'Foi pedida uma subscrição de avisos do LuckyScan50 para este endereço.\n\n'
-                             'Para confirmar, abra a ligação e escolha Confirmar:\n' + self.link(row, 'confirm') +
-                             '\n\nA ligação é válida por 24 horas. Se não fez este pedido, ignore a mensagem.\n')
+                subject, body = render_email('confirm', {'confirm_url': self.link(row, 'confirm')}, self.config.templates_file)
+                self.enqueue(db, row, 'confirm:' + row['version'], 'confirm', subject, body)
             return {'status': row['status'], 'email': address}
 
     def status(self, identity):
@@ -372,9 +372,10 @@ def plan_messages(store, rows, deadlines=None, apply=False):
                     label = ('M1lhão' if row['game'] == 'milhao' else 'Euromilhões') + ' ' + row['drawId']
                     numbers = (row['winningCode'] if row['game'] == 'milhao' else
                                ' '.join(f'{n:02}' for n in row['numbers']) + ' · Estrelas: ' + ' '.join(f'{n:02}' for n in row['stars']))
-                    events.append(('result:' + key + ':' + fingerprint, 'results',
-                                   'LuckyScan50 — resultado ' + label,
-                                   f'{label}\nData: {row["date"]}\nChave: {numbers}\n\nFonte: {row["sourceUrl"]}\n'))
+                    subject, body = render_email('results', {
+                        'label': label, 'draw_date': row['date'], 'winning_key': numbers,
+                        'source_url': row['sourceUrl']}, store.config.templates_file)
+                    events.append(('result:' + key + ':' + fingerprint, 'results', subject, body))
             for watch in json.loads(subscriber['watches']):
                 prizes = [(key, amount) for key, amount in awards(watch, index)
                           if key not in (deadlines or {})
@@ -386,9 +387,10 @@ def plan_messages(store, rows, deadlines=None, apply=False):
                 if prefs['prizes']:
                     # A weekly reminder per receipt; a changed receipt is evaluated again next week.
                     event = f'prize:{watch["id"]}:{today.isocalendar().year}:{today.isocalendar().week}'
-                    events.append((event, 'prizes', 'LuckyScan50 — prémio por levantar',
-                                   f'Um recibo tem {outstanding / 100:.2f} € em prémios identificados ainda não registados como recebidos.\n'
-                                   'Abra a app, confirme o recibo e atualize o recebimento se já levantou o prémio.\n' + stamp))
+                    subject, body = render_email('prizes', {
+                        'prize_amount': f'{outstanding / 100:.2f}'.replace('.', ','),
+                        'sync_note': stamp}, store.config.templates_file)
+                    events.append((event, 'prizes', subject, body))
                 if prefs['expiry']:
                     for key, _ in prizes:
                         deadline = (deadlines or {}).get(key)
@@ -399,10 +401,11 @@ def plan_messages(store, rows, deadlines=None, apply=False):
                             # One advance warning and one final-day warning, never a daily flood.
                             phase = 'last' if remaining == 0 else 'advance'
                             event = f'expiry:{watch["id"]}:{key}:{deadline["deadline"]}:{phase}'
-                            events.append((event, 'expiry', 'LuckyScan50 — prazo de levantamento próximo',
-                                           f'Concurso: {key}\nData-limite validada: {deadline["deadline"]}\n'
-                                           f'Faltam {remaining} dia(s). Confirme se já levantou o prémio.\n'
-                                           f'Fonte: {deadline["sourceUrl"]}\n' + stamp))
+                            subject, body = render_email('expiry', {
+                                'draw': key, 'deadline': deadline['deadline'],
+                                'days_remaining': remaining, 'source_url': deadline['sourceUrl'],
+                                'sync_note': stamp}, store.config.templates_file)
+                            events.append((event, 'expiry', subject, body))
             for event, category, subject, body in events:
                 if db.execute('SELECT 1 FROM outbox WHERE subscriber=? AND event=?', (subscriber['id'], event)).fetchone():
                     continue

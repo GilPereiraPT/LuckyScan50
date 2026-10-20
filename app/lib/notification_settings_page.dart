@@ -5,6 +5,10 @@ import 'data/notification_preferences.dart';
 import 'data/email_notifications_client.dart';
 import 'main.dart' show storeProvider, brandedPageTitle;
 
+final emailSettingsClientFactoryProvider = Provider<EmailNotificationsClient Function()>(
+  (ref) => () => EmailNotificationsClient(),
+);
+
 class NotificationSettingsPage extends ConsumerStatefulWidget {
   const NotificationSettingsPage({super.key});
   @override
@@ -22,6 +26,35 @@ class _NotificationSettingsPageState
   int leadDays = 7;
   String? error;
   String emailStatus = 'not_subscribed';
+  String? notice;
+  bool noticeError = false;
+  bool dirty = false;
+
+  void feedback(String text, {bool failure = false}) {
+    if (!mounted) return;
+    setState(() {
+      notice = text;
+      noticeError = failure;
+      error = failure ? text : null;
+    });
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        content: Text(text),
+        backgroundColor: failure ? Theme.of(context).colorScheme.error : null,
+      ));
+  }
+
+  void changed(VoidCallback update, {bool announce = true}) {
+    setState(() {
+      update();
+      dirty = true;
+      noticeError = false;
+      error = null;
+      notice = 'Alterações por guardar. Toque em Guardar alterações para aplicar.';
+    });
+    if (announce) feedback(notice!);
+  }
 
   @override
   void initState() {
@@ -65,19 +98,13 @@ class _NotificationSettingsPageState
       final allowed = value ? await AndroidNotifications.request() : false;
       if (!value) await AndroidNotifications.cancelAll();
       if (!mounted) return;
-      setState(() => android = allowed);
+      changed(() => android = allowed);
       if (value && !allowed) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Notificações não autorizadas. Pode alterar a autorização nas definições do Android.',
-            ),
-          ),
-        );
+        feedback('Notificações não autorizadas pelo Android. Pode alterar a autorização nas definições do dispositivo.', failure: true);
       }
     } catch (_) {
       if (mounted) {
-        setState(() => error = 'Não foi possível pedir autorização.');
+        feedback('Não foi possível pedir autorização. Tente novamente.', failure: true);
       }
     } finally {
       if (mounted) setState(() => busy = false);
@@ -87,13 +114,15 @@ class _NotificationSettingsPageState
   Future<void> save() async {
     final address = email.text.trim();
     if (emailConsent && !NotificationPreferences.validEmail(address)) {
-      setState(() => error = 'Introduza um endereço de email válido.');
+      feedback('Não foi possível guardar: introduza um endereço de email válido.', failure: true);
       return;
     }
     setState(() {
       busy = true;
       error = null;
     });
+    bool serverUpdated = false;
+    bool localSaved = false;
     try {
       final value = NotificationPreferences(
         android: android && await AndroidNotifications.enabled(),
@@ -110,41 +139,53 @@ class _NotificationSettingsPageState
                   : DateTime.now().toUtc().toIso8601String())
             : null,
       );
-      final client = EmailNotificationsClient();
+      final client = ref.read(emailSettingsClientFactoryProvider)();
       String status;
       try {
         status = await client.configure(ref.read(storeProvider), value);
+        serverUpdated = true;
       } finally {
         client.close();
       }
       await ref
           .read(storeProvider)
           .setSetting(notificationSettingsKey, jsonEncode(value.toJson()));
-      if (!value.android) await AndroidNotifications.cancelAll();
+      localSaved = true;
+      if (!value.android) {
+        try { await AndroidNotifications.cancelAll(); } catch (_) {
+          // Preferences are saved even if the platform cannot clear old notices.
+        }
+      }
       if (!mounted) return;
       setState(() {
         preferences = value;
         emailStatus = status;
+        dirty = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            status == 'pending'
-                ? 'Pedido registado. Receberá um email para confirmar o endereço.'
-                : status == 'active'
-                ? 'Preferências guardadas. Avisos por email ativos.'
-                : 'Preferências guardadas. Avisos por email desativados.',
-          ),
-        ),
-      );
       await synchronizeEmailWallet(ref.read(storeProvider));
+      final problem = value.emailConsent
+          ? await ref.read(storeProvider).setting('notifications.email.lastSyncError')
+          : null;
+      if (problem != null && problem.isNotEmpty) {
+        feedback('Definições guardadas, mas não foi possível sincronizar a carteira para os avisos por email. Tente Verificar confirmação e sincronizar.', failure: true);
+      } else {
+        feedback(status == 'pending'
+            ? 'Definições guardadas. Aguarda confirmação do email; receberá uma mensagem para confirmar o endereço.'
+            : status == 'active'
+            ? 'Definições guardadas com sucesso. Avisos por email ativos.'
+            : 'Definições guardadas com sucesso. Avisos por email desativados.');
+      }
     } on FormatException catch (e) {
       if (mounted) {
-        setState(() => error = e.message);
+        feedback('Não foi possível guardar as alterações. ${e.message}', failure: true);
       }
     } catch (_) {
       if (mounted) {
-        setState(() => error = 'Não foi possível guardar as preferências.');
+        feedback(localSaved
+            ? 'As definições ficaram guardadas, mas não foi possível concluir a atualização dos avisos.'
+            : serverUpdated
+            ? 'O servidor recebeu a alteração, mas não foi possível guardá-la no dispositivo. Tente novamente.'
+            : 'Não foi possível guardar as alterações. Verifique a ligação à Internet e tente novamente.', failure: true);
       }
     } finally {
       if (mounted) setState(() => busy = false);
@@ -152,38 +193,42 @@ class _NotificationSettingsPageState
   }
 
   Future<void> refreshEmail() async {
-    setState(() {
-      busy = true;
-      error = null;
-    });
-    final client = EmailNotificationsClient();
+    if (dirty) {
+      feedback('Guarde as alterações antes de verificar a confirmação do email.', failure: true);
+      return;
+    }
+    setState(() { busy = true; error = null; });
+    final client = ref.read(emailSettingsClientFactoryProvider)();
     try {
       final status = await client.refresh(ref.read(storeProvider));
       await synchronizeEmailWallet(ref.read(storeProvider));
-      final problem = await ref
-          .read(storeProvider)
+      final problem = await ref.read(storeProvider)
           .setting('notifications.email.lastSyncError');
       if (mounted) {
         setState(() {
           emailStatus = status;
-          error = problem == null || problem.isEmpty ? null : problem;
         });
+        if (problem != null && problem.isNotEmpty) {
+          feedback('O estado do email foi atualizado, mas a carteira não foi sincronizada. Tente novamente.', failure: true);
+        } else {
+          feedback(status == 'active'
+              ? 'Email confirmado. Estado atualizado e carteira sincronizada.'
+              : status == 'pending'
+              ? 'O email ainda aguarda confirmação. Abra a ligação recebida na mensagem.'
+              : status == 'revoked'
+              ? 'A subscrição de email está cancelada.'
+              : 'Não existe uma subscrição ativa. Guarde as preferências para a criar.');
+        }
       }
     } on FormatException catch (e) {
-      if (mounted) {
-        setState(() => error = e.message);
-      }
+      if (mounted) { feedback('Não foi possível verificar o email. ${e.message}', failure: true); }
     } catch (_) {
       if (mounted) {
-        setState(
-          () => error = 'Não foi possível consultar a subscrição de email.',
-        );
+        feedback('Não foi possível consultar a subscrição de email. Verifique a ligação à Internet e tente novamente.', failure: true);
       }
     } finally {
       client.close();
-      if (mounted) {
-        setState(() => busy = false);
-      }
+      if (mounted) { setState(() => busy = false); }
     }
   }
 
@@ -194,7 +239,7 @@ class _NotificationSettingsPageState
       minimum: const EdgeInsets.all(16),
       child: FilledButton(
         onPressed: busy || preferences == null ? null : save,
-        child: const Text('Guardar preferências'),
+        child: Text(busy ? 'A atualizar…' : dirty ? 'Guardar alterações' : 'Guardar preferências'),
       ),
     ),
     body: preferences == null
@@ -206,6 +251,13 @@ class _NotificationSettingsPageState
         : ListView(
             padding: const EdgeInsets.all(20),
             children: [
+              if (notice != null) Semantics(
+                liveRegion: true,
+                child: Card(child: ListTile(
+                  leading: Icon(noticeError ? Icons.error_outline : dirty ? Icons.edit_notifications_outlined : Icons.check_circle_outline),
+                  title: Text(notice!),
+                )),
+              ),
               const Text(
                 'Escolha como pretende receber avisos. Pode desativá-los a qualquer momento.',
               ),
@@ -237,10 +289,11 @@ class _NotificationSettingsPageState
                 value: emailConsent,
                 onChanged: busy
                     ? null
-                    : (v) => setState(() => emailConsent = v),
+                    : (v) => changed(() => emailConsent = v),
               ),
               TextField(
                 controller: email,
+                onChanged: (_) => changed(() {}, announce: false),
                 enabled: !busy,
                 keyboardType: TextInputType.emailAddress,
                 autofillHints: const [AutofillHints.email],
@@ -259,21 +312,20 @@ class _NotificationSettingsPageState
                       : 'Avisos por email desativados. Pode cancelar também pela ligação incluída em cada mensagem.',
                 ),
               ),
-              if (emailConsent)
-                OutlinedButton(
-                  onPressed: busy ? null : refreshEmail,
-                  child: const Text('Verificar confirmação e sincronizar'),
-                ),
+              if (emailConsent) OutlinedButton(
+                onPressed: busy ? null : refreshEmail,
+                child: const Text('Verificar confirmação e sincronizar'),
+              ),
               const Divider(),
               SwitchListTile(
                 title: const Text('Resultados disponíveis'),
                 value: results,
-                onChanged: busy ? null : (v) => setState(() => results = v),
+                onChanged: busy ? null : (v) => changed(() => results = v),
               ),
               SwitchListTile(
                 title: const Text('Lembretes de prémios por levantar'),
                 value: prizes,
-                onChanged: busy ? null : (v) => setState(() => prizes = v),
+                onChanged: busy ? null : (v) => changed(() => prizes = v),
               ),
               SwitchListTile(
                 title: const Text('Prémios próximos do prazo de levantamento'),
@@ -281,7 +333,7 @@ class _NotificationSettingsPageState
                   'Enviados por email apenas quando existir uma data-limite validada para o concurso.',
                 ),
                 value: expiry,
-                onChanged: busy ? null : (v) => setState(() => expiry = v),
+                onChanged: busy ? null : (v) => changed(() => expiry = v),
               ),
               if (expiry)
                 DropdownButtonFormField<int>(
@@ -297,7 +349,7 @@ class _NotificationSettingsPageState
                         ),
                       )
                       .toList(),
-                  onChanged: busy ? null : (v) => setState(() => leadDays = v!),
+                  onChanged: busy ? null : (v) => changed(() => leadDays = v!),
                 ),
               const SizedBox(height: 16),
               const Text(
@@ -305,8 +357,8 @@ class _NotificationSettingsPageState
                 'Os emails são processados pelo servidor. Mantenha os recebimentos '
                 'atualizados na app para evitar lembretes de prémios já levantados.',
               ),
-              if (error != null) Text(error!),
             ],
           ),
   );
 }
+

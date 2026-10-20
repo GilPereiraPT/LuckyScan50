@@ -564,7 +564,7 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
     return [
       ListTile(
         leading: const Icon(Icons.notifications_outlined),
-        title: const Text('Notificações e email'),
+        title: const Text('Definições de notificação e email'),
         subtitle: const Text('Resultados, prémios e prazos de levantamento'),
         trailing: const Icon(Icons.chevron_right),
         onTap: () => context.push('/notifications'),
@@ -583,8 +583,14 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
         ],
         onChanged: (v) async {
           if (v == null) return;
-          ref.read(themeProvider.notifier).state = v;
-          await ref.read(storeProvider).setSetting('theme', v.name);
+          final messenger = ScaffoldMessenger.of(context);
+          try {
+            await ref.read(storeProvider).setSetting('theme', v.name);
+            ref.read(themeProvider.notifier).state = v;
+            messenger.showSnackBar(const SnackBar(content: Text('Tema guardado com sucesso.')));
+          } catch (_) {
+            messenger.showSnackBar(const SnackBar(content: Text('Não foi possível guardar o tema. Tente novamente.')));
+          }
         },
       ),
       const SizedBox(height: 16),
@@ -597,7 +603,7 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
       ),
       const SizedBox(height: 16),
       const Text(
-        'Os recibos e imagens ficam no armazenamento privado da aplicação. Não são enviados à API. Não introduza palavras-passe dos Jogos Santa Casa.',
+        'As imagens ficam no armazenamento privado da aplicação. Ao autorizar avisos por email, são enviados o endereço e os dados mínimos das apostas necessários para verificar prémios. Não introduza palavras-passe dos Jogos Santa Casa.',
       ),
       ListTile(
         leading: const Icon(Icons.lock_outline),
@@ -760,17 +766,12 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
     }
     final emailClient = EmailNotificationsClient();
     try {
-      await emailClient.configure(
-        ref.read(storeProvider),
-        const NotificationPreferences(),
-      );
+      await emailClient.configure(ref.read(storeProvider),
+          const NotificationPreferences());
     } catch (_) {
       if (mounted) {
-        message(
-          context,
-          'Não foi possível cancelar os avisos por email. '
-          'Ligue-se à Internet e tente novamente antes de eliminar os dados.',
-        );
+        message(context, 'Não foi possível cancelar os avisos por email. '
+            'Ligue-se à Internet e tente novamente antes de eliminar os dados.');
       }
       return;
     } finally {
@@ -1691,3 +1692,4 @@ class ReceiptPage extends ConsumerWidget {
     );
   }
 }
+

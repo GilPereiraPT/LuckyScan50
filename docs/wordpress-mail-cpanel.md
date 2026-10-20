@@ -76,3 +76,11 @@ O teste do FluentSMTP comprova apenas WordPress → caixa de correio. O teste ac
 - Os prazos de levantamento continuam a exigir datas oficiais revistas, no ficheiro privado de datas-limite. Sem data, não é inventado um prazo.
 
 Referências: [wp_mail](https://developer.wordpress.org/reference/functions/wp_mail/), [endpoints REST](https://developer.wordpress.org/rest-api/extending-the-rest-api/adding-custom-endpoints/), [FluentSMTP](https://fluentsmtp.com/docs/fluent-smtp-settings/).
+
+## Personalizar o conteúdo dos emails
+
+Copie `email-templates.example.json` para `email-templates.json`, numa pasta privada do servidor. Defina `LUCKYSCAN_EMAIL_TEMPLATES_FILE` com o caminho absoluto desse ficheiro e reinicie a aplicação Python no cPanel. Sem esta variável, usam-se os textos portugueses incluídos na aplicação.
+
+O ficheiro contém quatro modelos: `confirm` (confirmação), `results` (resultados), `prizes` (prémios por levantar) e `expiry` (prazos a caducar). Em cada um, edite `subject` e `body`. Mantenha os campos entre chavetas presentes no exemplo: são substituídos pelos dados reais. O assunto tem de incluir LuckyScan50 e ocupar uma única linha. Os valores monetários usam vírgula decimal.
+
+O cancelamento da subscrição e o aviso de aplicação não oficial são acrescentados automaticamente. O modelo de confirmação deve manter `{confirm_url}`. JSON inválido ou campos em falta impedem a criação de novas mensagens; os emails já em fila conservam o conteúdo com que foram criados. Para validar antes de ativar: `python3 -m unittest discover -s validacao/api-python` (na pasta do pacote extraído).
