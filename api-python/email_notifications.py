@@ -360,7 +360,9 @@ def plan_messages(store, rows, deadlines=None, apply=False):
                                    'LuckyScan50 — resultado ' + label,
                                    f'{label}\nData: {row["date"]}\nChave: {numbers}\n\nFonte: {row["sourceUrl"]}\n'))
             for watch in json.loads(subscriber['watches']):
-                prizes = awards(watch, index)
+                prizes = [(key, amount) for key, amount in awards(watch, index)
+                          if key not in (deadlines or {})
+                          or date.fromisoformat(deadlines[key]['deadline']) >= today]
                 if sum(amount for _, amount in prizes) <= watch['receivedCents']:
                     continue
                 stamp = 'Dados da carteira sincronizados em ' + datetime.fromtimestamp(subscriber['updated_at'], timezone.utc).isoformat() + '.\n'
@@ -539,7 +541,7 @@ def handle_request(environ, start_response, config=None):
         return reply(200, store.watches(identity, payload))
     except EmailError as exc:
         return reply(exc.status, {'error': exc.code})
-    except (ValueError, TypeError, KeyError, UnicodeError):
+    except (ValueError, TypeError, KeyError, UnicodeError, RecursionError):
         return reply(400, {'error': 'invalid_request'})
     except (sqlite3.Error, OSError):
         return reply(503, {'error': 'email_storage_unavailable'})

@@ -5,6 +5,7 @@ import fcntl
 import json
 import os
 from pathlib import Path
+import sqlite3
 
 from email_notifications import Config, EmailError, EmailStore, deadline_map, deliver, maintenance, plan_messages
 from passenger_wsgi import load_results
@@ -42,7 +43,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     try:
         print(json.dumps(run(send=args.send)))
-    except (EmailError, OSError, ValueError, KeyError):
+    except (EmailError, OSError, ValueError, TypeError, KeyError, sqlite3.Error):
         # Never write email addresses, tokens, credentials or SMTP exception text to cron logs.
         print(json.dumps({'ready': False, 'sent': 0, 'reason': 'configuration_or_data_error'}))
         raise SystemExit(1)

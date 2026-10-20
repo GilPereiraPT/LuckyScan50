@@ -159,6 +159,17 @@ class EmailTests(unittest.TestCase):
         with self.store.connect() as db:
             self.assertEqual(db.execute('SELECT count(*) FROM outbox').fetchone()[0], before)
 
+    def test_known_expired_prize_is_not_reminded(self):
+        self.subscribe()
+        self.confirm()
+        self.store.watches(self.identity, [self.watch()])
+        deadlines = {'euromilhoes:001/2026': {
+            'deadline': '2026-01-01', 'verifiedAt': '2026-01-01',
+            'sourceUrl': 'https://www.jogossantacasa.pt/reviewed-test-fixture'}}
+        planned = plan_messages(self.store, [result()], deadlines)
+        self.assertEqual(planned['prizes'], 0)
+        self.assertEqual(planned['expiry'], 0)
+
     def test_unsubscribe_cancels_queued_mail_and_erases_personal_data(self):
         self.subscribe()
         self.confirm()
