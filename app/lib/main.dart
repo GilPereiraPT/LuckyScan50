@@ -587,9 +587,17 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
           try {
             await ref.read(storeProvider).setSetting('theme', v.name);
             ref.read(themeProvider.notifier).state = v;
-            messenger.showSnackBar(const SnackBar(content: Text('Tema guardado com sucesso.')));
+            messenger.showSnackBar(
+              const SnackBar(content: Text('Tema guardado com sucesso.')),
+            );
           } catch (_) {
-            messenger.showSnackBar(const SnackBar(content: Text('Não foi possível guardar o tema. Tente novamente.')));
+            messenger.showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Não foi possível guardar o tema. Tente novamente.',
+                ),
+              ),
+            );
           }
         },
       ),
@@ -766,12 +774,17 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
     }
     final emailClient = EmailNotificationsClient();
     try {
-      await emailClient.configure(ref.read(storeProvider),
-          const NotificationPreferences());
+      await emailClient.configure(
+        ref.read(storeProvider),
+        const NotificationPreferences(),
+      );
     } catch (_) {
       if (mounted) {
-        message(context, 'Não foi possível cancelar os avisos por email. '
-            'Ligue-se à Internet e tente novamente antes de eliminar os dados.');
+        message(
+          context,
+          'Não foi possível cancelar os avisos por email. '
+          'Ligue-se à Internet e tente novamente antes de eliminar os dados.',
+        );
       }
       return;
     } finally {
@@ -1692,4 +1705,3 @@ class ReceiptPage extends ConsumerWidget {
     );
   }
 }
-
