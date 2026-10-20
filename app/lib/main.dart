@@ -1,3 +1,5 @@
+import 'notification_settings_page.dart';
+import 'data/notification_preferences.dart';
 import 'frequency_table.dart';
 import 'dart:convert';
 import 'dart:io';
@@ -90,6 +92,7 @@ final router = GoRouter(
     GoRoute(path: '/', builder: (_, __) => const Home()),
     GoRoute(path: '/add', builder: (_, __) => const AddReceipt()),
     GoRoute(path: '/manual', builder: (_, __) => const ManualBetPage()),
+    GoRoute(path: '/notifications', builder: (_, __) => const NotificationSettingsPage()),
     GoRoute(path: '/about', builder: (_, __) => const AboutPage()),
     GoRoute(path: '/api', builder: (_, __) => const ApiOverviewPage()),
     GoRoute(
@@ -171,9 +174,15 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
     setState(() => syncing = true);
     final client = ResultsClient();
     try {
+      final previous = await ref.read(storeProvider).results();
       final rows = await client.fetch();
       await ref.read(storeProvider).saveResults(rows);
       ref.invalidate(resultsProvider);
+      try {
+        await notifyAfterSync(ref.read(storeProvider), previous, rows);
+      } catch (_) {
+        // Notification failures must not turn a successful sync into an error.
+      }
       if (mounted) {
         message(
           context,
@@ -496,6 +505,13 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
       ];
     }
     return [
+      ListTile(
+        leading: const Icon(Icons.notifications_outlined),
+        title: const Text('Notificações e email'),
+        subtitle: const Text('Resultados, prémios e prazos de levantamento'),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => context.push('/notifications'),
+      ),
       const Text(
         'Privacidade e preferências',
         style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
