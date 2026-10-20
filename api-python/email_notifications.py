@@ -1,4 +1,4 @@
-"""Opt-in Gmail notifications. Separate private SQLite DB; no third-party packages.
+"""Opt-in email via Gmail or WordPress. Separate private SQLite DB; stdlib only.
 
 No network access happens in request handlers. Only the explicit cron --send
 command delivers mail, and only when all server settings are present.
@@ -21,6 +21,8 @@ import sqlite3
 import ssl
 import time
 from urllib.parse import parse_qs, urlencode, urlsplit
+from urllib.error import HTTPError
+from urllib.request import Request, HTTPRedirectHandler, build_opener
 from zoneinfo import ZoneInfo
 
 from domain import TIERS, validate_result
@@ -41,6 +43,9 @@ class Config:
     enabled: bool = False
     daily_limit: int = 200
     batch_limit: int = 20
+    provider: str = 'gmail'
+    wordpress_url: str = ''
+    wordpress_key: str = ''
 
     @classmethod
     def environment(cls):
@@ -48,22 +53,33 @@ class Config:
             os.environ.get('LUCKYSCAN_EMAIL_DATABASE', ''),
             os.environ.get('LUCKYSCAN_EMAIL_PUBLIC_URL', '').rstrip('/'),
             os.environ.get('LUCKYSCAN_EMAIL_SIGNING_KEY', ''),
-            os.environ.get('LUCKYSCAN_GMAIL_USER', ''),
+            os.environ.get('LUCKYSCAN_GMAIL_USER', os.environ.get('LUCKYSCAN_EMAIL_FROM', '')),
             os.environ.get('LUCKYSCAN_GMAIL_APP_PASSWORD', '').replace(' ', ''),
             os.environ.get('LUCKYSCAN_EMAIL_ENABLED') == '1',
             max(1, min(400, int(os.environ.get('LUCKYSCAN_EMAIL_DAILY_LIMIT', '200')))),
             max(1, min(50, int(os.environ.get('LUCKYSCAN_EMAIL_BATCH_LIMIT', '20')))),
+            os.environ.get('LUCKYSCAN_EMAIL_PROVIDER', 'gmail'),
+            os.environ.get('LUCKYSCAN_WORDPRESS_MAIL_URL', ''),
+            os.environ.get('LUCKYSCAN_WORDPRESS_MAIL_KEY', ''),
         )
 
     @property
     def ready(self):
         url = urlsplit(self.base_url)
-        return bool(self.enabled and self.database and Path(self.database).is_absolute()
+        common = bool(self.enabled and self.database and Path(self.database).is_absolute()
                     and url.scheme == 'https' and url.hostname
                     and not (url.username or url.password or url.query or url.fragment)
                     and len(self.secret) >= 32
-                    and re.fullmatch(r'[A-Za-z0-9._%+-]+@gmail\.com', self.username)
-                    and re.fullmatch(r'[A-Za-z0-9]{16}', self.password))
+                    and re.fullmatch(r'[A-Za-z0-9._%+-]+@gmail\.com', self.username))
+        if self.provider == 'gmail':
+            return common and bool(re.fullmatch(r'[A-Za-z0-9]{16}', self.password))
+        if self.provider == 'wordpress':
+            wp = urlsplit(self.wordpress_url)
+            return bool(common and wp.scheme == 'https' and wp.hostname
+                        and wp.path.endswith('/luckyscan50/v1/mail')
+                        and not (wp.username or wp.password or wp.query or wp.fragment)
+                        and re.fullmatch(r'[A-Za-z0-9_-]{32,128}', self.wordpress_key))
+        return False
 
 
 def digest(value):
@@ -410,10 +426,55 @@ def gmail_send(config, message):
         smtp.close()
 
 
-def deliver(store, sender=gmail_send):
+class NoMailRedirect(HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+def wordpress_send(config, message, opener=None):
+    """Send only to the configured HTTPS bridge; never forward its secret on redirects."""
+    if config.provider != 'wordpress' or not config.ready:
+        raise EmailError('wordpress_not_configured', 503)
+    plain = message.get_body(preferencelist=('plain',))
+    unsubscribe = str(message['List-Unsubscribe']).strip('<>')
+    payload = {
+        'deliveryId': str(message['X-LuckyScan50-Delivery-ID']),
+        'to': str(message['To']),
+        'subject': str(message['Subject']),
+        'body': plain.get_content() if plain else '',
+        'unsubscribeUrl': unsubscribe,
+    }
+    request = Request(config.wordpress_url, data=json.dumps(payload).encode(), method='POST', headers={
+        'Content-Type': 'application/json', 'X-LuckyScan50-Key': config.wordpress_key,
+        'User-Agent': 'LuckyScan50-Mail/1.0',
+    })
+    transport = opener or build_opener(NoMailRedirect())
+    try:
+        with transport.open(request, timeout=40) as response:
+            data = response.read(8193)
+            if len(data) > 8192:
+                raise OSError('Ambiguous bridge response')
+            decoded = json.loads(data)
+            if response.status != 200 or not isinstance(decoded, dict) or decoded.get('accepted') is not True:
+                raise OSError('Ambiguous bridge response')
+    except HTTPError as exc:
+        if exc.code in (401, 403):
+            raise smtplib.SMTPAuthenticationError(535, b'WordPress bridge authorization failed') from None
+        if exc.code == 429:
+            raise smtplib.SMTPDataError(451, b'WordPress bridge quota reached') from None
+        if exc.code in (400, 413):
+            raise smtplib.SMTPDataError(550, b'WordPress bridge rejected payload') from None
+        # Redirects, 409 and 5xx can follow an already accepted delivery.
+        raise OSError('WordPress delivery outcome requires review') from None
+    except (ValueError, UnicodeError):
+        raise OSError('Ambiguous bridge response') from None
+
+
+def deliver(store, sender=None):
     """Reserve before SMTP. Ambiguous transport failures are NOT automatically retried."""
     if not store.config.ready:
         raise EmailError('email_not_configured', 503)
+    sender = sender or (wordpress_send if store.config.provider == 'wordpress' else gmail_send)
     sent = failed = uncertain = 0
     for _ in range(store.config.batch_limit):
         with store.connect() as db:
@@ -439,6 +500,8 @@ def deliver(store, sender=gmail_send):
         message['To'] = subscriber['email']
         message['Subject'] = queued['subject']
         message['Message-ID'] = make_msgid(idstring=f'luckyscan50-{queued["id"]}', domain='gmail.com')
+        message['X-LuckyScan50-Delivery-ID'] = hmac.new(store.config.secret.encode(),
+            f'{queued["subscriber"]}:{queued["id"]}:{queued["version"]}'.encode(), hashlib.sha256).hexdigest()
         unsubscribe = store.link(subscriber, 'unsubscribe')
         message['List-Unsubscribe'] = '<' + unsubscribe + '>'
         message['List-Unsubscribe-Post'] = 'List-Unsubscribe=One-Click'
@@ -499,7 +562,7 @@ def handle_request(environ, start_response, config=None):
     try:
         config = config or Config.environment()
         if path == '/v1/email/status' and environ.get('REQUEST_METHOD') == 'GET':
-            return reply(200, {'available': config.ready, 'provider': 'gmail', 'requiresConfirmation': True})
+            return reply(200, {'available': config.ready, 'provider': config.provider, 'requiresConfirmation': True})
         if not config.ready:
             return reply(503, {'error': 'email_not_configured'})
         store = EmailStore(config)

@@ -18,7 +18,7 @@ def build(destination, source_commit=None):
         if not path.name.startswith('test_'):
             files[path.name] = path.read_bytes()
     for name in ('requirements.txt', 'rss-collector.example.json', 'verified-draw-dates.example.json',
-                 'gmail.env.example', 'claim-deadlines.example.json'):
+                 'gmail.env.example', 'wordpress.env.example', 'claim-deadlines.example.json'):
         files[name] = (api / name).read_bytes()
     files['README.md'] = (api / 'README.md').read_text().replace('../docs/', 'documentacao/').encode()
     for path in sorted((api / 'migrations').glob('*.sql')):
@@ -37,6 +37,7 @@ def build(destination, source_commit=None):
         '(historical-results-sources.md)', '(documentacao/historical-results-sources.md)').replace(
         '(official-results-cpanel.md)', '(documentacao/official-results-cpanel.md)').encode()
     files['INSTALAR_GMAIL.md'] = (ROOT / 'docs/gmail-cpanel.md').read_bytes()
+    files['INSTALAR_WORDPRESS.md'] = (ROOT / 'docs/wordpress-mail-cpanel.md').read_bytes()
     commit = source_commit or subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
     if not re.fullmatch(r'[0-9a-f]{40}', commit):
         raise ValueError('Expected a full source commit SHA')

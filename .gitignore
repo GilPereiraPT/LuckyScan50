@@ -4,6 +4,7 @@ __pycache__/
 dist/
 .env
 gmail.env
+wordpress.env
 *.private.env
 email.sqlite3*
 *.cron.lock

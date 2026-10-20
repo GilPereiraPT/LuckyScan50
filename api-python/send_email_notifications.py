@@ -39,7 +39,7 @@ def run(send=False):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--send', action='store_true', help='Deliver queued mail through configured Gmail SMTP')
+    parser.add_argument('--send', action='store_true', help='Deliver queued mail through the configured email provider')
     args = parser.parse_args()
     try:
         print(json.dumps(run(send=args.send)))
