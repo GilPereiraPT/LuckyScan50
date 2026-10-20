@@ -15,7 +15,9 @@ void main() {
       source: 'manual',
       code: '',
       costCents: 500,
-      lines: [BetLine([1, 2, 3, 4, 5], [1, 2])],
+      lines: [
+        BetLine([1, 2, 3, 4, 5], [1, 2]),
+      ],
       drawIds: ['081/2026', '082/2026'],
     );
     final restored = Receipt.fromJson(receipt.toJson());

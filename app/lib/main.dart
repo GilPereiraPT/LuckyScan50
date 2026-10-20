@@ -92,7 +92,10 @@ final router = GoRouter(
     GoRoute(path: '/', builder: (_, __) => const Home()),
     GoRoute(path: '/add', builder: (_, __) => const AddReceipt()),
     GoRoute(path: '/manual', builder: (_, __) => const ManualBetPage()),
-    GoRoute(path: '/notifications', builder: (_, __) => const NotificationSettingsPage()),
+    GoRoute(
+      path: '/notifications',
+      builder: (_, __) => const NotificationSettingsPage(),
+    ),
     GoRoute(path: '/about', builder: (_, __) => const AboutPage()),
     GoRoute(path: '/api', builder: (_, __) => const ApiOverviewPage()),
     GoRoute(
@@ -160,7 +163,8 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
       final store = ref.read(storeProvider);
       if (await store.setting('notifications.offer.seen') == 'true' ||
           await store.setting(notificationSettingsKey) != null ||
-          !mounted) return;
+          !mounted)
+        return;
       final configure = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(

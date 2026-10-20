@@ -47,7 +47,8 @@ class NotificationPreferences {
         prizes: json['prizes'] != false,
         expiry: json['expiry'] != false,
         leadDays: [1, 3, 7, 14].contains(json['leadDays'])
-            ? json['leadDays'] as int : 7,
+            ? json['leadDays'] as int
+            : 7,
         emailConsentAt: json['emailConsentAt'] as String?,
       );
 
@@ -66,24 +67,33 @@ class NotificationPreferences {
 
 class AndroidNotifications {
   static const channel = MethodChannel('luckyscan50/notifications');
-  static Future<bool> enabled() async => Platform.isAndroid &&
+  static Future<bool> enabled() async =>
+      Platform.isAndroid &&
       (await channel.invokeMethod<bool>('enabled') ?? false);
-  static Future<bool> request() async => Platform.isAndroid &&
+  static Future<bool> request() async =>
+      Platform.isAndroid &&
       (await channel.invokeMethod<bool>('request') ?? false);
   static Future<void> settings() async {
     if (Platform.isAndroid) await channel.invokeMethod<void>('settings');
   }
+
   static Future<void> cancelAll() async {
     if (Platform.isAndroid) await channel.invokeMethod<void>('cancelAll');
   }
+
   static Future<bool> show(String category, String title, String body) async {
     if (!Platform.isAndroid) return false;
     return await channel.invokeMethod<bool>('show', {
-      'id': category == 'results' ? 1 : category == 'prizes' ? 2 : 3,
-      'category': category,
-      'title': title,
-      'body': body,
-    }) ?? false;
+          'id': category == 'results'
+              ? 1
+              : category == 'prizes'
+              ? 2
+              : 3,
+          'category': category,
+          'title': title,
+          'body': body,
+        }) ??
+        false;
   }
 }
 
@@ -96,15 +106,21 @@ Future<void> notifyAfterSync(
   final preferences = await NotificationPreferences.load(store);
   if (!preferences.android || !await AndroidNotifications.enabled()) return;
   final known = previous.map((r) => '${r['game']}:${r['drawId']}').toSet();
-  final fresh = current.where((r) =>
-      r['status'] == 'complete' &&
-      !known.contains('${r['game']}:${r['drawId']}')).toList();
+  final fresh = current
+      .where(
+        (r) =>
+            r['status'] == 'complete' &&
+            !known.contains('${r['game']}:${r['drawId']}'),
+      )
+      .toList();
   if (preferences.results && fresh.isNotEmpty) {
-    final key = fresh.map((r) => '${r['game']}:${r['drawId']}').toList()..sort();
+    final key = fresh.map((r) => '${r['game']}:${r['drawId']}').toList()
+      ..sort();
     final fingerprint = key.join(',');
     if (await store.setting('notifications.results.last') != fingerprint &&
         await AndroidNotifications.show(
-          'results', 'Resultados disponíveis',
+          'results',
+          'Resultados disponíveis',
           '${fresh.length} concurso(s) atualizado(s). Consulte os resultados na app.',
         )) {
       await store.setSetting('notifications.results.last', fingerprint);
@@ -120,7 +136,8 @@ Future<void> notifyAfterSync(
     if (outstanding.isNotEmpty &&
         await store.setting('notifications.prizes.last') != today &&
         await AndroidNotifications.show(
-          'prizes', 'Prémios por levantar',
+          'prizes',
+          'Prémios por levantar',
           '${outstanding.length} recibo(s) com prémios identificados ainda por registar como recebidos.',
         )) {
       await store.setSetting('notifications.prizes.last', today);

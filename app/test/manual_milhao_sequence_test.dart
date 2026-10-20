@@ -24,9 +24,6 @@ void main() {
 
   test('does not wrap or change letters at the numeric limit', () {
     expect(manualMilhaoSequence('ABC99999', 1), ['ABC 99999']);
-    expect(
-      () => manualMilhaoSequence('ABC 99999', 2),
-      throwsFormatException,
-    );
+    expect(() => manualMilhaoSequence('ABC 99999', 2), throwsFormatException);
   });
 }

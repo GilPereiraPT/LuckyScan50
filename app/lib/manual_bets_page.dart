@@ -116,8 +116,9 @@ int manualCostCents(int combinations, {int drawCount = 1}) =>
     combinations * 250 * drawCount;
 
 List<String> manualMilhaoSequence(String firstCode, int count) {
-  final match = RegExp(r'^([A-Z]{3})\s*(\d{5})$')
-      .firstMatch(firstCode.trim().toUpperCase());
+  final match = RegExp(
+    r'^([A-Z]{3})\s*(\d{5})$',
+  ).firstMatch(firstCode.trim().toUpperCase());
   if (match == null || count < 1 || count > 500) {
     throw const FormatException(
       'Indique o primeiro código (ABC 00001) e uma quantidade entre 1 e 500.',
@@ -169,9 +170,9 @@ class _ManualBetPageState extends ConsumerState<ManualBetPage> {
       );
       setState(() => milhaoCodes.text = codes.join('\n'));
     } on FormatException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
     }
   }
 
@@ -231,18 +232,22 @@ class _ManualBetPageState extends ConsumerState<ManualBetPage> {
           .where((c) => c.isNotEmpty)
           .toList();
       final milhaoIds = includeMilhao
-          ? milhaoDraw.text.split(RegExp(r'[,;\s]+'))
-              .where((id) => id.isNotEmpty).toSet().toList()
+          ? milhaoDraw.text
+                .split(RegExp(r'[,;\s]+'))
+                .where((id) => id.isNotEmpty)
+                .toSet()
+                .toList()
           : <String>[];
       if (includeMilhao && codes.isEmpty) {
         throw const FormatException(
           'Gere a sequência M1lhão e reveja os códigos antes de guardar.',
         );
       }
-      if (includeMilhao && (milhaoIds.isEmpty ||
-          milhaoIds.any((id) => !RegExp(r'^\d{3}/\d{4}$').hasMatch(id)) ||
-          codes.any((c) => !RegExp(r'^[A-Z]{3}\d{5}$').hasMatch(c)) ||
-          codes.toSet().length != codes.length)) {
+      if (includeMilhao &&
+          (milhaoIds.isEmpty ||
+              milhaoIds.any((id) => !RegExp(r'^\d{3}/\d{4}$').hasMatch(id)) ||
+              codes.any((c) => !RegExp(r'^[A-Z]{3}\d{5}$').hasMatch(c)) ||
+              codes.toSet().length != codes.length)) {
         throw const FormatException(
           'Confirme o concurso M1lhão (000/2026) e os códigos, sem duplicados.',
         );
@@ -623,48 +628,62 @@ class _ManualBetPageState extends ConsumerState<ManualBetPage> {
                         contentPadding: EdgeInsets.zero,
                         title: const Text('Registar M1lhão (opcional)'),
                         value: includeMilhao,
-                        onChanged: saving ? null : (value) =>
-                            setState(() => includeMilhao = value),
+                        onChanged: saving
+                            ? null
+                            : (value) => setState(() => includeMilhao = value),
                       ),
                       if (includeMilhao) ...[
-                      const Text('Introduza as letras uma vez e o primeiro número. A sequência mantém as letras e os zeros iniciais.'),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: milhaoDraw,
-                        enabled: !saving,
-                        decoration: const InputDecoration(labelText: 'Concursos M1lhão', hintText: '000/2026, 001/2026'),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: milhaoFirst,
-                        enabled: !saving,
-                        textCapitalization: TextCapitalization.characters,
-                        decoration: const InputDecoration(labelText: 'Primeiro código', hintText: 'ABC 00001'),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: milhaoCount,
-                        enabled: !saving,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(labelText: 'Quantidade de códigos no comprovativo'),
-                      ),
-                      OutlinedButton.icon(
-                        onPressed: saving ? null : generateMilhao,
-                        icon: const Icon(Icons.format_list_numbered),
-                        label: const Text('Gerar sequência'),
-                      ),
-                      TextField(
-                        controller: milhaoCodes,
-                        enabled: !saving,
-                        minLines: 2,
-                        maxLines: 6,
-                        textCapitalization: TextCapitalization.characters,
-                        decoration: const InputDecoration(labelText: 'Códigos M1lhão — rever ou editar', hintText: 'Um código por linha'),
-                      ),
-                      const Text(
-                        'Estes códigos serão verificados em todos os concursos M1lhão indicados. '
-                        'Confirme no comprovativo; se os códigos forem diferentes, crie registos separados.',
-                      ),
+                        const Text(
+                          'Introduza as letras uma vez e o primeiro número. A sequência mantém as letras e os zeros iniciais.',
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: milhaoDraw,
+                          enabled: !saving,
+                          decoration: const InputDecoration(
+                            labelText: 'Concursos M1lhão',
+                            hintText: '000/2026, 001/2026',
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: milhaoFirst,
+                          enabled: !saving,
+                          textCapitalization: TextCapitalization.characters,
+                          decoration: const InputDecoration(
+                            labelText: 'Primeiro código',
+                            hintText: 'ABC 00001',
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: milhaoCount,
+                          enabled: !saving,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Quantidade de códigos no comprovativo',
+                          ),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: saving ? null : generateMilhao,
+                          icon: const Icon(Icons.format_list_numbered),
+                          label: const Text('Gerar sequência'),
+                        ),
+                        TextField(
+                          controller: milhaoCodes,
+                          enabled: !saving,
+                          minLines: 2,
+                          maxLines: 6,
+                          textCapitalization: TextCapitalization.characters,
+                          decoration: const InputDecoration(
+                            labelText: 'Códigos M1lhão — rever ou editar',
+                            hintText: 'Um código por linha',
+                          ),
+                        ),
+                        const Text(
+                          'Estes códigos serão verificados em todos os concursos M1lhão indicados. '
+                          'Confirme no comprovativo; se os códigos forem diferentes, crie registos separados.',
+                        ),
                       ],
                     ],
                   ),
@@ -701,12 +720,18 @@ class _ManualBetPageState extends ConsumerState<ManualBetPage> {
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
-                        children: selectedDraws.map((id) => InputChip(
-                          label: Text('$id · ${options[id]}'),
-                          onDeleted: saving || selectedDraws.length == 1
-                              ? null
-                              : () => setState(() => selectedDraws.remove(id)),
-                        )).toList(),
+                        children: selectedDraws
+                            .map(
+                              (id) => InputChip(
+                                label: Text('$id · ${options[id]}'),
+                                onDeleted: saving || selectedDraws.length == 1
+                                    ? null
+                                    : () => setState(
+                                        () => selectedDraws.remove(id),
+                                      ),
+                              ),
+                            )
+                            .toList(),
                       ),
                       const Text(
                         'As mesmas chaves aplicam-se a todos os concursos selecionados.',
@@ -726,7 +751,9 @@ class _ManualBetPageState extends ConsumerState<ManualBetPage> {
                       TextField(
                         controller: paidAmount,
                         enabled: !saving,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                         decoration: const InputDecoration(
                           labelText: 'Total pago no comprovativo (€)',
                           helperText: 'Opcional: substitui o total calculado.',

@@ -24,7 +24,13 @@ void main() {
 
   test('validates email without allowing whitespace or extra at signs', () {
     expect(NotificationPreferences.validEmail('user@example.pt'), isTrue);
-    for (final invalid in ['', 'user', 'user@host', 'a b@host.pt', 'a@@host.pt']) {
+    for (final invalid in [
+      '',
+      'user',
+      'user@host',
+      'a b@host.pt',
+      'a@@host.pt',
+    ]) {
       expect(NotificationPreferences.validEmail(invalid), isFalse);
     }
   });

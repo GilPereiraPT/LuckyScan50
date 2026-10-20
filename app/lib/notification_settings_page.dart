@@ -43,7 +43,8 @@ class _NotificationSettingsPageState
         leadDays = value.leadDays;
       });
     } catch (_) {
-      if (mounted) setState(() => error = 'Não foi possível ler as preferências.');
+      if (mounted)
+        setState(() => error = 'Não foi possível ler as preferências.');
     }
   }
 
@@ -61,12 +62,17 @@ class _NotificationSettingsPageState
       if (!mounted) return;
       setState(() => android = allowed);
       if (value && !allowed) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Notificações não autorizadas. Pode alterar a autorização nas definições do Android.'),
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Notificações não autorizadas. Pode alterar a autorização nas definições do Android.',
+            ),
+          ),
+        );
       }
     } catch (_) {
-      if (mounted) setState(() => error = 'Não foi possível pedir autorização.');
+      if (mounted)
+        setState(() => error = 'Não foi possível pedir autorização.');
     } finally {
       if (mounted) setState(() => busy = false);
     }
@@ -78,7 +84,10 @@ class _NotificationSettingsPageState
       setState(() => error = 'Introduza um endereço de email válido.');
       return;
     }
-    setState(() { busy = true; error = null; });
+    setState(() {
+      busy = true;
+      error = null;
+    });
     try {
       final value = NotificationPreferences(
         android: android && await AndroidNotifications.enabled(),
@@ -90,22 +99,27 @@ class _NotificationSettingsPageState
         leadDays: leadDays,
         emailConsentAt: emailConsent
             ? (preferences?.emailConsent == true &&
-                preferences?.email == address
-                ? preferences?.emailConsentAt
-                : DateTime.now().toUtc().toIso8601String())
+                      preferences?.email == address
+                  ? preferences?.emailConsentAt
+                  : DateTime.now().toUtc().toIso8601String())
             : null,
       );
-      await ref.read(storeProvider).setSetting(
-        notificationSettingsKey, jsonEncode(value.toJson()),
-      );
+      await ref
+          .read(storeProvider)
+          .setSetting(notificationSettingsKey, jsonEncode(value.toJson()));
       if (!value.android) await AndroidNotifications.cancelAll();
       if (!mounted) return;
       setState(() => preferences = value);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Preferências guardadas. O envio por email ainda não está ativo.'),
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Preferências guardadas. O envio por email ainda não está ativo.',
+          ),
+        ),
+      );
     } catch (_) {
-      if (mounted) setState(() => error = 'Não foi possível guardar as preferências.');
+      if (mounted)
+        setState(() => error = 'Não foi possível guardar as preferências.');
     } finally {
       if (mounted) setState(() => busy = false);
     }
@@ -122,30 +136,44 @@ class _NotificationSettingsPageState
       ),
     ),
     body: preferences == null
-        ? Center(child: error == null
-            ? const CircularProgressIndicator()
-            : Text(error!))
+        ? Center(
+            child: error == null
+                ? const CircularProgressIndicator()
+                : Text(error!),
+          )
         : ListView(
             padding: const EdgeInsets.all(20),
             children: [
-              const Text('Escolha como pretende receber avisos. Pode desativá-los a qualquer momento.'),
+              const Text(
+                'Escolha como pretende receber avisos. Pode desativá-los a qualquer momento.',
+              ),
               SwitchListTile(
                 title: const Text('Notificações no Android'),
-                subtitle: const Text('Pedir autorização para apresentar avisos no dispositivo.'),
+                subtitle: const Text(
+                  'Pedir autorização para apresentar avisos no dispositivo.',
+                ),
                 value: android,
                 onChanged: busy ? null : setAndroid,
               ),
               TextButton(
-                onPressed: busy ? null : () async {
-                  await AndroidNotifications.settings();
-                },
-                child: const Text('Abrir definições de notificações do Android'),
+                onPressed: busy
+                    ? null
+                    : () async {
+                        await AndroidNotifications.settings();
+                      },
+                child: const Text(
+                  'Abrir definições de notificações do Android',
+                ),
               ),
               SwitchListTile(
                 title: const Text('Receber avisos por email'),
-                subtitle: const Text('Autorizo o envio dos avisos selecionados para o meu email.'),
+                subtitle: const Text(
+                  'Autorizo o envio dos avisos selecionados para o meu email.',
+                ),
                 value: emailConsent,
-                onChanged: busy ? null : (v) => setState(() => emailConsent = v),
+                onChanged: busy
+                    ? null
+                    : (v) => setState(() => emailConsent = v),
               ),
               TextField(
                 controller: email,
@@ -153,11 +181,15 @@ class _NotificationSettingsPageState
                 keyboardType: TextInputType.emailAddress,
                 autofillHints: const [AutofillHints.email],
                 autocorrect: false,
-                decoration: const InputDecoration(labelText: 'Endereço de email'),
+                decoration: const InputDecoration(
+                  labelText: 'Endereço de email',
+                ),
               ),
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 12),
-                child: Text('Email pendente de ativação: o endereço e a autorização ficam guardados apenas neste dispositivo. Ainda não são enviados emails.'),
+                child: Text(
+                  'Email pendente de ativação: o endereço e a autorização ficam guardados apenas neste dispositivo. Ainda não são enviados emails.',
+                ),
               ),
               const Divider(),
               SwitchListTile(
@@ -172,20 +204,32 @@ class _NotificationSettingsPageState
               ),
               SwitchListTile(
                 title: const Text('Prémios próximos do prazo de levantamento'),
-                subtitle: const Text('Pendente: exige uma data-limite validada para cada prémio.'),
+                subtitle: const Text(
+                  'Pendente: exige uma data-limite validada para cada prémio.',
+                ),
                 value: expiry,
                 onChanged: busy ? null : (v) => setState(() => expiry = v),
               ),
-              if (expiry) DropdownButtonFormField<int>(
-                initialValue: leadDays,
-                decoration: const InputDecoration(labelText: 'Antecedência do aviso'),
-                items: [1, 3, 7, 14].map((d) => DropdownMenuItem(
-                  value: d, child: Text('$d dia(s) antes'),
-                )).toList(),
-                onChanged: busy ? null : (v) => setState(() => leadDays = v!),
-              ),
+              if (expiry)
+                DropdownButtonFormField<int>(
+                  initialValue: leadDays,
+                  decoration: const InputDecoration(
+                    labelText: 'Antecedência do aviso',
+                  ),
+                  items: [1, 3, 7, 14]
+                      .map(
+                        (d) => DropdownMenuItem(
+                          value: d,
+                          child: Text('$d dia(s) antes'),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: busy ? null : (v) => setState(() => leadDays = v!),
+                ),
               const SizedBox(height: 16),
-              const Text('Nesta versão, os avisos Android são verificados quando a app sincroniza. A verificação automática com a app fechada ainda não está ativa.'),
+              const Text(
+                'Nesta versão, os avisos Android são verificados quando a app sincroniza. A verificação automática com a app fechada ainda não está ativa.',
+              ),
               if (error != null) Text(error!),
             ],
           ),
