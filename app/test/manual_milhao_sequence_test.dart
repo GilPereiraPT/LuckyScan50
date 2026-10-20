@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../lib/manual_bets_page.dart';
+import 'package:luckyscan50/manual_bets_page.dart';
 
 void main() {
   test('preserves letters and leading zeroes across a carry', () {
