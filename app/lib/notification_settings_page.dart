@@ -130,7 +130,7 @@ class _NotificationSettingsPageState
         SnackBar(
           content: Text(
             status == 'pending'
-                ? 'Pedido registado. Confirme o seu endereço através da mensagem enviada por email.'
+                ? 'Pedido registado. Receberá um email para confirmar o endereço.'
                 : status == 'active'
                 ? 'Preferências guardadas. Avisos por email ativos.'
                 : 'Preferências guardadas. Avisos por email desativados.',
@@ -152,16 +152,12 @@ class _NotificationSettingsPageState
   }
 
   Future<void> refreshEmail() async {
-    setState(() {
-      busy = true;
-      error = null;
-    });
+    setState(() { busy = true; error = null; });
     final client = EmailNotificationsClient();
     try {
       final status = await client.refresh(ref.read(storeProvider));
       await synchronizeEmailWallet(ref.read(storeProvider));
-      final problem = await ref
-          .read(storeProvider)
+      final problem = await ref.read(storeProvider)
           .setting('notifications.email.lastSyncError');
       if (mounted) {
         setState(() {
@@ -170,20 +166,14 @@ class _NotificationSettingsPageState
         });
       }
     } on FormatException catch (e) {
-      if (mounted) {
-        setState(() => error = e.message);
-      }
+      if (mounted) { setState(() => error = e.message); }
     } catch (_) {
       if (mounted) {
-        setState(
-          () => error = 'Não foi possível consultar a subscrição de email.',
-        );
+        setState(() => error = 'Não foi possível consultar a subscrição de email.');
       }
     } finally {
       client.close();
-      if (mounted) {
-        setState(() => busy = false);
-      }
+      if (mounted) { setState(() => busy = false); }
     }
   }
 
@@ -259,11 +249,10 @@ class _NotificationSettingsPageState
                       : 'Avisos por email desativados. Pode cancelar também pela ligação incluída em cada mensagem.',
                 ),
               ),
-              if (emailConsent)
-                OutlinedButton(
-                  onPressed: busy ? null : refreshEmail,
-                  child: const Text('Verificar confirmação e sincronizar'),
-                ),
+              if (emailConsent) OutlinedButton(
+                onPressed: busy ? null : refreshEmail,
+                child: const Text('Verificar confirmação e sincronizar'),
+              ),
               const Divider(),
               SwitchListTile(
                 title: const Text('Resultados disponíveis'),
@@ -310,3 +299,4 @@ class _NotificationSettingsPageState
           ),
   );
 }
+

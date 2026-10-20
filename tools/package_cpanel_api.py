@@ -3,6 +3,7 @@ import argparse
 from datetime import datetime, timezone
 import hashlib
 import json
+import re
 from pathlib import Path
 import subprocess
 import zipfile
@@ -10,7 +11,7 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def build(destination):
+def build(destination, source_commit=None):
     files = {}
     api = ROOT / 'api-python'
     for path in sorted(api.glob('*.py')):
@@ -36,7 +37,9 @@ def build(destination):
         '(historical-results-sources.md)', '(documentacao/historical-results-sources.md)').replace(
         '(official-results-cpanel.md)', '(documentacao/official-results-cpanel.md)').encode()
     files['INSTALAR_GMAIL.md'] = (ROOT / 'docs/gmail-cpanel.md').read_bytes()
-    commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
+    commit = source_commit or subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
+    if not re.fullmatch(r'[0-9a-f]{40}', commit):
+        raise ValueError('Expected a full source commit SHA')
     files['build-info.json'] = (json.dumps({'commit': commit, 'createdAt': datetime.now(timezone.utc).isoformat(),
         'python': '3.12', 'remoteCollectionEnabledByDefault': False,
         'containsProductionData': False}, indent=2) + '\n').encode()
@@ -60,5 +63,7 @@ def build(destination):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('output', type=Path)
-    print(json.dumps(build(parser.parse_args().output), indent=2))
+    parser.add_argument('--source-commit', help='Source snapshot commit when packaging outside a Git checkout')
+    args = parser.parse_args()
+    print(json.dumps(build(args.output, args.source_commit), indent=2))
 
