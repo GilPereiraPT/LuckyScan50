@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'data/notification_preferences.dart';
+import 'data/email_notifications_client.dart';
 import 'main.dart' show storeProvider, brandedPageTitle;
 
 class NotificationSettingsPage extends ConsumerStatefulWidget {
@@ -20,6 +21,7 @@ class _NotificationSettingsPageState
   bool busy = false;
   int leadDays = 7;
   String? error;
+  String emailStatus = 'not_subscribed';
 
   @override
   void initState() {
@@ -31,6 +33,7 @@ class _NotificationSettingsPageState
     try {
       final value = await NotificationPreferences.load(ref.read(storeProvider));
       final allowed = value.android && await AndroidNotifications.enabled();
+      final status = await ref.read(storeProvider).setting(emailStatusKey);
       if (!mounted) return;
       setState(() {
         preferences = value;
@@ -41,6 +44,7 @@ class _NotificationSettingsPageState
         prizes = value.prizes;
         expiry = value.expiry;
         leadDays = value.leadDays;
+        emailStatus = status ?? 'not_subscribed';
       });
     } catch (_) {
       if (mounted) {
@@ -106,25 +110,70 @@ class _NotificationSettingsPageState
                   : DateTime.now().toUtc().toIso8601String())
             : null,
       );
+      final client = EmailNotificationsClient();
+      String status;
+      try {
+        status = await client.configure(ref.read(storeProvider), value);
+      } finally {
+        client.close();
+      }
       await ref
           .read(storeProvider)
           .setSetting(notificationSettingsKey, jsonEncode(value.toJson()));
       if (!value.android) await AndroidNotifications.cancelAll();
       if (!mounted) return;
-      setState(() => preferences = value);
+      setState(() {
+        preferences = value;
+        emailStatus = status;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
-            'Preferências guardadas. O envio por email ainda não está ativo.',
+            status == 'pending'
+                ? 'Pedido registado. Confirme o seu endereço através da mensagem enviada por email.'
+                : status == 'active'
+                ? 'Preferências guardadas. Avisos por email ativos.'
+                : 'Preferências guardadas. Avisos por email desativados.',
           ),
         ),
       );
+      await synchronizeEmailWallet(ref.read(storeProvider));
+    } on FormatException catch (e) {
+      if (mounted) {
+        setState(() => error = e.message);
+      }
     } catch (_) {
       if (mounted) {
         setState(() => error = 'Não foi possível guardar as preferências.');
       }
     } finally {
       if (mounted) setState(() => busy = false);
+    }
+  }
+
+  Future<void> refreshEmail() async {
+    setState(() { busy = true; error = null; });
+    final client = EmailNotificationsClient();
+    try {
+      final status = await client.refresh(ref.read(storeProvider));
+      await synchronizeEmailWallet(ref.read(storeProvider));
+      final problem = await ref.read(storeProvider)
+          .setting('notifications.email.lastSyncError');
+      if (mounted) {
+        setState(() {
+          emailStatus = status;
+          error = problem == null || problem.isEmpty ? null : problem;
+        });
+      }
+    } on FormatException catch (e) {
+      if (mounted) { setState(() => error = e.message); }
+    } catch (_) {
+      if (mounted) {
+        setState(() => error = 'Não foi possível consultar a subscrição de email.');
+      }
+    } finally {
+      client.close();
+      if (mounted) { setState(() => busy = false); }
     }
   }
 
@@ -171,7 +220,9 @@ class _NotificationSettingsPageState
               SwitchListTile(
                 title: const Text('Receber avisos por email'),
                 subtitle: const Text(
-                  'Autorizo o envio dos avisos selecionados para o meu email.',
+                  'Autorizo o envio dos avisos selecionados. Para avisos de prémios, '
+                  'autorizo a sincronização das chaves, concursos e recebimentos com o servidor. '
+                  'As fotografias não são enviadas.',
                 ),
                 value: emailConsent,
                 onChanged: busy
@@ -188,11 +239,19 @@ class _NotificationSettingsPageState
                   labelText: 'Endereço de email',
                 ),
               ),
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Text(
-                  'Email pendente de ativação: o endereço e a autorização ficam guardados apenas neste dispositivo. Ainda não são enviados emails.',
+                  emailStatus == 'active'
+                      ? 'Email confirmado. Os avisos são enviados pelo servidor, mesmo com a app fechada.'
+                      : emailStatus == 'pending'
+                      ? 'Aguarda confirmação. Abra a ligação recebida por email e depois toque em Verificar confirmação.'
+                      : 'Avisos por email desativados. Pode cancelar também pela ligação incluída em cada mensagem.',
                 ),
+              ),
+              if (emailConsent) OutlinedButton(
+                onPressed: busy ? null : refreshEmail,
+                child: const Text('Verificar confirmação e sincronizar'),
               ),
               const Divider(),
               SwitchListTile(
@@ -208,7 +267,7 @@ class _NotificationSettingsPageState
               SwitchListTile(
                 title: const Text('Prémios próximos do prazo de levantamento'),
                 subtitle: const Text(
-                  'Pendente: exige uma data-limite validada para cada prémio.',
+                  'Enviados por email apenas quando existir uma data-limite validada para o concurso.',
                 ),
                 value: expiry,
                 onChanged: busy ? null : (v) => setState(() => expiry = v),
@@ -231,10 +290,13 @@ class _NotificationSettingsPageState
                 ),
               const SizedBox(height: 16),
               const Text(
-                'Nesta versão, os avisos Android são verificados quando a app sincroniza. A verificação automática com a app fechada ainda não está ativa.',
+                'Os avisos Android são verificados quando a app sincroniza. '
+                'Os emails são processados pelo servidor. Mantenha os recebimentos '
+                'atualizados na app para evitar lembretes de prémios já levantados.',
               ),
               if (error != null) Text(error!),
             ],
           ),
   );
 }
+

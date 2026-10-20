@@ -17,6 +17,7 @@ from domain import validate_result
 from store import Store, read_json
 from result_statistics import frequencies, summary
 from rss_import import overview as rss_overview
+from email_notifications import handle_request as email_request
 
 DATA_FILE=Path(os.environ.get('LUCKYSCAN_RESULTS_FILE',str(ROOT/'data'/'results.json')))
 DATABASE_FILE=os.environ.get('LUCKYSCAN_DATABASE')
@@ -28,6 +29,9 @@ def load_results():
 
 
 def application(environ,start_response):
+    email_response=email_request(environ,start_response)
+    if email_response is not None:
+        return email_response
     def reply(code,data):
         body=json.dumps(data,ensure_ascii=False,separators=(',',':')).encode('utf-8')
         statuses={200:'OK',400:'Bad Request',404:'Not Found',405:'Method Not Allowed',503:'Service Unavailable'}
@@ -110,3 +114,4 @@ def application(environ,start_response):
     rows=list(reversed(rows))
     return reply(200,{'data':rows[offset:offset+limit],'pagination':{'limit':limit,'offset':offset,
                      'total':len(rows),'hasMore':offset+limit<len(rows)}})
+

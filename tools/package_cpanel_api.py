@@ -16,7 +16,8 @@ def build(destination):
     for path in sorted(api.glob('*.py')):
         if not path.name.startswith('test_'):
             files[path.name] = path.read_bytes()
-    for name in ('requirements.txt', 'rss-collector.example.json', 'verified-draw-dates.example.json'):
+    for name in ('requirements.txt', 'rss-collector.example.json', 'verified-draw-dates.example.json',
+                 'gmail.env.example', 'claim-deadlines.example.json'):
         files[name] = (api / name).read_bytes()
     files['README.md'] = (api / 'README.md').read_text().replace('../docs/', 'documentacao/').encode()
     for path in sorted((api / 'migrations').glob('*.sql')):
@@ -34,6 +35,7 @@ def build(destination):
     files['INSTALAR_RSS.md'] = (ROOT / 'docs/rss-cron-cpanel.md').read_text().replace(
         '(historical-results-sources.md)', '(documentacao/historical-results-sources.md)').replace(
         '(official-results-cpanel.md)', '(documentacao/official-results-cpanel.md)').encode()
+    files['INSTALAR_GMAIL.md'] = (ROOT / 'docs/gmail-cpanel.md').read_bytes()
     commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
     files['build-info.json'] = (json.dumps({'commit': commit, 'createdAt': datetime.now(timezone.utc).isoformat(),
         'python': '3.12', 'remoteCollectionEnabledByDefault': False,
@@ -59,3 +61,4 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('output', type=Path)
     print(json.dumps(build(parser.parse_args().output), indent=2))
+

@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'notification_settings_page.dart';
+import 'data/email_notifications_client.dart';
 import 'data/notification_preferences.dart';
 import 'frequency_table.dart';
 import 'dart:convert';
@@ -173,7 +175,8 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
           content: const Text(
             'Escolha se pretende avisos de resultados, prémios e prazos '
             'no Android ou por email. Os canais são opcionais. '
-            'O envio por email e os alertas de caducidade ainda estão pendentes.',
+            'O email exige confirmação do endereço. Os avisos de caducidade '
+            'exigem uma data-limite validada.',
           ),
           actions: [
             TextButton(
@@ -217,6 +220,7 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
       final previous = await ref.read(storeProvider).results();
       final rows = await client.fetch();
       await ref.read(storeProvider).saveResults(rows);
+      unawaited(synchronizeEmailWallet(ref.read(storeProvider)));
       ref.invalidate(resultsProvider);
       try {
         await notifyAfterSync(ref.read(storeProvider), previous, rows);
@@ -244,6 +248,11 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(receiptsProvider, (previous, next) {
+      if (next.hasValue) {
+        unawaited(synchronizeEmailWallet(ref.read(storeProvider)));
+      }
+    });
     final receipts = ref.watch(receiptsProvider);
     final results = ref.watch(resultsProvider);
     const titles = [
@@ -737,10 +746,24 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
   Future<void> erase() async {
     if (!await confirm(
       context,
-      'Eliminar todos os recibos, histórico, imagens e resultados deste dispositivo?',
+      'Eliminar os dados deste dispositivo e cancelar os avisos por email?',
     )) {
       return;
     }
+    final emailClient = EmailNotificationsClient();
+    try {
+      await emailClient.configure(ref.read(storeProvider),
+          const NotificationPreferences());
+    } catch (_) {
+      if (mounted) {
+        message(context, 'Não foi possível cancelar os avisos por email. '
+            'Ligue-se à Internet e tente novamente antes de eliminar os dados.');
+      }
+      return;
+    } finally {
+      emailClient.close();
+    }
+    await AndroidNotifications.cancelAll();
     await ref.read(storeProvider).erase();
     final images = Directory(
       p.join((await getApplicationDocumentsDirectory()).path, 'receipts'),
@@ -1655,3 +1678,4 @@ class ReceiptPage extends ConsumerWidget {
     );
   }
 }
+
