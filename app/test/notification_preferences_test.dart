@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../lib/data/notification_preferences.dart';
+import 'package:luckyscan50/data/notification_preferences.dart';
 
 void main() {
   test('delivery channels require explicit opt-in', () {
