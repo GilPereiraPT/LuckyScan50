@@ -213,6 +213,14 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
   int index = 0;
   bool syncing = false;
   String search = '', filter = 'Todos';
+  Future<void> syncEmailSafely() async {
+    try {
+      await synchronizeEmailWallet(ref.read(storeProvider));
+    } catch (_) {
+      // Optional email services must not prevent access to the local wallet.
+    }
+  }
+
   Future<void> sync() async {
     setState(() => syncing = true);
     final client = ResultsClient();
@@ -220,7 +228,7 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
       final previous = await ref.read(storeProvider).results();
       final rows = await client.fetch();
       await ref.read(storeProvider).saveResults(rows);
-      unawaited(synchronizeEmailWallet(ref.read(storeProvider)));
+      unawaited(syncEmailSafely());
       ref.invalidate(resultsProvider);
       try {
         await notifyAfterSync(ref.read(storeProvider), previous, rows);
@@ -250,7 +258,7 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     ref.listen(receiptsProvider, (previous, next) {
       if (next.hasValue) {
-        unawaited(synchronizeEmailWallet(ref.read(storeProvider)));
+        unawaited(syncEmailSafely());
       }
     });
     final receipts = ref.watch(receiptsProvider);
