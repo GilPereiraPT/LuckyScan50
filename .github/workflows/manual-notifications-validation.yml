@@ -1,0 +1,45 @@
+name: Manual flow and notifications validation
+on:
+  push:
+    branches: ['feat/manual-draw-picker']
+    paths: ['app/**', '.github/workflows/manual-notifications-validation.yml']
+permissions:
+  contents: write
+concurrency:
+  group: manual-notifications-validation
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.35.7'
+          channel: stable
+          cache: true
+      - run: flutter pub get --enforce-lockfile
+        working-directory: app
+      - name: Format changed Dart files
+        run: dart format lib/manual_bets_page.dart lib/main.dart lib/notification_settings_page.dart lib/data/notification_preferences.dart test/manual_milhao_sequence_test.dart test/manual_multi_draw_test.dart test/notification_preferences_test.dart
+        working-directory: app
+      - name: Save formatting
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/lib/manual_bets_page.dart app/lib/main.dart app/lib/notification_settings_page.dart app/lib/data/notification_preferences.dart app/test/manual_milhao_sequence_test.dart app/test/manual_multi_draw_test.dart app/test/notification_preferences_test.dart
+          if ! git diff --cached --quiet; then
+            git commit -m "style: format manual flow and notification settings"
+            git push
+          fi
+      - run: flutter analyze
+        working-directory: app
+      - run: flutter test --reporter expanded
+        working-directory: app
+      - run: flutter build apk --debug --target-platform android-arm64
+        working-directory: app
