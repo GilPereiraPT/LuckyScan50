@@ -112,7 +112,8 @@ Map<String, String> manualDrawOptions(
   return options;
 }
 
-int manualCostCents(int combinations) => combinations * 250;
+int manualCostCents(int combinations, {int drawCount = 1}) =>
+    combinations * 250 * drawCount;
 
 List<String> manualMilhaoSequence(String firstCode, int count) {
   final match = RegExp(r'^([A-Z]{3})\s*(\d{5})$')
@@ -143,6 +144,9 @@ class ManualBetPage extends ConsumerStatefulWidget {
 class _ManualBetPageState extends ConsumerState<ManualBetPage> {
   final selections = <ManualSelection>[ManualSelection()];
   final milhaoDraw = TextEditingController();
+  final paidAmount = TextEditingController();
+  bool includeMilhao = false;
+  final selectedDraws = <String>{};
   final milhaoFirst = TextEditingController();
   final milhaoCount = TextEditingController(text: '1');
   final milhaoCodes = TextEditingController();
@@ -150,6 +154,7 @@ class _ManualBetPageState extends ConsumerState<ManualBetPage> {
   @override
   void dispose() {
     milhaoDraw.dispose();
+    paidAmount.dispose();
     milhaoFirst.dispose();
     milhaoCount.dispose();
     milhaoCodes.dispose();
@@ -215,40 +220,45 @@ class _ManualBetPageState extends ConsumerState<ManualBetPage> {
         DateTime.now(),
         ref.read(resultsProvider).valueOrNull ?? [],
       );
-      final drawId = selectedDraw;
-      if (drawId == null || !options.containsKey(drawId)) {
-        throw const FormatException('Selecione o concurso.');
+      final drawIds = selectedDraws.toList()
+        ..sort((a, b) => options[a]!.compareTo(options[b]!));
+      if (drawIds.isEmpty || drawIds.any((id) => !options.containsKey(id))) {
+        throw const FormatException('Selecione pelo menos um concurso.');
       }
-      final codes = milhaoCodes.text
+      final codes = (includeMilhao ? milhaoCodes.text : '')
           .split(RegExp(r'[\n,;]+'))
           .map((c) => c.trim().toUpperCase().replaceAll(RegExp(r'\s+'), ''))
           .where((c) => c.isNotEmpty)
           .toList();
-      final milhaoId = milhaoDraw.text.trim();
-      if (codes.isEmpty && milhaoFirst.text.trim().isNotEmpty) {
+      final milhaoIds = includeMilhao
+          ? milhaoDraw.text.split(RegExp(r'[,;\s]+'))
+              .where((id) => id.isNotEmpty).toSet().toList()
+          : <String>[];
+      if (includeMilhao && codes.isEmpty) {
         throw const FormatException(
           'Gere a sequência M1lhão e reveja os códigos antes de guardar.',
         );
       }
-      if (codes.isEmpty != milhaoId.isEmpty ||
-          (milhaoId.isNotEmpty &&
-              !RegExp(r'^\d{3}/\d{4}$').hasMatch(milhaoId)) ||
+      if (includeMilhao && (milhaoIds.isEmpty ||
+          milhaoIds.any((id) => !RegExp(r'^\d{3}/\d{4}$').hasMatch(id)) ||
           codes.any((c) => !RegExp(r'^[A-Z]{3}\d{5}$').hasMatch(c)) ||
-          codes.toSet().length != codes.length) {
+          codes.toSet().length != codes.length)) {
         throw const FormatException(
           'Confirme o concurso M1lhão (000/2026) e os códigos, sem duplicados.',
         );
       }
-      final price = manualCostCents(lines.length);
-      final drawDate = options[drawId]!;
+      final price = paidAmount.text.trim().isEmpty
+          ? manualCostCents(lines.length, drawCount: drawIds.length)
+          : cents(paidAmount.text);
+      final drawDate = options[drawIds.first]!;
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
           title: const Text('Confirmar registo'),
           content: Text(
             '${selections.length} aposta(s), ${lines.length} combinação(ões) simples.\n'
-            'Concurso: $drawId\nValor pago: ${euro(price)}\n'
-            'M1lhão: ${codes.isEmpty ? 'sem códigos registados' : '$milhaoId · ${codes.length} códigos'}\n\n'
+            'Concursos: ${drawIds.join(', ')}\nValor pago: ${euro(price)}\n'
+            'M1lhão: ${codes.isEmpty ? 'sem códigos registados' : '${milhaoIds.join(', ')} · ${codes.length} códigos'}\n\n'
             'Confirme as seleções com o comprovativo. Esta app não faz apostas oficiais.',
           ),
           actions: [
@@ -275,8 +285,8 @@ class _ManualBetPageState extends ConsumerState<ManualBetPage> {
         costCents: price,
         drawDate: drawDate,
         lines: lines,
-        drawIds: [drawId],
-        milhaoDrawIds: codes.isEmpty ? [] : [milhaoId],
+        drawIds: drawIds,
+        milhaoDrawIds: milhaoIds,
         milhaoCodes: codes,
       );
       await ref.read(storeProvider).save(receipt);
@@ -387,6 +397,9 @@ class _ManualBetPageState extends ConsumerState<ManualBetPage> {
           orElse: () => entries.last,
         )
         .key;
+    if (selectedDraws.isEmpty && selectedDraw != null) {
+      selectedDraws.add(selectedDraw!);
+    }
     final s = selection;
     final theme = Theme.of(context);
     return Scaffold(
@@ -606,13 +619,20 @@ class _ManualBetPageState extends ConsumerState<ManualBetPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('M1lhão', style: theme.textTheme.titleLarge),
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Registar M1lhão (opcional)'),
+                        value: includeMilhao,
+                        onChanged: saving ? null : (value) =>
+                            setState(() => includeMilhao = value),
+                      ),
+                      if (includeMilhao) ...[
                       const Text('Introduza as letras uma vez e o primeiro número. A sequência mantém as letras e os zeros iniciais.'),
                       const SizedBox(height: 12),
                       TextField(
                         controller: milhaoDraw,
                         enabled: !saving,
-                        decoration: const InputDecoration(labelText: 'Concurso M1lhão', hintText: '000/2026'),
+                        decoration: const InputDecoration(labelText: 'Concursos M1lhão', hintText: '000/2026, 001/2026'),
                       ),
                       const SizedBox(height: 12),
                       TextField(
@@ -641,7 +661,11 @@ class _ManualBetPageState extends ConsumerState<ManualBetPage> {
                         textCapitalization: TextCapitalization.characters,
                         decoration: const InputDecoration(labelText: 'Códigos M1lhão — rever ou editar', hintText: 'Um código por linha'),
                       ),
-                      const Text('Confirme a quantidade, os códigos e o concurso no comprovativo antes de guardar.'),
+                      const Text(
+                        'Estes códigos serão verificados em todos os concursos M1lhão indicados. '
+                        'Confirme no comprovativo; se os códigos forem diferentes, crie registos separados.',
+                      ),
+                      ],
                     ],
                   ),
                 ),
@@ -656,7 +680,7 @@ class _ManualBetPageState extends ConsumerState<ManualBetPage> {
                         initialValue: selectedDraw,
                         isExpanded: true,
                         decoration: const InputDecoration(
-                          labelText: 'Concurso Euromilhões',
+                          labelText: 'Adicionar concurso Euromilhões',
                         ),
                         items: entries
                             .map(
@@ -668,23 +692,50 @@ class _ManualBetPageState extends ConsumerState<ManualBetPage> {
                             .toList(),
                         onChanged: saving
                             ? null
-                            : (value) => setState(() => selectedDraw = value),
+                            : (value) => setState(() {
+                                selectedDraw = value;
+                                if (value != null) selectedDraws.add(value);
+                              }),
                       ),
                       const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: selectedDraws.map((id) => InputChip(
+                          label: Text('$id · ${options[id]}'),
+                          onDeleted: saving || selectedDraws.length == 1
+                              ? null
+                              : () => setState(() => selectedDraws.remove(id)),
+                        )).toList(),
+                      ),
+                      const Text(
+                        'As mesmas chaves aplicam-se a todos os concursos selecionados.',
+                      ),
                       ListTile(
                         leading: const Icon(Icons.calendar_month),
-                        title: const Text('Data do sorteio'),
-                        subtitle: Text(options[selectedDraw] ?? ''),
+                        title: const Text('Concursos selecionados'),
+                        subtitle: Text('${selectedDraws.length} concurso(s)'),
                       ),
                       ListTile(
                         leading: const Icon(Icons.euro),
                         title: const Text('Valor pago calculado'),
                         subtitle: Text(
-                          '${euro(manualCostCents(total))} · $total combinações × 2,50 €',
+                          '${euro(manualCostCents(total, drawCount: selectedDraws.length))} · $total combinações × ${selectedDraws.length} concursos × 2,50 €',
+                        ),
+                      ),
+                      TextField(
+                        controller: paidAmount,
+                        enabled: !saving,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: const InputDecoration(
+                          labelText: 'Total pago no comprovativo (€)',
+                          helperText: 'Opcional: substitui o total calculado.',
                         ),
                       ),
                       const Text(
-                        'Inclui M1lhão. As datas seguem o calendário de terça e sexta-feira; os resultados guardados têm prioridade. Confirme com o comprovativo. Máximo: 500 combinações.',
+                        'Registe o total do recibo uma única vez. O registo dos códigos '
+                        'M1lhão é opcional e não altera o valor pago. As datas dos '
+                        'resultados guardados têm prioridade. Máximo: 500 combinações.',
                       ),
                     ],
                   ),
