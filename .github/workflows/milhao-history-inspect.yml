@@ -1,0 +1,54 @@
+name: Inspect official Milhao history
+on:
+  push:
+    branches: ['feat/manual-draw-picker']
+    paths: ['.github/workflows/milhao-history-inspect.yml']
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Read public official history structure
+        working-directory: api-python
+        run: |
+          python - <<'PY'
+          import hashlib, json, re
+          from pathlib import Path
+          from urllib.request import Request, build_opener
+          from rss_import import NoRedirect
+          from official_cartaz import Document, MAX_BYTES, Node
+          url = 'https://www.jogossantacasa.pt/web/SCCartazResult/m1lhao'
+          with build_opener(NoRedirect()).open(Request(url, headers={'User-Agent':'LuckyScan50-history/1.0'}), timeout=20) as response:
+              assert response.status == 200 and response.url == url
+              payload = response.read(MAX_BYTES + 1)
+          assert len(payload) <= MAX_BYTES
+          match = re.search(br'charset\s*=\s*[\x27"]?([A-Za-z0-9_-]+)', payload[:8192], re.I)
+          encoding = match[1].decode() if match else 'utf-8-sig'
+          text = payload.decode(encoding)
+          doc = Document()
+          doc.feed(text)
+          forms = [n for n in doc.root.find('form') if n.attrs.get('id') == 'frmContestSelection']
+          assert len(forms) == 1
+          form = forms[0]
+          print(json.dumps({'form':form.attrs, 'sha256':hashlib.sha256(payload).hexdigest(), 'encoding':encoding}))
+          for tag in ('select', 'span', 'ul'):
+              for n in form.find(tag):
+                  if tag == 'select':
+                      print(json.dumps({'select':n.attrs,'options':[{'value':x.attrs.get('value'),'text':x.text()} for x in n.find('option')]}, ensure_ascii=False))
+                  elif tag == 'span' and 'dataInfo' in n.attrs.get('class',''):
+                      print(json.dumps({'header':n.text()},ensure_ascii=False))
+                  elif tag == 'ul' and 'colums' in n.attrs.get('class',''):
+                      print(json.dumps({'ul':n.attrs,'cells':[x.text() for x in n.children if isinstance(x,Node) and x.tag=='li']},ensure_ascii=False))
+          Path('milhao-capture.html').write_bytes(payload)
+          PY
+      - uses: actions/upload-artifact@v6
+        with:
+          name: official-milhao-capture
+          path: api-python/milhao-capture.html
+          retention-days: 7
