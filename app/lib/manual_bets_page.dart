@@ -114,6 +114,26 @@ Map<String, String> manualDrawOptions(
 
 int manualCostCents(int combinations) => combinations * 250;
 
+List<String> manualMilhaoSequence(String firstCode, int count) {
+  final match = RegExp(r'^([A-Z]{3})\s*(\d{5})$')
+      .firstMatch(firstCode.trim().toUpperCase());
+  if (match == null || count < 1 || count > 500) {
+    throw const FormatException(
+      'Indique o primeiro código (ABC 00001) e uma quantidade entre 1 e 500.',
+    );
+  }
+  final first = int.parse(match[2]!);
+  if (first + count - 1 > 99999) {
+    throw const FormatException(
+      'A sequência ultrapassa 99999. Confirme os códigos no comprovativo.',
+    );
+  }
+  return List.generate(
+    count,
+    (i) => '${match[1]} ${(first + i).toString().padLeft(5, '0')}',
+  );
+}
+
 class ManualBetPage extends ConsumerStatefulWidget {
   const ManualBetPage({super.key});
   @override
@@ -122,6 +142,34 @@ class ManualBetPage extends ConsumerStatefulWidget {
 
 class _ManualBetPageState extends ConsumerState<ManualBetPage> {
   final selections = <ManualSelection>[ManualSelection()];
+  final milhaoDraw = TextEditingController();
+  final milhaoFirst = TextEditingController();
+  final milhaoCount = TextEditingController(text: '1');
+  final milhaoCodes = TextEditingController();
+
+  @override
+  void dispose() {
+    milhaoDraw.dispose();
+    milhaoFirst.dispose();
+    milhaoCount.dispose();
+    milhaoCodes.dispose();
+    super.dispose();
+  }
+
+  void generateMilhao() {
+    try {
+      final codes = manualMilhaoSequence(
+        milhaoFirst.text,
+        int.tryParse(milhaoCount.text) ?? 0,
+      );
+      setState(() => milhaoCodes.text = codes.join('\n'));
+    } on FormatException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message)),
+      );
+    }
+  }
+
   String? selectedDraw;
   int active = 0;
   bool saving = false;
@@ -171,6 +219,26 @@ class _ManualBetPageState extends ConsumerState<ManualBetPage> {
       if (drawId == null || !options.containsKey(drawId)) {
         throw const FormatException('Selecione o concurso.');
       }
+      final codes = milhaoCodes.text
+          .split(RegExp(r'[\n,;]+'))
+          .map((c) => c.trim().toUpperCase().replaceAll(RegExp(r'\s+'), ''))
+          .where((c) => c.isNotEmpty)
+          .toList();
+      final milhaoId = milhaoDraw.text.trim();
+      if (codes.isEmpty && milhaoFirst.text.trim().isNotEmpty) {
+        throw const FormatException(
+          'Gere a sequência M1lhão e reveja os códigos antes de guardar.',
+        );
+      }
+      if (codes.isEmpty != milhaoId.isEmpty ||
+          (milhaoId.isNotEmpty &&
+              !RegExp(r'^\d{3}/\d{4}$').hasMatch(milhaoId)) ||
+          codes.any((c) => !RegExp(r'^[A-Z]{3}\d{5}$').hasMatch(c)) ||
+          codes.toSet().length != codes.length) {
+        throw const FormatException(
+          'Confirme o concurso M1lhão (000/2026) e os códigos, sem duplicados.',
+        );
+      }
       final price = manualCostCents(lines.length);
       final drawDate = options[drawId]!;
       final confirmed = await showDialog<bool>(
@@ -179,7 +247,8 @@ class _ManualBetPageState extends ConsumerState<ManualBetPage> {
           title: const Text('Confirmar registo'),
           content: Text(
             '${selections.length} aposta(s), ${lines.length} combinação(ões) simples.\n'
-            'Concurso: $drawId\nValor pago: ${euro(price)}\n\n'
+            'Concurso: $drawId\nValor pago: ${euro(price)}\n'
+            'M1lhão: ${codes.isEmpty ? 'sem códigos registados' : '$milhaoId · ${codes.length} códigos'}\n\n'
             'Confirme as seleções com o comprovativo. Esta app não faz apostas oficiais.',
           ),
           actions: [
@@ -207,6 +276,8 @@ class _ManualBetPageState extends ConsumerState<ManualBetPage> {
         drawDate: drawDate,
         lines: lines,
         drawIds: [drawId],
+        milhaoDrawIds: codes.isEmpty ? [] : [milhaoId],
+        milhaoCodes: codes,
       );
       await ref.read(storeProvider).save(receipt);
       ref.invalidate(receiptsProvider);
@@ -524,6 +595,53 @@ class _ManualBetPageState extends ConsumerState<ManualBetPage> {
                           ),
                         ],
                       ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('M1lhão', style: theme.textTheme.titleLarge),
+                      const Text('Introduza as letras uma vez e o primeiro número. A sequência mantém as letras e os zeros iniciais.'),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: milhaoDraw,
+                        enabled: !saving,
+                        decoration: const InputDecoration(labelText: 'Concurso M1lhão', hintText: '000/2026'),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: milhaoFirst,
+                        enabled: !saving,
+                        textCapitalization: TextCapitalization.characters,
+                        decoration: const InputDecoration(labelText: 'Primeiro código', hintText: 'ABC 00001'),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: milhaoCount,
+                        enabled: !saving,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(labelText: 'Quantidade de códigos no comprovativo'),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: saving ? null : generateMilhao,
+                        icon: const Icon(Icons.format_list_numbered),
+                        label: const Text('Gerar sequência'),
+                      ),
+                      TextField(
+                        controller: milhaoCodes,
+                        enabled: !saving,
+                        minLines: 2,
+                        maxLines: 6,
+                        textCapitalization: TextCapitalization.characters,
+                        decoration: const InputDecoration(labelText: 'Códigos M1lhão — rever ou editar', hintText: 'Um código por linha'),
+                      ),
+                      const Text('Confirme a quantidade, os códigos e o concurso no comprovativo antes de guardar.'),
                     ],
                   ),
                 ),
