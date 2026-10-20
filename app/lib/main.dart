@@ -152,6 +152,41 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) => offerNotifications());
+  }
+
+  Future<void> offerNotifications() async {
+    try {
+      final store = ref.read(storeProvider);
+      if (await store.setting('notifications.offer.seen') == 'true' ||
+          await store.setting(notificationSettingsKey) != null ||
+          !mounted) return;
+      final configure = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Receber avisos do LuckyScan50?'),
+          content: const Text(
+            'Escolha se pretende avisos de resultados, prémios e prazos '
+            'no Android ou por email. Os canais são opcionais. '
+            'O envio por email e os alertas de caducidade ainda estão pendentes.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Agora não'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Configurar avisos'),
+            ),
+          ],
+        ),
+      );
+      await store.setSetting('notifications.offer.seen', 'true');
+      if (configure == true && mounted) context.push('/notifications');
+    } catch (_) {
+      // The optional setup prompt must never prevent access to the wallet.
+    }
   }
 
   @override
