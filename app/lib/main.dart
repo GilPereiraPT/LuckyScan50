@@ -163,8 +163,9 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
       final store = ref.read(storeProvider);
       if (await store.setting('notifications.offer.seen') == 'true' ||
           await store.setting(notificationSettingsKey) != null ||
-          !mounted)
+          !mounted) {
         return;
+      }
       final configure = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
