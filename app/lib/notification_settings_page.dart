@@ -43,8 +43,9 @@ class _NotificationSettingsPageState
         leadDays = value.leadDays;
       });
     } catch (_) {
-      if (mounted)
+      if (mounted) {
         setState(() => error = 'Não foi possível ler as preferências.');
+      }
     }
   }
 
@@ -71,8 +72,9 @@ class _NotificationSettingsPageState
         );
       }
     } catch (_) {
-      if (mounted)
+      if (mounted) {
         setState(() => error = 'Não foi possível pedir autorização.');
+      }
     } finally {
       if (mounted) setState(() => busy = false);
     }
@@ -118,8 +120,9 @@ class _NotificationSettingsPageState
         ),
       );
     } catch (_) {
-      if (mounted)
+      if (mounted) {
         setState(() => error = 'Não foi possível guardar as preferências.');
+      }
     } finally {
       if (mounted) setState(() => busy = false);
     }
