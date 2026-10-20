@@ -10,7 +10,7 @@ import re
 import sqlite3
 import tempfile
 import time
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlsplit
 from urllib.request import Request, build_opener, HTTPCookieProcessor
 from http.cookiejar import CookieJar
 from zoneinfo import ZoneInfo
@@ -20,7 +20,7 @@ import rss_import as rss
 from store import Store
 
 
-def catalogue(payload):
+def catalogue(payload, url=official.URL):
     match = re.search(br'charset\s*=\s*[\'"]?([A-Za-z0-9_-]+)', payload[:8192], re.I)
     text = payload.decode(match[1].decode() if match else 'utf-8-sig')
     document = official.Document()
@@ -30,7 +30,7 @@ def catalogue(payload):
              if n.attrs.get('id') == 'frmContestSelection']
     if len(forms) != 1 or forms[0].attrs.get('method', '').lower() != 'post':
         raise ValueError('Official history form unavailable')
-    if forms[0].attrs.get('action') not in (official.URL, '/web/SCCartazResult/euroMilhoes'):
+    if forms[0].attrs.get('action') not in (url, urlsplit(url).path):
         raise ValueError('Unexpected official form destination')
     selects = [n for n in forms[0].find('select') if n.attrs.get('name') == 'selectContest']
     if len(selects) != 1:
@@ -48,16 +48,17 @@ def catalogue(payload):
 
 
 class OfficialSession:
-    def __init__(self):
+    def __init__(self, url=official.URL):
+        self.url = url
         self.opener = build_opener(rss.NoRedirect(), HTTPCookieProcessor(CookieJar()))
 
     def fetch(self, selection=None):
         body = None if selection is None else urlencode({'selectContest': selection}).encode()
-        request = Request(official.URL, data=body, headers={
+        request = Request(self.url, data=body, headers={
             'User-Agent': 'LuckyScan50-history/1.0', 'Accept': 'text/html',
             'Content-Type': 'application/x-www-form-urlencoded'})
         with self.opener.open(request, timeout=20) as response:
-            if response.status != 200 or response.url != official.URL:
+            if response.status != 200 or response.url != self.url:
                 raise ValueError('Unexpected official history HTTP response')
             payload = response.read(official.MAX_BYTES + 1)
             if len(payload) > official.MAX_BYTES:
@@ -65,11 +66,11 @@ class OfficialSession:
             return payload
 
 
-def collect(today, fetch, pause=time.sleep):
+def collect(today, fetch, pause=time.sleep, adapter=official):
     """No database writes; reject a server that ignores the selected contest."""
     landing = fetch()
-    entries = catalogue(landing)
-    latest, _ = official.parse(landing)
+    entries = catalogue(landing, adapter.URL)
+    latest, _ = adapter.parse(landing)
     cutoff = today - timedelta(days=89)
     selected, all_dates, seen = [], [], set()
     for identity, selection in entries:
@@ -78,7 +79,7 @@ def collect(today, fetch, pause=time.sleep):
         else:
             pause(1)
             payload = fetch(selection)
-            row, _ = official.parse(payload)
+            row, _ = adapter.parse(payload)
         if row['drawId'] != identity:
             raise ValueError('Official server did not return requested draw ' + identity)
         day = datetime.strptime(row['date'], '%Y-%m-%d').date()
@@ -100,7 +101,7 @@ def collect(today, fetch, pause=time.sleep):
     }, sorted(selected, key=lambda item: item[0]['date'])
 
 
-def apply_batch(store, items, report, apply=False):
+def apply_batch(store, items, report, apply=False, adapter=official):
     """Validate against a SQLite copy, refuse all conflicts, then commit one batch."""
     store.all()
     with store.path.with_suffix(store.path.suffix + '.lock').open('a') as lock:
@@ -113,14 +114,14 @@ def apply_batch(store, items, report, apply=False):
             rss.initialize(stage)
             changes, conflicts, partial = [], [], []
             for row, payload in items:
-                result = official.reconcile(stage, payload)
+                result = adapter.reconcile(stage, payload)
                 if result['conflicts']:
                     conflicts.append(row['drawId'])
                 if result['changed']:
                     changes.append(row)
                 if row['status'] != 'complete':
                     partial.append(row['drawId'])
-            output = {**report, 'game': 'euromilhoes', 'dryRun': not apply,
+            output = {**report, 'game': items[0][0]['game'], 'dryRun': not apply,
                       'changed': 0, 'wouldChange': len(changes),
                       'conflicts': conflicts, 'partialDraws': partial}
             if conflicts:
@@ -144,7 +145,7 @@ def apply_batch(store, items, report, apply=False):
             with closing(store.connect(readonly=True)) as original, closing(sqlite3.connect(backup)) as target:
                 original.backup(target)
             backup.chmod(0o600)
-            official.initialize(store)
+            adapter.initialize(store)
             with closing(store.connect()) as db, db:
                 db.execute('BEGIN IMMEDIATE')
                 current = [json.loads(r[0]) for r in db.execute(
@@ -154,11 +155,11 @@ def apply_batch(store, items, report, apply=False):
                 if changes:
                     store.import_rows(changes, source='official-history-90-days', _connection=db)
                 for row, payload in items:
-                    official.record(store, payload, 'accepted' if row['status'] == 'complete' else 'pending',
+                    adapter.record(store, payload, 'accepted' if row['status'] == 'complete' else 'pending',
                                     ['history_90_days'], row, connection=db)
             output.update(status='imported', changed=len(changes),
                           unchanged=len(items) - len(changes), backup=str(backup))
-            manifest = {**output, 'sourceUrl': official.URL,
+            manifest = {**output, 'sourceUrl': adapter.URL,
                         'snapshots': {row['drawId']: hashlib.sha256(payload).hexdigest()
                                       for row, payload in items}}
             target = folder / 'manifest.json'
@@ -167,10 +168,10 @@ def apply_batch(store, items, report, apply=False):
             return output
 
 
-def run(apply=False, today=None, fetch=None):
+def run(apply=False, today=None, fetch=None, adapter=official):
     path = os.environ.get('LUCKYSCAN_DATABASE', '')
     if not path or not Path(path).is_absolute() or not Path(path).is_file():
         raise ValueError('LUCKYSCAN_DATABASE must point to the existing results SQLite database')
     today = today or datetime.now(ZoneInfo('Europe/Lisbon')).date()
-    report, items = collect(today, fetch or OfficialSession().fetch)
-    return apply_batch(Store(path), items, report, apply)
+    report, items = collect(today, fetch or OfficialSession(adapter.URL).fetch, adapter=adapter)
+    return apply_batch(Store(path), items, report, apply, adapter=adapter)

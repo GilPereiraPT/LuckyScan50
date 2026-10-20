@@ -2,7 +2,7 @@ name: Inspect official Milhao history
 on:
   push:
     branches: ['feat/manual-draw-picker']
-    paths: ['.github/workflows/milhao-history-inspect.yml']
+    paths: ['.github/workflows/milhao-history-inspect.yml', 'api-python/official_milhao.py']
 permissions:
   contents: read
 jobs:
@@ -46,6 +46,11 @@ jobs:
                   elif tag == 'ul' and 'colums' in n.attrs.get('class',''):
                       print(json.dumps({'ul':n.attrs,'cells':[x.text() for x in n.children if isinstance(x,Node) and x.tag=='li']},ensure_ascii=False))
           Path('milhao-capture.html').write_bytes(payload)
+          from official_milhao import parse
+          import historical_results
+          row, issues = parse(payload)
+          entries = historical_results.catalogue(payload, url)
+          print(json.dumps({'parsedOfficialMilhao':row, 'issues':issues, 'catalogueCount':len(entries)},ensure_ascii=False))
           PY
       - uses: actions/upload-artifact@v6
         with:
