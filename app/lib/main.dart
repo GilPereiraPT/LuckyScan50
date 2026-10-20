@@ -752,12 +752,17 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
     }
     final emailClient = EmailNotificationsClient();
     try {
-      await emailClient.configure(ref.read(storeProvider),
-          const NotificationPreferences());
+      await emailClient.configure(
+        ref.read(storeProvider),
+        const NotificationPreferences(),
+      );
     } catch (_) {
       if (mounted) {
-        message(context, 'Não foi possível cancelar os avisos por email. '
-            'Ligue-se à Internet e tente novamente antes de eliminar os dados.');
+        message(
+          context,
+          'Não foi possível cancelar os avisos por email. '
+          'Ligue-se à Internet e tente novamente antes de eliminar os dados.',
+        );
       }
       return;
     } finally {
@@ -1678,4 +1683,3 @@ class ReceiptPage extends ConsumerWidget {
     );
   }
 }
-

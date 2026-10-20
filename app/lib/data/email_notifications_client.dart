@@ -24,7 +24,9 @@ class EmailNotificationsClient {
   }) async {
     final uri = Uri.parse('$base/v1/email/$path');
     if (uri.scheme != 'https' || uri.userInfo.isNotEmpty) {
-      throw const FormatException('O serviço de email exige uma ligação HTTPS.');
+      throw const FormatException(
+        'O serviço de email exige uma ligação HTTPS.',
+      );
     }
     final message = http.Request(method, uri)
       ..followRedirects = false
@@ -40,10 +42,14 @@ class EmailNotificationsClient {
       );
     }
     if (response.statusCode == 429) {
-      throw const FormatException('Aguarde antes de pedir outro email de confirmação.');
+      throw const FormatException(
+        'Aguarde antes de pedir outro email de confirmação.',
+      );
     }
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw const FormatException('Não foi possível atualizar a subscrição de email.');
+      throw const FormatException(
+        'Não foi possível atualizar a subscrição de email.',
+      );
     }
     final decoded = jsonDecode(response.body);
     if (decoded is! Map<String, dynamic>) {
@@ -57,7 +63,8 @@ class EmailNotificationsClient {
     if (existing != null) return existing;
     final random = Random.secure();
     final generated = List.generate(
-      32, (_) => random.nextInt(256).toRadixString(16).padLeft(2, '0'),
+      32,
+      (_) => random.nextInt(256).toRadixString(16).padLeft(2, '0'),
     ).join();
     await store.setSetting(emailTokenKey, generated);
     return generated;
@@ -75,16 +82,21 @@ class EmailNotificationsClient {
       await store.setSetting(emailStatusKey, 'revoked');
       return 'revoked';
     }
-    final result = await request('POST', 'subscription', token: await token(store), body: {
-      'email': preferences.email.trim(),
-      'consent': true,
-      'preferences': {
-        'results': preferences.results,
-        'prizes': preferences.prizes,
-        'expiry': preferences.expiry,
-        'leadDays': preferences.leadDays,
+    final result = await request(
+      'POST',
+      'subscription',
+      token: await token(store),
+      body: {
+        'email': preferences.email.trim(),
+        'consent': true,
+        'preferences': {
+          'results': preferences.results,
+          'prizes': preferences.prizes,
+          'expiry': preferences.expiry,
+          'leadDays': preferences.leadDays,
+        },
       },
-    });
+    );
     final status = result['status'] as String;
     await store.setSetting(emailStatusKey, status);
     return status;
@@ -99,19 +111,26 @@ class EmailNotificationsClient {
     return status;
   }
 
-  Future<void> uploadWatches(WalletStore store, NotificationPreferences preferences) async {
+  Future<void> uploadWatches(
+    WalletStore store,
+    NotificationPreferences preferences,
+  ) async {
     final existing = await store.setting(emailTokenKey);
     if (existing == null || await refresh(store) != 'active') return;
     final receipts = await store.receipts();
     final payload = preferences.prizes || preferences.expiry
-        ? receipts.map((receipt) => {
-            'id': receipt.id,
-            'drawIds': receipt.drawIds,
-            'milhaoDrawIds': receipt.milhaoDrawIds,
-            'lines': receipt.lines.map((line) => line.toJson()).toList(),
-            'milhaoCodes': receipt.milhaoCodes,
-            'receivedCents': receipt.receivedCents,
-          }).toList()
+        ? receipts
+              .map(
+                (receipt) => {
+                  'id': receipt.id,
+                  'drawIds': receipt.drawIds,
+                  'milhaoDrawIds': receipt.milhaoDrawIds,
+                  'lines': receipt.lines.map((line) => line.toJson()).toList(),
+                  'milhaoCodes': receipt.milhaoCodes,
+                  'receivedCents': receipt.receivedCents,
+                },
+              )
+              .toList()
         : <Map<String, dynamic>>[];
     await request('PUT', 'watches', token: existing, body: payload);
   }
@@ -123,21 +142,25 @@ class EmailNotificationsClient {
 // upload must not overwrite a more recent payment/deletion with an old snapshot.
 Future<void> _emailQueue = Future<void>.value();
 Future<void> synchronizeEmailWallet(WalletStore store) {
-  _emailQueue = _emailQueue.then((_) async {
-    final client = EmailNotificationsClient();
-    try {
-      final preferences = await NotificationPreferences.load(store);
-      if (!preferences.emailConsent) return;
-      await client.uploadWatches(store, preferences);
-      await store.setSetting('notifications.email.lastSyncError', '');
-    } catch (_) {
-      await store.setSetting('notifications.email.lastSyncError',
-          'Não foi possível sincronizar os avisos por email. Os dados no servidor podem estar desatualizados.');
-    } finally {
-      client.close();
-    }
-  }).catchError((Object _) {
-    // Never break the local wallet if its storage is closing or unavailable.
-  });
+  _emailQueue = _emailQueue
+      .then((_) async {
+        final client = EmailNotificationsClient();
+        try {
+          final preferences = await NotificationPreferences.load(store);
+          if (!preferences.emailConsent) return;
+          await client.uploadWatches(store, preferences);
+          await store.setSetting('notifications.email.lastSyncError', '');
+        } catch (_) {
+          await store.setSetting(
+            'notifications.email.lastSyncError',
+            'Não foi possível sincronizar os avisos por email. Os dados no servidor podem estar desatualizados.',
+          );
+        } finally {
+          client.close();
+        }
+      })
+      .catchError((Object _) {
+        // Never break the local wallet if its storage is closing or unavailable.
+      });
   return _emailQueue;
 }
