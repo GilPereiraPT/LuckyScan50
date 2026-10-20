@@ -2,7 +2,7 @@ name: LuckyScan50 website
 on:
   push:
     branches: ['feat/manual-draw-picker']
-    paths: ['website/**', 'tools/check_website.py', 'tools/test_website_interactions.cjs', '.github/workflows/website.yml']
+    paths: ['website/**', 'tools/check_website.py', 'tools/test_website_interactions.cjs', 'tools/test_website_counter.cjs', '.github/workflows/website.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -23,7 +23,9 @@ jobs:
       - name: Validate JavaScript syntax and interactions
         run: |
           node --check website/script.js
+          node --check website/counter.js
           node tools/test_website_interactions.cjs
+          node tools/test_website_counter.cjs
   release:
     needs: validate
     runs-on: ubuntu-24.04
@@ -83,7 +85,7 @@ jobs:
           output = Path('_site')
           output.mkdir()
           for name in ('index.html', 'ajuda.html', 'privacidade.html', 'termos.html',
-                       'styles.css', 'script.js', 'robots.txt', 'sitemap.xml', '.nojekyll'):
+                       'styles.css', 'script.js', 'counter.js', 'robots.txt', 'sitemap.xml', '.nojekyll'):
               shutil.copy2(root / name, output / name)
           shutil.copytree(root / 'assets', output / 'assets')
           PY

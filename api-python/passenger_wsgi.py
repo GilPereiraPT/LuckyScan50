@@ -1,4 +1,4 @@
-"""Public, read-only native WSGI API. No external Python dependencies."""
+"""Public results, email and aggregate website API; stdlib only."""
 from datetime import date
 import json
 import logging
@@ -18,6 +18,7 @@ from store import Store, read_json
 from result_statistics import frequencies, summary
 from rss_import import overview as rss_overview
 from email_notifications import handle_request as email_request
+from website_stats import handle_request as website_request
 
 DATA_FILE=Path(os.environ.get('LUCKYSCAN_RESULTS_FILE',str(ROOT/'data'/'results.json')))
 DATABASE_FILE=os.environ.get('LUCKYSCAN_DATABASE')
@@ -29,6 +30,9 @@ def load_results():
 
 
 def application(environ,start_response):
+    website_response=website_request(environ,start_response)
+    if website_response is not None:
+        return website_response
     email_response=email_request(environ,start_response)
     if email_response is not None:
         return email_response
