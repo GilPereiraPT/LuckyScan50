@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../lib/manual_bets_page.dart';
-import '../lib/domain/wallet.dart';
+import 'package:luckyscan50/manual_bets_page.dart';
+import 'package:luckyscan50/domain/wallet.dart';
 
 void main() {
   test('counts combinations for each selected draw', () {
