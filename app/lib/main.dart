@@ -1309,6 +1309,15 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
                   ),
                 ),
               ),
+            if (lastScan != null) ...[
+              for (final bet in lastScan!.receipt.bets.where(
+                (b) => !b.complete,
+              ))
+                ListTile(
+                  title: Text('Aposta ${bet.index} incompleta — confirmar'),
+                  subtitle: Text('${bet.formLine}\n${bet.issues.join('; ')}'),
+                ),
+            ],
             if (lastScan != null)
               ExpansionTile(
                 title: const Text('Diagnóstico de leitura'),
@@ -1418,17 +1427,6 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
                     Text(
                       'Jogo: ${lastScan!.receipt.game ?? 'não identificado'} · ${lastScan!.receipt.lines.length} apostas completas',
                     ),
-                    for (final bet in lastScan!.receipt.bets.where(
-                      (b) => !b.complete,
-                    ))
-                      ListTile(
-                        title: Text(
-                          'Aposta ${bet.index} incompleta — confirmar',
-                        ),
-                        subtitle: Text(
-                          '${bet.formLine}\n${bet.issues.join('; ')}',
-                        ),
-                      ),
                     for (final warning in lastScan!.receipt.warnings)
                       Text(warning),
                     ExpansionTile(
