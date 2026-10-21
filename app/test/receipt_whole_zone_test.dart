@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../lib/domain/receipt_whole_zone.dart';
-import '../lib/domain/receipt_multipass.dart';
-import '../lib/domain/receipt_parser.dart';
+import 'package:luckyscan50/domain/receipt_whole_zone.dart';
+import 'package:luckyscan50/domain/receipt_multipass.dart';
+import 'package:luckyscan50/domain/receipt_parser.dart';
 
 void main() {
   test(
