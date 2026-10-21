@@ -1,7 +1,5 @@
 import 'dart:math' as math;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:luckyscan50/domain/receipt_evidence.dart';
-import 'package:luckyscan50/domain/receipt_geometry.dart';
 import 'package:luckyscan50/domain/receipt_multipass.dart';
 import 'package:luckyscan50/domain/receipt_numbered_bets.dart';
 import 'package:luckyscan50/domain/receipt_parser.dart';
