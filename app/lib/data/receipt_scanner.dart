@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import '../domain/receipt_ocr.dart';
 import '../domain/receipt_rules.dart';
 import '../domain/receipt_multipass.dart';
+import '../domain/receipt_whole_zone.dart';
 import 'receipt_crop_backend.dart';
 import 'receipt_camera.dart';
 
@@ -170,9 +171,7 @@ Future<ReceiptScan> scanReceiptFile(String path) async {
       phaseTimings['ruleDetection'] = ruleClock.elapsedMilliseconds;
       imageGeometry['horizontalRuleCount'] = rules.length;
       stage = 'reconhecimento das regiões numéricas';
-      final recovered = await recoverReceiptRows(
-        numberedBetsFirst: true,
-        visualCells: true,
+      final recovered = await readReceiptWholeZone(
         initial: workingFrame,
         metadata: first,
         rules: rules,
