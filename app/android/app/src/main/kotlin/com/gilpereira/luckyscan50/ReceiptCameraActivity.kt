@@ -10,6 +10,7 @@ import android.os.*
 import android.view.*
 import android.widget.*
 import androidx.camera.core.*
+import androidx.camera.core.Camera
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
