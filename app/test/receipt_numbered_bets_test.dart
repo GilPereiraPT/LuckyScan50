@@ -221,8 +221,9 @@ void main() {
         expect(n.index, i + 1);
         expect(e.index, i + 1);
         expect(n.box.top, lessThan(e.box.top));
-        if (i < 4)
+        if (i < 4) {
           expect(e.box.bottom, lessThan(crops[(i + 1) * 2].box.bottom));
+        }
       }
     },
   );

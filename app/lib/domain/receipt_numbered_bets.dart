@@ -160,8 +160,9 @@ Future<MultiPassResult?> recoverNumberedBets({
   final duplicates = <int>{};
   for (final row in rows) {
     final ns = tokens.where((t) {
-      if (!_horizontal(t) || t.y < row.box.top || t.y > row.box.bottom)
+      if (!_horizontal(t) || t.y < row.box.top || t.y > row.box.bottom) {
         return false;
+      }
       final m = _numbered.firstMatch(t.text);
       return m != null && int.parse(m[1]!) == row.index;
     }).toList();
