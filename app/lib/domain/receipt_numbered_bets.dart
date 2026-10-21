@@ -81,159 +81,54 @@ List<ReceiptToken> _markers(List<ReceiptToken> tokens) {
   return result;
 }
 
-class NumberedBetReading {
-  const NumberedBetReading(this.bet, this.evidence);
-  final ParsedBet bet;
-  final List<ValueEvidence> evidence;
-}
-
-NumberedBetReading _read(
-  int index,
-  ReceiptToken n,
-  List<ReceiptToken> tokens,
-  CropBox bounds,
+// This parser is used only for a crop to the right of a known N/E marker.
+// O/o has no alphabetic meaning in that numeric-only region.
+({List<int>? values, List<ValueEvidence> evidence}) _lineReading(
+  OcrFrame frame,
+  BetCrop crop,
   String pass,
 ) {
-  final slope = math.tan(horizontalReceiptAngle(n.angle) * math.pi / 180);
-  double baseline(ReceiptToken t) => t.y - slope * (t.x - n.x);
-  final es = tokens
-      .where(
-        (t) =>
-            t.text == 'E' &&
-            _horizontal(t) &&
-            baseline(t) > n.y + n.height * .35 &&
-            baseline(t) < n.y + n.height * 3 &&
-            baseline(t) < bounds.bottom &&
-            ((t.x + t.width / 2) - (n.x + n.width / 2)).abs() <= n.height * 1.5,
-      )
-      .toList();
-  final e = es.length == 1 ? es.single : null;
-  String digits(ReceiptToken anchor) {
-    final row =
-        tokens
-            .where(
-              (t) =>
-                  !identical(t, anchor) &&
-                  _horizontal(t) &&
-                  t.x - t.width / 2 >=
-                      anchor.x + anchor.width / 2 - n.height * .05 &&
-                  (baseline(t) - baseline(anchor)).abs() <=
-                      math.min(t.height, anchor.height) * .45 &&
-                  (e == null ||
-                      (baseline(t) - baseline(anchor)).abs() <
-                          (baseline(t) - baseline(identical(anchor, n) ? e : n))
-                              .abs()),
-            )
-            .toList()
-          ..sort((a, b) => a.x.compareTo(b.x));
-    return row.map((t) => t.text).join(' ');
+  var raw = frame.text.trim();
+  final marker = _marker.firstMatch(raw);
+  if (marker != null) {
+    if (marker[2]!.toUpperCase() != crop.kind ||
+        (marker[1] != null && int.parse(marker[1]!) != crop.index)) {
+      return (values: null, evidence: <ValueEvidence>[]);
+    }
+    raw = marker[3]!;
   }
-
-  final rawN = digits(n), rawE = e == null ? '' : digits(e);
-  return _reading(index, rawN, rawE, pass, bounds, [
-    if (es.length > 1) 'Linha E ambígua; confirmar associação',
-  ]);
-}
-
-NumberedBetReading _reading(
-  int index,
-  String rawN,
-  String rawE,
-  String pass,
-  CropBox bounds,
-  List<String> issues,
-) {
-  final numbers = NeLineDigits.parse(rawN, stars: false);
-  final stars = NeLineDigits.parse(rawE, stars: true);
-  final evidence = <ValueEvidence>[];
-  for (final group in [
-    (kind: 'N', raw: rawN, values: numbers),
-    (kind: 'E', raw: rawE, values: stars),
-  ]) {
-    if (group.values == null) continue;
-    final digits = group.raw.replaceAll(RegExp(r'\s+'), '');
-    for (var i = 0; i < group.values!.length; i++) {
-      evidence.add(
+  final normalized = raw.replaceAll(RegExp('[Oo]'), '0');
+  final values = NeLineDigits.parse(normalized, stars: crop.kind == 'E');
+  if (values == null) return (values: null, evidence: <ValueEvidence>[]);
+  final digits = raw.replaceAll(RegExp(r'\s+'), '');
+  return (
+    values: values,
+    evidence: [
+      for (var i = 0; i < values.length; i++)
         ValueEvidence(
-          group.kind,
+          crop.kind!,
           i,
-          group.values![i],
+          values[i],
           digits.substring(i * 2, i * 2 + 2),
           pass,
-          betIndex: index,
-          bounds: bounds,
+          correction:
+              RegExp('[Oo]').hasMatch(digits.substring(i * 2, i * 2 + 2))
+              ? 'O→0 em linha numérica'
+              : null,
+          betIndex: crop.index,
+          bounds: crop.box,
         ),
-      );
-    }
-  }
-  return NumberedBetReading(
-    ParsedBet(index, numbers ?? [], stars ?? [], [
-      ...issues,
-      if (numbers == null) 'Cinco números distintos entre 1 e 50 em falta',
-      if (stars == null) 'Duas estrelas distintas entre 1 e 12 em falta',
-    ]),
-    evidence,
+    ],
   );
 }
 
-/// Read a bounded crop independently. An explicit different index is rejected.
-/// An isolated N is allowed only because the original crop has a printed index.
-NumberedBetReading? _cropReading(OcrFrame frame, BetCrop crop, String pass) {
-  final tokens = _markers(frame.tokens);
-  final ns = tokens
-      .where(
-        (t) => _horizontal(t) && RegExp(r'^(?:\d{1,2}\.)?N$').hasMatch(t.text),
-      )
-      .toList();
-  if (ns.isNotEmpty) {
-    if (ns.length != 1) return null;
-    final match = _numbered.firstMatch(ns.single.text);
-    if (match != null && int.parse(match[1]!) != crop.index) return null;
-    final right = tokens.map((t) => t.x + t.width / 2).reduce(math.max);
-    final bottom = tokens.map((t) => t.y + t.height).reduce(math.max);
-    return _read(
-      crop.index,
-      ns.single,
-      tokens,
-      CropBox(0, 0, right, bottom),
-      pass,
-    );
-  }
-  final rows = frame.rows.isEmpty ? frame.text.split('\n') : frame.rows;
-  String? n, e;
-  bool nextN = false, nextE = false;
-  for (final raw in rows) {
-    final text = raw.trim().toUpperCase();
-    if (text.isEmpty || RegExp(r'^={4,}$').hasMatch(text)) continue;
-    final match = _marker.firstMatch(text);
-    if (match != null) {
-      if (match[1] != null && int.parse(match[1]!) != crop.index) return null;
-      if (match[2] == 'N') {
-        if (n != null) return null;
-        n = match[3]!;
-        nextN = n.trim().isEmpty;
-      } else {
-        if (n == null || e != null) return null;
-        e = match[3]!;
-        nextN = false;
-        nextE = e.trim().isEmpty;
-      }
-    } else if (nextN) {
-      n = text;
-      nextN = false;
-    } else if (nextE) {
-      e = text;
-      nextE = false;
-    } else {
-      return null;
-    }
-  }
-  if (n == null) return null;
-  return _reading(crop.index, n, e ?? '', pass, crop.box, []);
+double _middle(Iterable<double> values) {
+  final sorted = values.toList()..sort();
+  return sorted[sorted.length ~/ 2];
 }
 
-/// Priority path for physical tickets: numbered N anchors, then N/E rows.
-/// It never uses the date, amount or arbitrary footer digits as bet values.
+/// The full-image pass locates markers only. Every numeric N/E line is then
+/// recognized separately, in order, even if full-image OCR looked complete.
 Future<MultiPassResult?> recoverNumberedBets({
   required OcrFrame initial,
   required double width,
@@ -244,10 +139,6 @@ Future<MultiPassResult?> recoverNumberedBets({
 }) async {
   final clock = Stopwatch()..start();
   final tokens = _markers(initial.tokens);
-  final printed = tokens
-      .where((t) => _horizontal(t) && _numbered.hasMatch(t.text))
-      .toList();
-  // Split OCR elements such as "1." + "N" are assembled by the crop planner.
   final separators = tokens.where(
     (t) => _horizontal(t) && RegExp(r'^[=\s]{4,}$').hasMatch(t.text),
   );
@@ -257,93 +148,141 @@ Future<MultiPassResult?> recoverNumberedBets({
     height,
     rules: [...rules, ...separators.map(receiptTokenBox)],
   );
-  if (printed.isEmpty && !plan.rows.any((r) => r.printedIndex)) return null;
-  if (plan.rows.isEmpty) return null;
+  final rows = plan.rows.where((r) => r.printedIndex).toList();
+  if (rows.isEmpty) return null;
   final geometryMs = clock.elapsedMilliseconds;
   final meta = metadata ?? initial.parse();
   final expected = math
       .max(plan.expectedLines ?? 0, meta.expectedLines ?? 0)
       .clamp(1, maxReceiptBets)
       .toInt();
+  final anchors = <int, ReceiptToken>{};
+  final duplicates = <int>{};
+  for (final row in rows) {
+    final ns = tokens.where((t) {
+      if (!_horizontal(t) || t.y < row.box.top || t.y > row.box.bottom)
+        return false;
+      final m = _numbered.firstMatch(t.text);
+      return m != null && int.parse(m[1]!) == row.index;
+    }).toList();
+    if (ns.length == 1) {
+      anchors[row.index] = ns.single;
+    } else if (ns.length > 1) {
+      duplicates.add(row.index);
+    } else {
+      final split = tokens
+          .where(
+            (t) =>
+                _horizontal(t) &&
+                t.text == 'N' &&
+                t.y >= row.box.top &&
+                t.y <= row.box.bottom,
+          )
+          .toList();
+      if (split.length == 1) anchors[row.index] = split.single;
+    }
+  }
+  // Repeated printed identifiers are never silently reassigned.
+  for (final index in anchors.keys) {
+    final matches = tokens.where((t) {
+      final m = _horizontal(t) ? _numbered.firstMatch(t.text) : null;
+      return m != null &&
+          int.parse(m[1]!) == index &&
+          (plan.zone == null ||
+              (t.y >= plan.zone!.top && t.y <= plan.zone!.bottom));
+    });
+    if (matches.length > 1) duplicates.add(index);
+  }
+  final orderedAnchors = anchors.entries.toList()
+    ..sort((a, b) => a.key.compareTo(b.key));
+  final pitches = <double>[
+    for (var i = 1; i < orderedAnchors.length; i++)
+      if (orderedAnchors[i].value.y > orderedAnchors[i - 1].value.y)
+        (orderedAnchors[i].value.y - orderedAnchors[i - 1].value.y) /
+            (orderedAnchors[i].key - orderedAnchors[i - 1].key),
+  ];
   final bets = <int, ParsedBet>{};
   final observations = <int, List<ValueEvidence>>{};
   final passes = <CropPass>[];
-  for (final crop in plan.rows.where((r) => r.printedIndex)) {
-    final local = tokens
-        .where((t) => t.y >= crop.box.top && t.y <= crop.box.bottom)
-        .toList();
-    final ns = local.where((t) {
-      if (!_horizontal(t)) return false;
-      final match = _numbered.firstMatch(t.text);
-      return match != null && int.parse(match[1]!) == crop.index;
-    }).toList();
-    final split = local.where((t) => _horizontal(t) && t.text == 'N').toList();
-    final n = ns.length == 1
-        ? ns.single
-        : ns.isEmpty && split.length == 1
-        ? split.single
-        : null;
-    final reading = n == null
-        ? null
-        : _read(crop.index, n, local, crop.box, 'numbered-full-frame');
-    final candidates = <ValueEvidence>[...?reading?.evidence];
-    var bet =
-        reading?.bet ??
-        ParsedBet(crop.index, const [], const [], const [
-          'Aposta não reconhecida',
-        ]);
-    final duplicate =
-        printed.where((t) {
-          final match = _numbered.firstMatch(t.text)!;
-          return int.parse(match[1]!) == crop.index &&
-              (plan.zone == null || t.y < plan.zone!.bottom);
-        }).length >
-        1;
-    if (duplicate) {
-      bet = ParsedBet(crop.index, bet.numbers, bet.stars, [
-        ...bet.issues,
-        'Identificador de aposta repetido',
+  for (final row in rows) {
+    final n = anchors[row.index];
+    if (n == null || duplicates.contains(row.index)) {
+      bets[row.index] = ParsedBet(row.index, const [], const [], [
+        duplicates.contains(row.index)
+            ? 'Identificador de aposta repetido'
+            : 'Marcador N em falta',
       ]);
+      continue;
     }
-    if (!duplicate &&
-        !bet.complete &&
-        !bet.issues.any((issue) => issue.contains('ambígua'))) {
+    final slope = math.tan(horizontalReceiptAngle(n.angle) * math.pi / 180);
+    double alignedY(ReceiptToken t) => t.y - slope * (t.x - n.x);
+    final pitch = pitches.isNotEmpty ? _middle(pitches) : n.height * 2.5;
+    final es = tokens
+        .where(
+          (t) =>
+              _horizontal(t) &&
+              t.text == 'E' &&
+              alignedY(t) > n.y + n.height * .35 &&
+              alignedY(t) < n.y + pitch * .8 &&
+              ((t.x + t.width / 2) - (n.x + n.width / 2)).abs() <
+                  n.height * 1.5,
+        )
+        .toList();
+    if (es.length > 1) {
+      bets[row.index] = ParsedBet(row.index, const [], const [], const [
+        'Linha E ambígua; confirmar associação',
+      ]);
+      continue;
+    }
+    // If global OCR missed E, search its own lower half-line, never the next bet.
+    final e = es.isEmpty ? null : es.single;
+    final eY = e == null ? n.y + pitch / 2 : alignedY(e);
+    final spacing = eY - n.y;
+    final numbers = <int>[], stars = <int>[];
+    final evidence = <ValueEvidence>[];
+    for (final kind in ['N', 'E']) {
+      final marker = kind == 'N' ? n : e;
+      final y = kind == 'N' ? n.y : eY;
+      final left = math.max(
+        0.0,
+        (marker?.x ?? n.x) + (marker?.width ?? n.width) / 2 + n.height * .12,
+      );
+      final right = math.min(width, plan.zone?.right ?? width);
+      final top = math.max(
+        0.0,
+        math.max(
+          plan.zone?.top ?? 0,
+          y - spacing * .55 + math.min(0, slope * (right - n.x)),
+        ),
+      );
+      final bottom = math.min(
+        height,
+        math.min(
+          plan.zone?.bottom ?? height,
+          y + spacing * .55 + math.max(0, slope * (right - n.x)),
+        ),
+      );
+      if (right <= left || bottom <= top) continue;
+      final crop = BetCrop(
+        row.index,
+        CropBox(left, top, right, bottom),
+        printedIndex: true,
+        kind: kind,
+        deskewDegrees: horizontalReceiptAngle(n.angle),
+      );
       for (final scale in [1.0, 2.0]) {
-        final pass = 'numbered-row-${crop.index}@${scale.toInt()}x';
+        final pass = 'numbered-line-${row.index}-$kind@${scale.toInt()}x';
         final timer = Stopwatch()..start();
         try {
           final frame = await recognizeCrop(crop, scale);
           passes.add(
             CropPass(pass, crop, scale, frame, timer.elapsedMilliseconds),
           );
-          final next = _cropReading(frame, crop, pass);
-          if (next == null) continue;
-          candidates.addAll(next.evidence);
-          final conflict =
-              (bet.numbers.length == 5 &&
-                  next.bet.numbers.length == 5 &&
-                  bet.numbers.join(',') != next.bet.numbers.join(',')) ||
-              (bet.stars.length == 2 &&
-                  next.bet.stars.length == 2 &&
-                  bet.stars.join(',') != next.bet.stars.join(','));
-          if (conflict) {
-            bet = ParsedBet(crop.index, bet.numbers, bet.stars, [
-              'Leituras OCR contraditórias',
-            ]);
-            break;
-          }
-          final numbers = next.bet.numbers.isNotEmpty
-              ? next.bet.numbers
-              : bet.numbers;
-          final stars = next.bet.stars.isNotEmpty ? next.bet.stars : bet.stars;
-          bet = ParsedBet(crop.index, numbers, stars, [
-            ...next.bet.issues.where((issue) => issue.contains('ambígua')),
-            if (numbers.length != 5)
-              'Cinco números distintos entre 1 e 50 em falta',
-            if (stars.length != 2)
-              'Duas estrelas distintas entre 1 e 12 em falta',
-          ]);
-          if (bet.complete) break;
+          final reading = _lineReading(frame, crop, pass);
+          if (reading.values == null) continue;
+          (kind == 'N' ? numbers : stars).addAll(reading.values!);
+          evidence.addAll(reading.evidence);
+          break;
         } catch (error) {
           passes.add(
             CropPass(
@@ -358,8 +297,11 @@ Future<MultiPassResult?> recoverNumberedBets({
         }
       }
     }
-    bets[crop.index] = bet;
-    observations[crop.index] = candidates;
+    bets[row.index] = ParsedBet(row.index, numbers, stars, [
+      if (numbers.length != 5) 'Cinco números distintos entre 1 e 50 em falta',
+      if (stars.length != 2) 'Duas estrelas distintas entre 1 e 12 em falta',
+    ]);
+    observations[row.index] = evidence;
   }
   final ordered = [
     for (var index = 1; index <= expected; index++)
@@ -388,7 +330,7 @@ Future<MultiPassResult?> recoverNumberedBets({
     milhaoCodes: meta.milhaoCodes,
     tokenCount: initial.tokens.length,
     skewDegrees: meta.skewDegrees,
-    strategy: 'numbered-n-e',
+    strategy: 'numbered-n-e-lines',
     observations: initial.tokens,
   );
   return MultiPassResult(
