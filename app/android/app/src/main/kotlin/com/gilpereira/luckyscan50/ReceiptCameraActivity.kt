@@ -79,7 +79,7 @@ class ReceiptCameraActivity : Activity(), LifecycleOwner, SensorEventListener {
         root.addView(viewer,LinearLayout.LayoutParams(-1,0,1f))
         val panel=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; setPadding(dp(20),dp(8),dp(20),dp(12)) }
         panel.addView(TextView(this).apply {
-            text="Coloque o talão numa superfície plana, com todos os lados visíveis. Toque na imagem para focar."
+            text="Coloque o talão numa superfície plana, com todos os lados visíveis. Toque na imagem para focar. Pode fotografar a qualquer momento com o botão."
             setTextColor(Color.LTGRAY); textSize=14f
         })
         level=TextView(this).apply { text="A medir inclinação…"; setTextColor(gold); textSize=15f }
@@ -90,7 +90,7 @@ class ReceiptCameraActivity : Activity(), LifecycleOwner, SensorEventListener {
         panel.addView(automatic)
         shutter=Button(this).apply {
             text="Fotografar"; isEnabled=false
-            setOnClickListener { takePhoto() }
+            setOnClickListener { takePhoto(manual=true) }
         }
         panel.addView(shutter,LinearLayout.LayoutParams(-1,dp(54)))
         root.addView(panel)
@@ -139,6 +139,7 @@ class ReceiptCameraActivity : Activity(), LifecycleOwner, SensorEventListener {
                     .setTargetRotation(rotation).setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST).build()
                 analysis.setAnalyzer(executor) { image -> analyze(image) }
                 camera=p.bindToLifecycle(this,CameraSelector.DEFAULT_BACK_CAMERA,live,shot,analysis)
+                updateShutter()
                 preview.postDelayed({ if(resumed) focus(preview.width/2f,preview.height/2f) },500)
             } catch(error: Exception) {
                 status.text="Não foi possível abrir a câmara. Volte atrás e tente novamente."
@@ -147,7 +148,7 @@ class ReceiptCameraActivity : Activity(), LifecycleOwner, SensorEventListener {
     }
     private fun focus(x: Float,y: Float) {
         if(capturing || camera==null) return
-        latestReady=false; shutter.isEnabled=false; gate.reset()
+        latestReady=false; gate.reset(); updateShutter()
         focusAfter=SystemClock.elapsedRealtime()+900
         val point=preview.meteringPointFactory.createPoint(x,y)
         try {
@@ -185,10 +186,10 @@ class ReceiptCameraActivity : Activity(), LifecycleOwner, SensorEventListener {
                 val current=SystemClock.elapsedRealtime()
                 val sensorTilt=if(current-gravityAt<=1200)tilt else null
                 val moving=current-gyroAt<=1200 && rotationSpeed>.08
-                if(current-now>400) { gate.reset(); latestReady=false; shutter.isEnabled=false; return@runOnUiThread }
+                if(current-now>400) { gate.reset(); latestReady=false; updateShutter(); return@runOnUiThread }
                 val decision=gate.update(current,quality,sensorTilt,moving || current<focusAfter)
                 latestAt=current; latestReady=decision.ready
-                shutter.isEnabled=decision.ready
+                updateShutter()
                 status.text=decision.message
                 status.setTextColor(if(decision.ready)Color.rgb(100,230,150) else Color.WHITE)
                 level.text=if(sensorTilt==null)"Nível indisponível · alinhe pela moldura" else
@@ -197,14 +198,18 @@ class ReceiptCameraActivity : Activity(), LifecycleOwner, SensorEventListener {
                 if(decision.ready && automatic.isChecked) takePhoto()
             }
         } catch(_: Exception) {
-            runOnUiThread { gate.reset(); latestReady=false; shutter.isEnabled=false }
+            runOnUiThread { gate.reset(); latestReady=false; updateShutter() }
         } finally { image.close() }
     }
-    private fun takePhoto() {
+    private fun updateShutter() {
+        shutter.isEnabled=resumed && !capturing && camera!=null && capture!=null
+    }
+    private fun takePhoto(manual: Boolean=false) {
         val now=SystemClock.elapsedRealtime()
-        if(!resumed || capturing || !latestReady || now-latestAt>400 ||
+        if(!resumed || capturing) return
+        if(!manual && (!latestReady || now-latestAt>400 ||
             (now-gravityAt<=1200 && (tilt?:0.0)>12) ||
-            (now-gyroAt<=1200 && rotationSpeed>.08)) return
+            (now-gyroAt<=1200 && rotationSpeed>.08))) return
         val shot=capture?:return
         val token=generation
         capturing=true; latestReady=false; shutter.isEnabled=false
@@ -220,7 +225,7 @@ class ReceiptCameraActivity : Activity(), LifecycleOwner, SensorEventListener {
                     setResult(RESULT_OK,Intent().putExtra("path",file.path)); finish()
                 }
                 override fun onError(error: ImageCaptureException) {
-                    file.delete(); pendingFile=null; capturing=false; gate.reset()
+                    file.delete(); pendingFile=null; capturing=false; gate.reset(); updateShutter()
                     status.text="Não foi possível fotografar. Mantenha imóvel e tente novamente."
                 }
             })
@@ -238,7 +243,7 @@ class ReceiptCameraActivity : Activity(), LifecycleOwner, SensorEventListener {
             Sensor.TYPE_GYROSCOPE -> { rotationSpeed=sqrt(event.values.sumOf { it.toDouble()*it }); gyroAt=now }
         }
         if((tilt?:0.0)>12 || (now-gyroAt<=1200 && rotationSpeed>.08)) {
-            gate.reset(); latestReady=false; shutter.isEnabled=false
+            gate.reset(); latestReady=false; updateShutter()
         }
     }
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
@@ -246,6 +251,7 @@ class ReceiptCameraActivity : Activity(), LifecycleOwner, SensorEventListener {
     override fun onResume() {
         super.onResume(); registry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
         resumed=true; gate.reset(); latestReady=false; gravityAt=0; gyroAt=0
+        updateShutter()
         val gravitySensor=sensors.getDefaultSensor(Sensor.TYPE_GRAVITY)
         val sensor=gravitySensor?:sensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
         if(sensor!=null)sensors.registerListener(this,sensor,SensorManager.SENSOR_DELAY_UI)
