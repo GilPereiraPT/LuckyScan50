@@ -232,8 +232,9 @@ Map<String, int> finances(
 }
 
 String receiptStatus(Receipt receipt, Verification verification) {
-  if (receipt.archived && canArchiveReceipt(receipt, verification))
+  if (receipt.archived && canArchiveReceipt(receipt, verification)) {
     return 'Arquivado';
+  }
   if (verification.complete &&
       verification.knownCents > 0 &&
       receipt.receivedCents >= verification.knownCents) {

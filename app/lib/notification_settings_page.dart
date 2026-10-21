@@ -110,8 +110,9 @@ class _NotificationSettingsPageState
         busy ||
         !dirty ||
         !emailConsent ||
-        !NotificationPreferences.validEmail(email.text.trim()))
+        !NotificationPreferences.validEmail(email.text.trim())) {
       return;
+    }
     await save();
   }
 
@@ -212,7 +213,14 @@ class _NotificationSettingsPageState
                 .read(storeProvider)
                 .setting('notifications.email.lastSyncError')
           : null;
-      if (problem != null && problem.isNotEmpty) {
+      final delivery = await ref.read(storeProvider).setting(emailDeliveryKey);
+      if (status == 'pending' &&
+          ['failed', 'uncertain', 'queued'].contains(delivery)) {
+        feedback(
+          'Preferências guardadas. O email ainda não foi enviado. Tente reenviar.',
+          failure: true,
+        );
+      } else if (problem != null && problem.isNotEmpty) {
         feedback(
           'Preferências guardadas. A sincronização será repetida.',
           failure: true,
@@ -414,6 +422,11 @@ class _NotificationSettingsPageState
                       : 'Avisos por email desativados',
                 ),
               ),
+              if (emailConsent && emailStatus == 'pending')
+                TextButton(
+                  onPressed: busy ? null : save,
+                  child: const Text('Reenviar email de confirmação'),
+                ),
               if (emailConsent)
                 OutlinedButton(
                   onPressed: busy ? null : refreshEmail,

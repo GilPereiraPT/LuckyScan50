@@ -6,6 +6,7 @@ import 'wallet_store.dart';
 
 const emailTokenKey = 'notifications.email.deviceToken';
 const emailStatusKey = 'notifications.email.status';
+const emailDeliveryKey = 'notifications.email.confirmationDelivery';
 
 class EmailNotificationsClient {
   EmailNotificationsClient({
@@ -98,6 +99,12 @@ class EmailNotificationsClient {
       },
     );
     final status = result['status'] as String;
+    if (result['confirmationDelivery'] is String) {
+      await store.setSetting(
+        emailDeliveryKey,
+        result['confirmationDelivery'] as String,
+      );
+    }
     await store.setSetting(emailStatusKey, status);
     return status;
   }
