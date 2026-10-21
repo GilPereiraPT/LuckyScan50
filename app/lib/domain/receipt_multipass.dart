@@ -3,6 +3,7 @@ import 'receipt_evidence.dart';
 import 'receipt_cells.dart';
 import 'receipt_cell_recovery.dart';
 import 'receipt_cell_consensus.dart';
+import 'receipt_numbered_bets.dart';
 export 'receipt_evidence.dart';
 import 'receipt_geometry.dart';
 export 'receipt_geometry.dart';
@@ -175,8 +176,20 @@ Future<MultiPassResult> recoverReceiptRows({
   ScannedReceipt? metadata,
   List<CropBox> rules = const [],
   bool visualCells = false,
+  bool numberedBetsFirst = false,
 }) async {
   final clock = Stopwatch()..start();
+  if (numberedBetsFirst) {
+    final numbered = await recoverNumberedBets(
+      initial: initial,
+      metadata: metadata,
+      rules: rules,
+      width: width,
+      height: height,
+      recognizeCrop: recognizeCrop,
+    );
+    if (numbered != null) return numbered;
+  }
   final geometryClock = Stopwatch()..start();
   final plan = planBetCrops(initial.tokens, width, height, rules: rules);
   final first = _boundedInitial(initial, plan);
