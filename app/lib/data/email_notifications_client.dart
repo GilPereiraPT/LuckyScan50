@@ -34,11 +34,11 @@ class EmailNotificationsClient {
     if (token != null) message.headers['Authorization'] = 'Bearer $token';
     if (body != null) message.body = jsonEncode(body);
     final response = await http.Response.fromStream(
-      await client.send(message).timeout(const Duration(seconds: 12)),
-    ).timeout(const Duration(seconds: 12));
+      await client.send(message).timeout(const Duration(seconds: 45)),
+    ).timeout(const Duration(seconds: 45));
     if (response.statusCode == 503 || response.statusCode == 404) {
       throw const FormatException(
-        'O envio por Gmail ainda não está configurado no servidor. As notificações Android continuam independentes.',
+        'O serviço de email está temporariamente indisponível.',
       );
     }
     if (response.statusCode == 429) {

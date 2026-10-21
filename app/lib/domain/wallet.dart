@@ -49,6 +49,7 @@ class Receipt {
     List<String> milhaoDrawIds = const [],
     List<String> milhaoCodes = const [],
     this.receivedCents = 0,
+    this.archived = false,
     this.imagePath,
     this.drawDate,
   }) : lines = List<BetLine>.unmodifiable(lines),
@@ -84,6 +85,7 @@ class Receipt {
   }
   final String id, createdAt, source, code;
   final int costCents, receivedCents;
+  final bool archived;
   final List<BetLine> lines;
   final List<String> drawIds, milhaoDrawIds, milhaoCodes;
   final String? imagePath, drawDate;
@@ -94,6 +96,7 @@ class Receipt {
     'code': code,
     'costCents': costCents,
     'receivedCents': receivedCents,
+    'archived': archived,
     'lines': lines.map((l) => l.toJson()).toList(),
     'drawIds': drawIds,
     'milhaoDrawIds': milhaoDrawIds,
@@ -108,6 +111,7 @@ class Receipt {
     code: j['code'] as String,
     costCents: j['costCents'] as int,
     receivedCents: j['receivedCents'] as int? ?? 0,
+    archived: j['archived'] as bool? ?? false,
     lines: (j['lines'] as List)
         .map((l) => BetLine.fromJson(Map<String, dynamic>.from(l as Map)))
         .toList(),
@@ -124,12 +128,14 @@ class Verification {
     this.knownCents,
     this.pendingDraws,
     this.unknownPrizes,
-    this.winningLines,
-  );
+    this.winningLines, {
+    this.pendingMilhao = 0,
+  });
   final int knownCents, pendingDraws, unknownPrizes, winningLines;
+  final int pendingMilhao;
   bool get complete => pendingDraws == 0 && unknownPrizes == 0;
   String get label => pendingDraws > 0
-      ? 'A aguardar'
+      ? (pendingMilhao == pendingDraws ? 'M1lhão pendente' : 'A aguardar')
       : unknownPrizes > 0
       ? 'Prémio por confirmar'
       : winningLines > 0
@@ -137,13 +143,19 @@ class Verification {
       : 'Sem prémio';
 }
 
-Verification verify(Receipt receipt, List<Map<String, dynamic>> results) {
-  int total = 0, pending = 0, unknown = 0, winners = 0;
-  for (final id in receipt.drawIds) {
+Verification verify(
+  Receipt receipt,
+  List<Map<String, dynamic>> results, {
+  bool includeEuromilhoes = true,
+  bool includeMilhao = true,
+}) {
+  int total = 0, pending = 0, unknown = 0, winners = 0, pendingMilhao = 0;
+  for (final id in includeEuromilhoes ? receipt.drawIds : <String>[]) {
     final rows = results.where(
       (r) => r['game'] == 'euromilhoes' && r['drawId'] == id,
     );
-    if (rows.isEmpty || rows.first['status'] != 'complete') {
+    if (rows.isEmpty ||
+        !['complete', 'numbers_confirmed'].contains(rows.first['status'])) {
       pending++;
       continue;
     }
@@ -158,7 +170,10 @@ Verification verify(Receipt receipt, List<Map<String, dynamic>> results) {
       final tier = tierFor(main, stars);
       if (tier == null) continue;
       winners++;
-      final amount = (draw['tiers'] as List)[tier - 1]['amountCents'];
+      final tiers = draw['tiers'] as List? ?? [];
+      final amount = draw['status'] == 'complete' && tiers.length >= tier
+          ? tiers[tier - 1]['amountCents']
+          : null;
       if (amount == null) {
         unknown++;
       } else {
@@ -166,11 +181,12 @@ Verification verify(Receipt receipt, List<Map<String, dynamic>> results) {
       }
     }
   }
-  for (final id in receipt.milhaoDrawIds) {
+  for (final id in includeMilhao ? receipt.milhaoDrawIds : <String>[]) {
     final rows = results.where(
       (r) => r['game'] == 'milhao' && r['drawId'] == id,
     );
     if (rows.isEmpty || rows.first['status'] != 'complete') {
+      pendingMilhao++;
       pending++;
       continue;
     }
@@ -187,7 +203,13 @@ Verification verify(Receipt receipt, List<Map<String, dynamic>> results) {
       }
     }
   }
-  return Verification(total, pending, unknown, winners);
+  return Verification(
+    total,
+    pending,
+    unknown,
+    winners,
+    pendingMilhao: pendingMilhao,
+  );
 }
 
 Map<String, int> finances(
@@ -210,6 +232,8 @@ Map<String, int> finances(
 }
 
 String receiptStatus(Receipt receipt, Verification verification) {
+  if (receipt.archived && canArchiveReceipt(receipt, verification))
+    return 'Arquivado';
   if (verification.complete &&
       verification.knownCents > 0 &&
       receipt.receivedCents >= verification.knownCents) {
@@ -217,3 +241,20 @@ String receiptStatus(Receipt receipt, Verification verification) {
   }
   return verification.label;
 }
+
+String receiptSourceLabel(String source) => switch (source) {
+  'physical' => 'Talão físico',
+  'online' => 'Online',
+  _ => 'Manual',
+};
+
+Verification verifyMilhao(
+  Receipt receipt,
+  List<Map<String, dynamic>> results,
+) => verify(receipt, results, includeEuromilhoes: false);
+
+bool canArchiveReceipt(Receipt receipt, Verification verification) =>
+    verification.complete &&
+    (verification.winningLines == 0 ||
+        (verification.knownCents > 0 &&
+            receipt.receivedCents >= verification.knownCents));

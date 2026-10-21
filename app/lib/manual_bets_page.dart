@@ -264,7 +264,7 @@ class _ManualBetPageState extends ConsumerState<ManualBetPage> {
             '${selections.length} aposta(s), ${lines.length} combinação(ões) simples.\n'
             'Concursos: ${drawIds.join(', ')}\nValor pago: ${euro(price)}\n'
             'M1lhão: ${codes.isEmpty ? 'sem códigos registados' : '${milhaoIds.join(', ')} · ${codes.length} códigos'}\n\n'
-            'Confirme as seleções com o comprovativo. Esta app não faz apostas oficiais.',
+            'Reveja as seleções antes de guardar.',
           ),
           actions: [
             TextButton(
@@ -441,9 +441,7 @@ class _ManualBetPageState extends ConsumerState<ManualBetPage> {
                 ),
               ),
               const SizedBox(height: 6),
-              const Text(
-                'Sem fotografia e sem OCR. Escolha os números, confirme o concurso e guarde na carteira.',
-              ),
+              const Text('Escolha os números e o concurso.'),
               const SizedBox(height: 18),
               Card(
                 child: Padding(

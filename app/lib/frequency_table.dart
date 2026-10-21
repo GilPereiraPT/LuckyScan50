@@ -76,12 +76,10 @@ class _FrequencyTableState extends State<FrequencyTable> {
         const SizedBox(height: 12),
         Text(
           official
-              ? 'Saídas publicadas pelos Jogos Santa Casa. Fonte: https://www.jogossantacasa.pt/web/SCEstatisticas/ · Atualização fixa de 17/10/2026. Toque num cabeçalho para ordenar.'
-              : '${confirmed.length} concursos com chave confirmada guardados. Histórico parcial. Toque num cabeçalho para ordenar.',
+              ? 'Jogos Santa Casa · 17/10/2026 · Toque num cabeçalho para ordenar.'
+              : '${confirmed.length} concursos · Toque num cabeçalho para ordenar.',
         ),
-        const Text(
-          'As minhas apostas: combinações simples por concurso, incluindo múltiplas. As frequências não são previsões.',
-        ),
+        const Text('As minhas apostas: combinações jogadas por concurso.'),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: DataTable(

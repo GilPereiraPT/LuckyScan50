@@ -122,15 +122,20 @@ void main() {
       );
       await tester.pumpAndSettle();
       if (contest == '081/2026') {
-        expect(find.text('Sem prémio · manual'), findsOneWidget);
+        expect(find.text('Sem prémio · Manual'), findsOneWidget);
+        expect(find.text('Arquivar bilhete'), findsOneWidget);
+        expect(find.text('Registar recebimento'), findsNothing);
       } else {
         expect(find.text('Prémios identificados'), findsNothing);
         expect(
-          find.textContaining('Não significa ausência de prémio'),
+          find.textContaining('resultado(s) por atualizar'),
           findsOneWidget,
         );
       }
-      final delete = find.widgetWithText(OutlinedButton, 'Eliminar recibo');
+      final delete = find.widgetWithText(
+        TextButton,
+        'Eliminar definitivamente',
+      );
       expect(tester.getRect(delete).bottom, lessThanOrEqualTo(606));
       await tester.tap(delete);
       await tester.pumpAndSettle();

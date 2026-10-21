@@ -64,9 +64,40 @@ class EmailTests(unittest.TestCase):
         response = {}
         def start(status, headers):
             response.update(status=int(status.split()[0]), headers=dict(headers))
-        with patch('email_notifications.time.time', lambda: self.now):
+        with patch('email_notifications.time.time', lambda: self.now), patch('email_notifications.gmail_send'):
             data = handle_request(env, start, self.config)
         return response, b''.join(data)
+
+    def test_subscription_sends_confirmation_immediately_and_only_once(self):
+        messages = []
+        with patch('email_notifications.gmail_send', side_effect=lambda c, m: messages.append(m)):
+            # request() patches the transport too; call the handler directly here.
+            def post():
+                payload = json.dumps({'email': 'reader@example.pt', 'consent': True,
+                                      'preferences': PREFS}).encode()
+                env = {'PATH_INFO': '/v1/email/subscription', 'REQUEST_METHOD': 'POST',
+                       'CONTENT_TYPE': 'application/json', 'CONTENT_LENGTH': str(len(payload)),
+                       'wsgi.input': io.BytesIO(payload), 'REMOTE_ADDR': '192.0.2.1',
+                       'HTTP_AUTHORIZATION': 'Bearer ' + TOKEN}
+                with patch('email_notifications.time.time', lambda: self.now):
+                    return json.loads(b''.join(handle_request(env, lambda *a: None, self.config)))
+            first = post()
+            second = post()
+        self.assertEqual(first['confirmationDelivery'], 'sent')
+        self.assertEqual(second['confirmationDelivery'], 'sent')
+        self.assertEqual(len(messages), 1)
+
+    def test_immediate_confirmation_does_not_drain_other_subscribers(self):
+        self.subscribe()
+        other = self.store.authenticate({'HTTP_AUTHORIZATION': 'Bearer ' + 'b' * 64})
+        self.store.subscribe(other, {'email': 'other@example.pt', 'consent': True,
+                                    'preferences': PREFS}, '192.0.2.2')
+        sent = []
+        deliver(self.store, lambda c, m: sent.append(m), subscriber_id=self.identity, confirmation_only=True)
+        self.assertEqual(len(sent), 1)
+        self.assertEqual(sent[0]['To'], 'reader@example.pt')
+        with self.store.connect() as db:
+            self.assertEqual(db.execute("SELECT state FROM outbox WHERE subscriber=?", (other,)).fetchone()[0], 'queued')
 
     def test_disabled_by_default_and_no_credentials_exposed(self):
         with patch.dict('os.environ', {}, clear=True):

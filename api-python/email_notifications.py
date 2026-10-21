@@ -1,7 +1,7 @@
 """Opt-in email via Gmail or WordPress. Separate private SQLite DB; stdlib only.
 
-No network access happens in request handlers. Only the explicit cron --send
-command delivers mail, and only when all server settings are present.
+Subscription requests deliver their confirmation immediately. Scheduled alerts
+are delivered by the cron worker when server settings are present.
 """
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -473,7 +473,7 @@ def wordpress_send(config, message, opener=None):
         raise OSError('Ambiguous bridge response') from None
 
 
-def deliver(store, sender=None):
+def deliver(store, sender=None, *, subscriber_id=None, confirmation_only=False):
     """Reserve before SMTP. Ambiguous transport failures are NOT automatically retried."""
     if not store.config.ready:
         raise EmailError('email_not_configured', 503)
@@ -485,7 +485,14 @@ def deliver(store, sender=None):
                 break
             # A previous killed process may have submitted its email already.
             db.execute("UPDATE outbox SET state='uncertain' WHERE state='sending' AND attempted_at<?", (store.clock() - 600,))
-            queued = db.execute("SELECT * FROM outbox WHERE state='queued' AND next_attempt<=? ORDER BY category='confirm' DESC,id LIMIT 1", (store.clock(),)).fetchone()
+            query = "SELECT * FROM outbox WHERE state='queued' AND next_attempt<=?"
+            parameters = [store.clock()]
+            if subscriber_id is not None:
+                query += ' AND subscriber=?'
+                parameters.append(subscriber_id)
+            if confirmation_only:
+                query += " AND category='confirm'"
+            queued = db.execute(query + " ORDER BY category='confirm' DESC,id LIMIT 1", parameters).fetchone()
             if not queued:
                 break
             subscriber = db.execute('SELECT * FROM subscribers WHERE id=?', (queued['subscriber'],)).fetchone()
@@ -579,7 +586,7 @@ def handle_request(environ, start_response, config=None):
             identity, token = params['id'][0], params['token'][0]
             purpose = path.rsplit('/', 1)[1]
             result = store.act_on_link(identity, token, purpose, apply=method == 'POST')
-            text = ('Email confirmado. Pode voltar à app e sincronizar a carteira.' if purpose == 'confirm'
+            text = ('Email confirmado. Pode voltar à app.' if purpose == 'confirm'
                     else 'Subscrição cancelada. Não receberá mais avisos.') if method == 'POST' else (
                     'Confirmar os avisos do LuckyScan50' if purpose == 'confirm' else 'Cancelar todos os avisos do LuckyScan50')
             form = '' if method == 'POST' else '<form method="post"><button type="submit">' + text + '</button></form>'
@@ -603,7 +610,14 @@ def handle_request(environ, start_response, config=None):
             raise EmailError('invalid_body')
         payload = json.loads(raw)
         if path.endswith('/subscription'):
-            return reply(202, store.subscribe(identity, payload, environ.get('REMOTE_ADDR', 'unknown')))
+            result = store.subscribe(identity, payload, environ.get('REMOTE_ADDR', 'unknown'))
+            if result['status'] == 'pending':
+                # Deliver only this device's confirmation; never flush other mail.
+                deliver(store, subscriber_id=identity, confirmation_only=True)
+                with store.connect() as db:
+                    delivery = db.execute("SELECT state FROM outbox WHERE subscriber=? AND category='confirm' ORDER BY id DESC LIMIT 1", (identity,)).fetchone()
+                result['confirmationDelivery'] = delivery['state'] if delivery else 'queued'
+            return reply(202, result)
         return reply(200, store.watches(identity, payload))
     except EmailError as exc:
         return reply(exc.status, {'error': exc.code})

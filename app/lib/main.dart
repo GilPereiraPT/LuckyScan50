@@ -29,12 +29,13 @@ import 'data/api_overview_page.dart';
 import 'data/wallet_store.dart';
 import 'domain/wallet.dart';
 import 'manual_bets_page.dart';
+import 'ticket_numbers.dart';
 
 const buildSha = String.fromEnvironment(
   'LUCKYSCAN_BUILD_SHA',
   defaultValue: 'local',
 );
-const appVersion = '0.2.11+13';
+const appVersion = '0.2.14+16';
 
 final receiptScannerProvider = Provider<ReceiptScanner>(
   (ref) => scanReceiptImage,
@@ -93,7 +94,14 @@ Future<void> main() async {
 final router = GoRouter(
   routes: [
     GoRoute(path: '/', builder: (_, __) => const Home()),
-    GoRoute(path: '/add', builder: (_, __) => const AddReceipt()),
+    GoRoute(
+      path: '/add',
+      builder: (_, state) => AddReceipt(
+        initialSource: state.extra is ImageSource
+            ? state.extra as ImageSource
+            : null,
+      ),
+    ),
     GoRoute(path: '/manual', builder: (_, __) => const ManualBetPage()),
     GoRoute(
       path: '/notifications',
@@ -115,12 +123,23 @@ class LuckyScanApp extends ConsumerWidget {
     ThemeData theme(Brightness brightness) => ThemeData(
       useMaterial3: true,
       brightness: brightness,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xffc5a45d),
-        brightness: brightness,
-        primary: brightness == Brightness.dark
-            ? const Color(0xffe7c77f)
-            : const Color(0xff172841),
+      colorScheme:
+          ColorScheme.fromSeed(
+            seedColor: const Color(0xffc5a45d),
+            brightness: brightness,
+            primary: brightness == Brightness.dark
+                ? const Color(0xffe7c77f)
+                : const Color(0xff172841),
+          ).copyWith(
+            surface: brightness == Brightness.dark
+                ? const Color(0xff132238)
+                : Colors.white,
+          ),
+      appBarTheme: AppBarTheme(
+        backgroundColor: brightness == Brightness.dark
+            ? const Color(0xff0c1523)
+            : const Color(0xfff5f6f9),
+        surfaceTintColor: Colors.transparent,
       ),
       scaffoldBackgroundColor: brightness == Brightness.dark
           ? const Color(0xff0c1523)
@@ -130,6 +149,9 @@ class LuckyScanApp extends ConsumerWidget {
       ),
       cardTheme: CardThemeData(
         elevation: 0,
+        color: brightness == Brightness.dark
+            ? const Color(0xff132238)
+            : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
     );
@@ -158,7 +180,10 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    WidgetsBinding.instance.addPostFrameCallback((_) => offerNotifications());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      sync(quiet: true);
+      offerNotifications();
+    });
   }
 
   Future<void> offerNotifications() async {
@@ -176,8 +201,7 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
           content: const Text(
             'Escolha se pretende avisos de resultados, prémios e prazos '
             'no Android ou por email. Os canais são opcionais. '
-            'O email exige confirmação do endereço. Os avisos de caducidade '
-            'exigem uma data-limite validada.',
+            'Escolha os avisos nas definições.',
           ),
           actions: [
             TextButton(
@@ -222,7 +246,8 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> sync() async {
+  Future<void> sync({bool quiet = false}) async {
+    if (syncing || !mounted) return;
     setState(() => syncing = true);
     final client = ResultsClient();
     try {
@@ -236,18 +261,12 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
       } catch (_) {
         // Notification failures must not turn a successful sync into an error.
       }
-      if (mounted) {
-        message(
-          context,
-          'Resultados atualizados. ${rows.length} concursos disponíveis offline.',
-        );
+      if (mounted && !quiet) {
+        message(context, 'Resultados atualizados.');
       }
     } catch (_) {
-      if (mounted) {
-        message(
-          context,
-          'Não foi possível sincronizar. Os dados guardados continuam disponíveis.',
-        );
+      if (mounted && !quiet) {
+        message(context, 'Não foi possível atualizar. Tente novamente.');
       }
     } finally {
       client.close();
@@ -322,9 +341,9 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
       ),
       floatingActionButton: index < 2
           ? FloatingActionButton.extended(
-              onPressed: () => context.push('/manual'),
-              icon: const Icon(Icons.grid_view_rounded),
-              label: const Text('Criar aposta manual'),
+              onPressed: () => context.push('/add', extra: ImageSource.camera),
+              icon: const Icon(Icons.camera_alt_outlined),
+              label: const Text('Fotografar'),
             )
           : null,
       bottomNavigationBar: NavigationBar(
@@ -378,60 +397,42 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
           style: Theme.of(context).textTheme.bodyMedium,
         ),
         const SizedBox(height: 12),
-        Card(
-          child: ListTile(
-            leading: const Icon(Icons.add_circle_outline),
-            title: const Text('Nova aposta manual'),
-            subtitle: const Text(
-              'Selecionar números e estrelas sem fotografia',
-            ),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.push('/manual'),
-          ),
+        FilledButton.icon(
+          style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(64)),
+          onPressed: () => context.push('/add', extra: ImageSource.camera),
+          icon: const Icon(Icons.camera_alt_rounded, size: 28),
+          label: const Text('Fotografar talão', style: TextStyle(fontSize: 19)),
         ),
-        Card(
-          child: ListTile(
-            leading: const Icon(Icons.camera_alt_outlined),
-            title: const Text('Fotografar ou importar talão'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.push('/add'),
+        const SizedBox(height: 10),
+        OutlinedButton.icon(
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size.fromHeight(56),
           ),
+          onPressed: () => context.push('/add', extra: ImageSource.gallery),
+          icon: const Icon(Icons.photo_library_outlined),
+          label: const Text('Importar imagem'),
         ),
-        Card(
-          child: ListTile(
-            leading: const Icon(Icons.cloud_done_outlined),
-            title: const Text('Resultados e fonte de dados'),
-            subtitle: const Text(
-              'Consultar a API LuckyScan50 e o estado dos feeds',
-            ),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.push('/api'),
-          ),
+        TextButton.icon(
+          onPressed: () => context.push('/manual'),
+          icon: const Icon(Icons.edit_outlined, size: 18),
+          label: const Text('Introduzir números manualmente'),
         ),
         const SizedBox(height: 16),
         metric('Total apostado', totals['spent']!),
         metric('Prémios identificados', totals['identified']!),
         metric('Efetivamente recebido', totals['received']!),
         metric('Saldo de caixa', totals['cashBalance']!),
-        const Text(
-          'Os prémios desconhecidos não entram nos totais. A despesa é registada uma vez por recibo.',
-        ),
         const SizedBox(height: 20),
         const Text(
           'Atividade recente',
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         if (tickets.isEmpty)
-          const Empty(
-            'Comece por registar uma aposta manual ou importar uma imagem.',
-          ),
-        ...tickets.take(3).map((r) => ticketTile(r, draws)),
-        const Padding(
-          padding: EdgeInsets.symmetric(vertical: 24),
-          child: Text(
-            'Projeto não oficial, independente dos Jogos Santa Casa. Confirme sempre os prémios pelo operador autorizado.',
-          ),
-        ),
+          const Empty('Fotografe ou importe o seu primeiro talão.'),
+        ...tickets
+            .where((r) => receiptStatus(r, verify(r, draws)) != 'Arquivado')
+            .take(3)
+            .map((r) => ticketTile(r, draws)),
       ];
     }
     if (index == 1) {
@@ -440,8 +441,11 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
             (r) =>
                 (r.code.toLowerCase().contains(search.toLowerCase()) ||
                     r.drawIds.join(' ').contains(search)) &&
-                (filter == 'Todos' ||
-                    receiptStatus(r, verify(r, draws)) == filter),
+                (filter == 'Todos'
+                    ? receiptStatus(r, verify(r, draws)) != 'Arquivado'
+                    : (filter == 'A aguardar'
+                          ? verify(r, draws).pendingDraws > 0
+                          : receiptStatus(r, verify(r, draws)) == filter)),
           )
           .toList();
       return [
@@ -463,6 +467,7 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
                     'Sem prémio',
                     'Prémio por confirmar',
                     'Recebido',
+                    'Arquivado',
                   ]
                   .map(
                     (s) => ChoiceChip(
@@ -483,9 +488,7 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
           'Resultados guardados',
           style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
-        const Text(
-          'Atualize para descarregar os concursos disponíveis. Os resultados ficam acessíveis offline.',
-        ),
+        const Text('Chaves e prémios dos últimos concursos.'),
         if (draws.isEmpty)
           const Empty('Sem resultados. Toque no botão de sincronização.'),
         ...([
@@ -525,7 +528,7 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
                               ),
                               trailing: Text(
                                 t['amountCents'] == null
-                                    ? 'Não atribuído / desconhecido'
+                                    ? 'Por publicar'
                                     : euro(t['amountCents'] as int),
                               ),
                             ),
@@ -533,7 +536,7 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
                           .toList(),
                     ),
                   Text(
-                    'Fonte: ${d['sourceUrl']}',
+                    'Jogos Santa Casa',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],
@@ -605,15 +608,12 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
       const SizedBox(height: 16),
       ListTile(
         leading: const Icon(Icons.cloud_outlined),
-        title: const Text('API e fontes oficiais'),
-        subtitle: const Text('Estado dos resultados, RSS e sincronização'),
+        title: const Text('Atualização dos resultados'),
+        subtitle: const Text('Fonte e última atualização'),
         trailing: const Icon(Icons.chevron_right),
         onTap: () => context.push('/api'),
       ),
       const SizedBox(height: 16),
-      const Text(
-        'As imagens ficam no armazenamento privado da aplicação. Ao autorizar avisos por email, são enviados o endereço e os dados mínimos das apostas necessários para verificar prémios. Não introduza palavras-passe dos Jogos Santa Casa.',
-      ),
       ListTile(
         leading: const Icon(Icons.lock_outline),
         title: const Text('Criar cópia encriptada'),
@@ -639,18 +639,13 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
       ListTile(
         leading: const Icon(Icons.info_outline),
         title: const Text('Sobre o LuckyScan50'),
-        subtitle: const Text('Conheça a aplicação, privacidade e limitações'),
+        subtitle: const Text('Informações da aplicação'),
         trailing: const Icon(Icons.chevron_right),
         onTap: () => context.push('/about'),
       ),
       const Divider(),
-      const Text(
-        'Disponível: carteira manual, OCR com confirmação, resultados offline, verificação e exportação. Alertas automáticos, prazos regulamentares e bloqueio biométrico ainda não estão disponíveis.',
-      ),
       const SizedBox(height: 20),
-      const Text(
-        'LuckyScan50 · Gil Pereira · versão $appVersion · $buildSha\nAplicação não oficial. Nunca utilize estatísticas como previsão de prémios.',
-      ),
+      const Text('LuckyScan50 · Gil Pereira · versão $appVersion'),
     ];
   }
 
@@ -670,7 +665,13 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
         ),
         isThreeLine: true,
         trailing: const Icon(Icons.chevron_right),
-        onTap: () => context.push('/receipt/${receipt.id}'),
+        onTap: () async {
+          await context.push('/receipt/${receipt.id}');
+          if (mounted) {
+            ref.invalidate(resultsProvider);
+            ref.invalidate(receiptsProvider);
+          }
+        },
       ),
     );
   }
@@ -876,7 +877,8 @@ Future<String?> askPassword(BuildContext context) async {
 }
 
 class AddReceipt extends ConsumerStatefulWidget {
-  const AddReceipt({super.key});
+  const AddReceipt({super.key, this.initialSource});
+  final ImageSource? initialSource;
   @override
   ConsumerState<AddReceipt> createState() => _AddReceiptState();
 }
@@ -909,6 +911,17 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
     'expected': expectedCount,
     'milhaoCodes': milhaoCodes,
   };
+  @override
+  void initState() {
+    super.initState();
+    final selected = widget.initialSource;
+    if (selected != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) scan(selected);
+      });
+    }
+  }
+
   @override
   void dispose() {
     for (final c in [
@@ -1016,8 +1029,8 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
       message(
         context,
         additionalMilhao
-            ? 'Boletim M1lhão lido. Confirme o código e o concurso; identificadores do recibo não são códigos de participação.'
-            : '${result.receipt.lines.length} aposta(s) completa(s) reconhecida(s). Confirme todos os campos. Edições manuais foram preservadas.',
+            ? 'M1lhão lido.'
+            : '${result.receipt.lines.length} apostas reconhecidas.',
       );
     } on ReceiptScanFailure catch (error) {
       if (mounted) {
@@ -1172,16 +1185,14 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
           children: [
             const Text(
-              'Uma despesa por recibo',
+              'Adicionar talão',
               style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
             ),
-            const Text(
-              'Agrupe as secções Euromilhões e M1lhão do mesmo comprovativo. Confirme os campos antes de guardar.',
-            ),
+            const Text('Fotografe ou importe o talão e reveja as apostas.'),
             const SizedBox(height: 16),
             ExpansionTile(
               initiallyExpanded: true,
-              title: const Text('OCR direto, sem corrigir perspetiva'),
+              title: const Text('Fotografia e importação'),
               children: [
                 Wrap(
                   spacing: 8,
@@ -1211,14 +1222,12 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Captura com moldura de quatro cantos',
+                      'Ajustar enquadramento',
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 6),
                     const Text(
-                      'Fotografe o talão completo e ajuste os cantos '
-                      'do papel antes de iniciar o OCR. A correção é opcional '
-                      'e pode ser dispensada para usar a fotografia original.',
+                      'Ajuste os quatro cantos para endireitar a imagem.',
                     ),
                     const SizedBox(height: 8),
                     Wrap(
@@ -1271,9 +1280,7 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
                         'Fotografe o boletim do M1lhão',
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      const Text(
-                        'O código M1lhão não é o identificador do recibo. Confirme o código antes de guardar.',
-                      ),
+                      const Text('Adicione os códigos do M1lhão deste talão.'),
                       Wrap(
                         spacing: 8,
                         children: [
@@ -1302,132 +1309,150 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
                   ),
                 ),
               ),
-            if (lastScan != null) ...[
-              OutlinedButton.icon(
-                icon: const Icon(Icons.ios_share),
-                label: const Text('Exportar relatório OCR'),
-                onPressed: busy || saving
-                    ? null
-                    : () async {
-                        try {
-                          final report = receiptDiagnosticReport(
-                            lastScan!,
-                            build: buildSha,
-                            version: appVersion,
-                          );
-                          final directory = await getTemporaryDirectory();
-                          final file = File(
-                            p.join(
-                              directory.path,
-                              'LuckyScan50-OCR-${DateTime.now().millisecondsSinceEpoch}.json',
-                            ),
-                          );
-                          await file.writeAsString(
-                            const JsonEncoder.withIndent('  ').convert(report),
-                          );
-                          await SharePlus.instance.share(
-                            ShareParams(
-                              files: [
-                                XFile(file.path, mimeType: 'application/json'),
-                              ],
-                              subject: 'LuckyScan50 — diagnóstico OCR',
-                            ),
-                          );
-                        } catch (_) {
-                          if (!context.mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Não foi possível exportar o relatório OCR.',
-                              ),
-                            ),
-                          );
-                        }
-                      },
-              ),
-              const Text(
-                'Inclui texto reconhecido do recibo; sem fotografias. '
-                'As edições manuais do formulário não entram no relatório.',
-              ),
-            ],
-            if (lastScan?.recoveryError != null)
-              Text(
-                'Recuperação indisponível; leitura inicial preservada: ${lastScan!.recoveryError}',
-              ),
-            if (lastScan?.multiPass != null)
+            if (lastScan != null)
               ExpansionTile(
-                title: const Text(
-                  'Passagens de recuperação e origem dos valores',
-                ),
+                title: const Text('Diagnóstico de leitura'),
                 children: [
-                  SelectableText(
-                    'Antes: ${(lastScan!.initialReceipt ?? lastScan!.multiPass!.initial).lines.length} apostas completas; '
-                    'depois: ${lastScan!.receipt.lines.length}. OCR inicial ${lastScan!.ocrMs} ms; recuperação ${lastScan!.multiPass!.elapsedMs} ms.\n'
-                    'Zona das apostas: ${lastScan!.multiPass!.plan.zone?.toJson()}\n'
-                    'Elementos verticais intersectantes: ${lastScan!.multiPass!.plan.verticalElements.map((v) => '${v.text} (${v.height.toStringAsFixed(1)} px, ${v.angle.toStringAsFixed(1)}°)').join('; ')}',
-                  ),
-                  if (lastScan!.initialReceipt != null)
+                  if (lastScan != null) ...[
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.ios_share),
+                      label: const Text('Exportar relatório OCR'),
+                      onPressed: busy || saving
+                          ? null
+                          : () async {
+                              try {
+                                final report = receiptDiagnosticReport(
+                                  lastScan!,
+                                  build: buildSha,
+                                  version: appVersion,
+                                );
+                                final directory = await getTemporaryDirectory();
+                                final file = File(
+                                  p.join(
+                                    directory.path,
+                                    'LuckyScan50-OCR-${DateTime.now().millisecondsSinceEpoch}.json',
+                                  ),
+                                );
+                                await file.writeAsString(
+                                  const JsonEncoder.withIndent(
+                                    '  ',
+                                  ).convert(report),
+                                );
+                                await SharePlus.instance.share(
+                                  ShareParams(
+                                    files: [
+                                      XFile(
+                                        file.path,
+                                        mimeType: 'application/json',
+                                      ),
+                                    ],
+                                    subject: 'LuckyScan50 — diagnóstico OCR',
+                                  ),
+                                );
+                              } catch (_) {
+                                if (!context.mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Não foi possível exportar o relatório OCR.',
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                    ),
+                    const Text(
+                      'Inclui texto reconhecido do recibo; sem fotografias. '
+                      'As edições manuais do formulário não entram no relatório.',
+                    ),
+                  ],
+                  if (lastScan?.recoveryError != null)
+                    Text(
+                      'Recuperação indisponível; leitura inicial preservada: ${lastScan!.recoveryError}',
+                    ),
+                  if (lastScan?.multiPass != null)
                     ExpansionTile(
                       title: const Text(
-                        'Primeira passagem preservada — coordenadas e texto',
+                        'Passagens de recuperação e origem dos valores',
                       ),
                       children: [
                         SelectableText(
-                          '${lastScan!.rawText}\n'
-                          '${lastScan!.initialReceipt!.observations.map((t) => '${t.text} @ x=${t.x}, y=${t.y}, w=${t.width}, h=${t.height}, a=${t.angle}').join('\n')}',
+                          'Antes: ${(lastScan!.initialReceipt ?? lastScan!.multiPass!.initial).lines.length} apostas completas; '
+                          'depois: ${lastScan!.receipt.lines.length}. OCR inicial ${lastScan!.ocrMs} ms; recuperação ${lastScan!.multiPass!.elapsedMs} ms.\n'
+                          'Zona das apostas: ${lastScan!.multiPass!.plan.zone?.toJson()}\n'
+                          'Elementos verticais intersectantes: ${lastScan!.multiPass!.plan.verticalElements.map((v) => '${v.text} (${v.height.toStringAsFixed(1)} px, ${v.angle.toStringAsFixed(1)}°)').join('; ')}',
+                        ),
+                        if (lastScan!.initialReceipt != null)
+                          ExpansionTile(
+                            title: const Text(
+                              'Primeira passagem preservada — coordenadas e texto',
+                            ),
+                            children: [
+                              SelectableText(
+                                '${lastScan!.rawText}\n'
+                                '${lastScan!.initialReceipt!.observations.map((t) => '${t.text} @ x=${t.x}, y=${t.y}, w=${t.width}, h=${t.height}, a=${t.angle}').join('\n')}',
+                              ),
+                            ],
+                          ),
+                        for (final pass in lastScan!.orientationPasses)
+                          SelectableText(
+                            'Orientação ${pass.turns * 90}°: ${pass.rows} linhas observadas, ${pass.elapsedMs} ms\n${pass.frame.text}',
+                          ),
+                        for (final pass in lastScan!.multiPass!.passes)
+                          SelectableText(
+                            '${pass.id}: recorte ${pass.crop.box.toJson()}, ${pass.elapsedMs} ms totais; '
+                            'motor ${pass.frame?.elapsedMs ?? 0} ms; erro ${pass.error ?? 'nenhum'}\n${pass.frame?.text ?? ''}',
+                          ),
+                        for (final bet in lastScan!.multiPass!.evidence)
+                          ListTile(
+                            title: Text('Aposta ${bet.index} — proveniência'),
+                            subtitle: SelectableText(
+                              'Valores aceites: ${bet.acceptedValues.map((v) => v.description).join('; ')}\n'
+                              'Observações de todas as passagens: ${bet.candidates.map((v) => v.description).join('; ')}\n'
+                              'Incertezas: ${bet.issues.join('; ')}',
+                            ),
+                          ),
+                      ],
+                    ),
+                  if (lastScan != null) ...[
+                    Text(
+                      'Jogo: ${lastScan!.receipt.game ?? 'não identificado'} · ${lastScan!.receipt.lines.length} apostas completas',
+                    ),
+                    for (final bet in lastScan!.receipt.bets.where(
+                      (b) => !b.complete,
+                    ))
+                      ListTile(
+                        title: Text(
+                          'Aposta ${bet.index} incompleta — confirmar',
+                        ),
+                        subtitle: Text(
+                          '${bet.formLine}\n${bet.issues.join('; ')}',
+                        ),
+                      ),
+                    for (final warning in lastScan!.receipt.warnings)
+                      Text(warning),
+                    ExpansionTile(
+                      title: const Text('Diagnóstico local da leitura'),
+                      children: [
+                        SelectableText(
+                          'Imagem → ML Kit local; retificação de perspetiva quando selecionada\n'
+                          'ML Kit: ${lastScan!.rawText.length} caracteres, ${lastScan!.receipt.tokenCount} elementos, ${lastScan!.ocrMs} ms\n'
+                          'Reconstrução: ${lastScan!.receipt.strategy}, inclinação ${lastScan!.receipt.skewDegrees.toStringAsFixed(1)}°\n'
+                          'Interpretação e recuperação: ${lastScan!.receipt.lines.length} apostas completas, ${lastScan!.parseMs} ms\n'
+                          'Elementos (x,y,altura,ângulo):\n${lastScan!.receipt.observations.map((t) => '${t.text} @ ${t.x.toStringAsFixed(1)},${t.y.toStringAsFixed(1)},${t.height.toStringAsFixed(1)},${t.angle.toStringAsFixed(1)}').join('\n')}\n'
+                          'Linhas reconstruídas:\n${lastScan!.receipt.rows.join('\n')}',
                         ),
                       ],
                     ),
-                  for (final pass in lastScan!.orientationPasses)
-                    SelectableText(
-                      'Orientação ${pass.turns * 90}°: ${pass.rows} linhas observadas, ${pass.elapsedMs} ms\n${pass.frame.text}',
-                    ),
-                  for (final pass in lastScan!.multiPass!.passes)
-                    SelectableText(
-                      '${pass.id}: recorte ${pass.crop.box.toJson()}, ${pass.elapsedMs} ms totais; '
-                      'motor ${pass.frame?.elapsedMs ?? 0} ms; erro ${pass.error ?? 'nenhum'}\n${pass.frame?.text ?? ''}',
-                    ),
-                  for (final bet in lastScan!.multiPass!.evidence)
-                    ListTile(
-                      title: Text('Aposta ${bet.index} — proveniência'),
-                      subtitle: SelectableText(
-                        'Valores aceites: ${bet.acceptedValues.map((v) => v.description).join('; ')}\n'
-                        'Observações de todas as passagens: ${bet.candidates.map((v) => v.description).join('; ')}\n'
-                        'Incertezas: ${bet.issues.join('; ')}',
+                  ],
+                  if (ocrText.isNotEmpty)
+                    ExpansionTile(
+                      title: const Text(
+                        'Texto OCR local — consultar transcrição',
                       ),
+                      children: [SelectableText(ocrText)],
                     ),
                 ],
-              ),
-            if (lastScan != null) ...[
-              Text(
-                'Jogo: ${lastScan!.receipt.game ?? 'não identificado'} · ${lastScan!.receipt.lines.length} apostas completas',
-              ),
-              for (final bet in lastScan!.receipt.bets.where(
-                (b) => !b.complete,
-              ))
-                ListTile(
-                  title: Text('Aposta ${bet.index} incompleta — confirmar'),
-                  subtitle: Text('${bet.formLine}\n${bet.issues.join('; ')}'),
-                ),
-              for (final warning in lastScan!.receipt.warnings) Text(warning),
-              ExpansionTile(
-                title: const Text('Diagnóstico local da leitura'),
-                children: [
-                  SelectableText(
-                    'Imagem → ML Kit local; retificação de perspetiva quando selecionada\n'
-                    'ML Kit: ${lastScan!.rawText.length} caracteres, ${lastScan!.receipt.tokenCount} elementos, ${lastScan!.ocrMs} ms\n'
-                    'Reconstrução: ${lastScan!.receipt.strategy}, inclinação ${lastScan!.receipt.skewDegrees.toStringAsFixed(1)}°\n'
-                    'Interpretação e recuperação: ${lastScan!.receipt.lines.length} apostas completas, ${lastScan!.parseMs} ms\n'
-                    'Elementos (x,y,altura,ângulo):\n${lastScan!.receipt.observations.map((t) => '${t.text} @ ${t.x.toStringAsFixed(1)},${t.y.toStringAsFixed(1)},${t.height.toStringAsFixed(1)},${t.angle.toStringAsFixed(1)}').join('\n')}\n'
-                    'Linhas reconstruídas:\n${lastScan!.receipt.rows.join('\n')}',
-                  ),
-                ],
-              ),
-            ],
-            if (ocrText.isNotEmpty)
-              ExpansionTile(
-                title: const Text('Texto OCR local — consultar transcrição'),
-                children: [SelectableText(ocrText)],
               ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
@@ -1461,9 +1486,6 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
               'Códigos M1lhão (um por linha)',
               hint: 'ABC 12345',
               maxLines: 3,
-            ),
-            const Text(
-              'O OCR tenta importar apenas chaves completas e válidas. Confirme sempre todas as chaves, estrelas e valores antes de guardar. Imagens não são enviadas ao servidor.',
             ),
           ],
         ),
@@ -1547,26 +1569,15 @@ class AboutPage extends StatelessWidget {
                 'disponíveis e acompanhar os valores apostados e recebidos.',
               ),
               const SizedBox(height: 16),
-              const Text(
-                'As fotografias e apostas são guardadas localmente. '
-                'O reconhecimento de texto exige confirmação antes '
-                'de guardar os dados.',
-              ),
+              const Text('Fotografe, importe e organize os seus talões.'),
               const SizedBox(height: 24),
               Text('Projeto independente', style: theme.textTheme.titleLarge),
               const SizedBox(height: 8),
-              const Text(
-                'Aplicação não oficial, sem ligação ou associação aos '
-                'Jogos Santa Casa. A verificação e atribuição oficial '
-                'de prémios competem exclusivamente ao operador autorizado.',
-              ),
+              const Text('LuckyScan50 não é afiliado dos Jogos Santa Casa.'),
               const SizedBox(height: 24),
               const Text('Gil Pereira · LuckyScan50'),
               const SizedBox(height: 8),
-              Text(
-                'Versão de auditoria $appVersion · $buildSha',
-                style: theme.textTheme.bodySmall,
-              ),
+              Text('Versão $appVersion', style: theme.textTheme.bodySmall),
             ],
           ),
         ),
@@ -1602,15 +1613,20 @@ class ReceiptPage extends ConsumerWidget {
               r.code.isEmpty ? 'Recibo local' : r.code,
               style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
             ),
-            Text('${receiptStatus(r, verification)} · ${r.source}'),
+            Text(
+              '${receiptStatus(r, verification)} · ${receiptSourceLabel(r.source)}',
+            ),
             const SizedBox(height: 16),
             metric('Valor pago', r.costCents),
             if (verification.complete || verification.knownCents > 0)
               metric('Prémios identificados', verification.knownCents),
-            metric('Recebido', r.receivedCents),
+            if (verification.winningLines > 0 || r.receivedCents > 0)
+              metric('Recebido', r.receivedCents),
             if (!verification.complete)
               Text(
-                'Conferência incompleta: ${verification.pendingDraws} concursos sem resultado disponível · ${verification.unknownPrizes} prémios por confirmar. Não significa ausência de prémio.',
+                verification.pendingDraws > 0
+                    ? '${verification.pendingDraws} resultado(s) por atualizar'
+                    : '${verification.unknownPrizes} valor(es) de prémio por publicar',
               ),
             const Text('Euromilhões'),
             for (final drawId in r.drawIds)
@@ -1618,14 +1634,13 @@ class ReceiptPage extends ConsumerWidget {
             ...r.lines.map(
               (l) => Card(
                 child: ListTile(
-                  title: Text(l.numbers.join('  ')),
-                  subtitle: Text('★ ${l.stars.join('  ')}'),
+                  title: TicketNumbers(numbers: l.numbers, stars: l.stars),
                 ),
               ),
             ),
             if (r.milhaoCodes.isNotEmpty)
               Text(
-                'M1lhão ${r.milhaoDrawIds.join(', ')}\n${r.milhaoCodes.join('\n')}',
+                'M1lhão · ${verifyMilhao(r, results).label}\n${r.milhaoDrawIds.join(', ')} · ${r.milhaoCodes.join(', ')}',
               ),
             if (r.imagePath != null && File(r.imagePath!).existsSync())
               Image.file(File(r.imagePath!), height: 300),
@@ -1639,50 +1654,77 @@ class ReceiptPage extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            FilledButton(
-              onPressed: () async {
-                final controller = TextEditingController(
-                  text: (r.receivedCents / 100).toStringAsFixed(2),
-                );
-                final value = await showDialog<String>(
-                  context: context,
-                  builder: (ctx) => AlertDialog(
-                    title: const Text('Total efetivamente recebido'),
-                    content: TextField(
-                      controller: controller,
-                      decoration: const InputDecoration(labelText: 'Euros'),
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        child: const Text('Cancelar'),
-                      ),
-                      FilledButton(
-                        onPressed: () => Navigator.pop(ctx, controller.text),
-                        child: const Text('Guardar'),
-                      ),
-                    ],
-                  ),
-                );
-                if (value == null) return;
-                try {
+            if (r.archived || canArchiveReceipt(r, verification))
+              FilledButton.icon(
+                icon: Icon(
+                  r.archived
+                      ? Icons.unarchive_outlined
+                      : Icons.archive_outlined,
+                ),
+                label: Text(
+                  r.archived ? 'Retirar do arquivo' : 'Arquivar bilhete',
+                ),
+                onPressed: () async {
                   await ref
                       .read(storeProvider)
                       .save(
                         Receipt.fromJson({
                           ...r.toJson(),
-                          'receivedCents': cents(value),
+                          'archived': !r.archived,
                         }),
                       );
                   ref.invalidate(receiptsProvider);
-                } catch (_) {
-                  if (context.mounted) message(context, 'Valor inválido.');
-                }
-              },
-              child: const Text('Registar recebimento'),
-            ),
+                  if (context.mounted) context.pop();
+                },
+              ),
+            if (verification.winningLines > 0 &&
+                !r.archived &&
+                (!verification.complete ||
+                    r.receivedCents < verification.knownCents))
+              FilledButton(
+                onPressed: () async {
+                  final controller = TextEditingController(
+                    text: (r.receivedCents / 100).toStringAsFixed(2),
+                  );
+                  final value = await showDialog<String>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('Total efetivamente recebido'),
+                      content: TextField(
+                        controller: controller,
+                        decoration: const InputDecoration(labelText: 'Euros'),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: const Text('Cancelar'),
+                        ),
+                        FilledButton(
+                          onPressed: () => Navigator.pop(ctx, controller.text),
+                          child: const Text('Guardar'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (value == null) return;
+                  try {
+                    await ref
+                        .read(storeProvider)
+                        .save(
+                          Receipt.fromJson({
+                            ...r.toJson(),
+                            'receivedCents': cents(value),
+                          }),
+                        );
+                    ref.invalidate(receiptsProvider);
+                  } catch (_) {
+                    if (context.mounted) message(context, 'Valor inválido.');
+                  }
+                },
+                child: const Text('Registar recebimento'),
+              ),
             const SizedBox(height: 8),
-            OutlinedButton(
+            TextButton(
               onPressed: () async {
                 if (!await confirm(
                   context,
@@ -1698,7 +1740,7 @@ class ReceiptPage extends ConsumerWidget {
                 ref.invalidate(receiptsProvider);
                 if (context.mounted) context.pop();
               },
-              child: const Text('Eliminar recibo'),
+              child: const Text('Eliminar definitivamente'),
             ),
           ],
         ),

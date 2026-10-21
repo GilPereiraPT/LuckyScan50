@@ -34,10 +34,10 @@ class _ApiOverviewPageState extends State<ApiOverviewPage> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
-      title: const Text('API e fontes de dados'),
+      title: const Text('Atualização dos resultados'),
       actions: [
         IconButton(
-          tooltip: 'Atualizar estado da API',
+          tooltip: 'Atualizar',
           icon: const Icon(Icons.refresh),
           onPressed: () => setState(refresh),
         ),
@@ -55,10 +55,8 @@ class _ApiOverviewPageState extends State<ApiOverviewPage> {
             children: const [
               ListTile(
                 leading: Icon(Icons.cloud_off_outlined),
-                title: Text('API temporariamente indisponível'),
-                subtitle: Text(
-                  'Os resultados guardados no dispositivo continuam acessíveis offline.',
-                ),
+                title: Text('Serviço temporariamente indisponível'),
+                subtitle: Text('Tente novamente mais tarde.'),
               ),
             ],
           );
@@ -69,15 +67,13 @@ class _ApiOverviewPageState extends State<ApiOverviewPage> {
           padding: const EdgeInsets.all(20),
           children: [
             const Text(
-              'LuckyScan50 · Fonte de resultados',
+              'Resultados dos Jogos Santa Casa',
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             const Text('API: luckyscan50-api.policlinicosdesantoandre.com'),
             const SizedBox(height: 12),
-            const Text(
-              'Os feeds RSS são observações da fonte. A data de publicação não comprova a data do sorteio. Apenas concursos validados devem ser usados na verificação de prémios.',
-            ),
+            const Text('Consulte o estado das atualizações.'),
             const SizedBox(height: 12),
             Text('Observações RSS: ${rows.length}'),
             Text('Conflitos comunicados: ${data['conflicts'] ?? '—'}'),
@@ -89,8 +85,8 @@ class _ApiOverviewPageState extends State<ApiOverviewPage> {
                     item['game'] == 'milhao' ? 'M1lhão' : 'Euromilhões',
                   ),
                   subtitle: Text(
-                    'Concurso: ${item['drawId'] ?? '—'}\\n'
-                    'Validação: ${item['validation'] ?? '—'}\\n'
+                    'Concurso: ${item['drawId'] ?? '—'}\n'
+                    'Validação: ${item['validation'] ?? '—'}\n'
                     'Histórico: ${item['historyStatus'] ?? '—'}',
                   ),
                   isThreeLine: true,
@@ -102,9 +98,7 @@ class _ApiOverviewPageState extends State<ApiOverviewPage> {
                 ),
               ),
             const SizedBox(height: 12),
-            const Text(
-              'A sincronização dos concursos confirmados é efetuada pelo botão de sincronização no ecrã principal. Os bilhetes e imagens não são enviados à API.',
-            ),
+            const Text('Os resultados são atualizados ao abrir a app.'),
           ],
         );
       },
