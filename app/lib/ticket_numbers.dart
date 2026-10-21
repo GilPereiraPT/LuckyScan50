@@ -28,14 +28,23 @@ class TicketNumbers extends StatelessWidget {
         ),
       ),
     );
-    return Wrap(
-      spacing: 6,
-      runSpacing: 8,
-      crossAxisAlignment: WrapCrossAlignment.center,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (final value in numbers) ball(value, false),
-        const Icon(Icons.star_rounded, size: 18, color: Color(0xffe7c77f)),
-        for (final value in stars) ball(value, true),
+        Wrap(
+          spacing: 6,
+          runSpacing: 8,
+          children: [for (final value in numbers) ball(value, false)],
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 6,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            const Icon(Icons.star_rounded, size: 18, color: Color(0xffe7c77f)),
+            for (final value in stars) ball(value, true),
+          ],
+        ),
       ],
     );
   }
