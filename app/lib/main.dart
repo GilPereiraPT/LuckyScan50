@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'data/receipt_camera.dart';
 import 'notification_settings_page.dart';
 import 'data/email_notifications_client.dart';
 import 'data/notification_preferences.dart';
@@ -33,7 +34,7 @@ const buildSha = String.fromEnvironment(
   'LUCKYSCAN_BUILD_SHA',
   defaultValue: 'local',
 );
-const appVersion = '0.2.10+12';
+const appVersion = '0.2.11+13';
 
 final receiptScannerProvider = Provider<ReceiptScanner>(
   (ref) => scanReceiptImage,
@@ -931,7 +932,7 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
   }
 
   Future<ReceiptScan?> _guidedScan(ImageSource selected) async {
-    final picked = await ImagePicker().pickImage(source: selected);
+    final picked = await pickReceiptImage(selected);
     if (picked == null || !mounted) return null;
     const backend = ReceiptCropBackend();
     final preview = await backend.prepare(picked.path, preview: true);

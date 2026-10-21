@@ -23,11 +23,16 @@ import kotlin.math.sqrt
 
 class MainActivity : FlutterActivity() {
     private val notifications = NotificationBridge(this)
+    private val receiptCamera = ReceiptCameraBridge(this)
     private val worker = Executors.newSingleThreadExecutor()
     private val sessions = mutableMapOf<String, File>()
     private val decoders = mutableMapOf<String, BitmapRegionDecoder>()
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "luckyscan50/receipt_camera")
+            .setMethodCallHandler { call, result ->
+                if (call.method == "capture") receiptCamera.open(result) else result.notImplemented()
+            }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "luckyscan50/notifications")
             .setMethodCallHandler { call, result ->
                 try {
@@ -306,7 +311,13 @@ class MainActivity : FlutterActivity() {
         notifications.permissionResult(requestCode)
     }
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: android.content.Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        receiptCamera.activityResult(requestCode, resultCode, data)
+    }
+
     override fun onDestroy() {
+        receiptCamera.dispose()
         notifications.dispose()
         worker.execute {
             decoders.values.forEach { it.recycle() }

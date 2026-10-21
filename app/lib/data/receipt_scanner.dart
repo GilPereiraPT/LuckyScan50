@@ -6,6 +6,7 @@ import '../domain/receipt_ocr.dart';
 import '../domain/receipt_rules.dart';
 import '../domain/receipt_multipass.dart';
 import 'receipt_crop_backend.dart';
+import 'receipt_camera.dart';
 
 class OrientationPass {
   const OrientationPass(this.turns, this.frame, this.elapsedMs, this.rows);
@@ -71,7 +72,7 @@ bool receiptNeedsOrientationSearch(
 
 Future<ReceiptScan?> scanReceiptImage(ImageSource source) async {
   try {
-    final picked = await ImagePicker().pickImage(source: source);
+    final picked = await pickReceiptImage(source);
     if (picked == null) return null;
     return scanReceiptFile(picked.path);
   } on ReceiptScanFailure {

@@ -79,6 +79,11 @@ flutter {
 
 dependencies {
     implementation("androidx.exifinterface:exifinterface:1.3.7")
+    val cameraX = "1.4.2"
+    implementation("androidx.camera:camera-camera2:$cameraX")
+    implementation("androidx.camera:camera-lifecycle:$cameraX")
+    implementation("androidx.camera:camera-view:$cameraX")
+    testImplementation("junit:junit:4.13.2")
 }
 
 val requirePrivateReleaseSigning = tasks.register("requirePrivateReleaseSigning") {
