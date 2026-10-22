@@ -3,6 +3,11 @@ __pycache__/
 *.py[cod]
 dist/
 .env
+gmail.env
+wordpress.env
+*.private.env
+email.sqlite3*
+*.cron.lock
 .dart_tool/
 build/
 *.iml
@@ -13,3 +18,4 @@ build/
 *.keystore
 app/android/key.properties
 docs/ticket-formats/samples/
+

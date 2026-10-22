@@ -22,11 +22,40 @@ import kotlin.math.hypot
 import kotlin.math.sqrt
 
 class MainActivity : FlutterActivity() {
+    private val notifications = NotificationBridge(this)
+    private val receiptCamera = ReceiptCameraBridge(this)
     private val worker = Executors.newSingleThreadExecutor()
     private val sessions = mutableMapOf<String, File>()
     private val decoders = mutableMapOf<String, BitmapRegionDecoder>()
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        val privateStorage = PrivateAppStorage(this)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "luckyscan50/private_storage")
+            .setMethodCallHandler { call, result -> privateStorage.handle(call, result) }
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "luckyscan50/receipt_camera")
+            .setMethodCallHandler { call, result ->
+                if (call.method == "capture") receiptCamera.open(result) else result.notImplemented()
+            }
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "luckyscan50/notifications")
+            .setMethodCallHandler { call, result ->
+                try {
+                    when (call.method) {
+                        "enabled" -> result.success(notifications.enabled())
+                        "request" -> notifications.request(result)
+                        "settings" -> { notifications.settings(); result.success(null) }
+                        "cancelAll" -> { notifications.cancelAll(); result.success(null) }
+                        "show" -> result.success(notifications.show(
+                            requireNotNull(call.argument<Number>("id")).toInt(),
+                            requireNotNull(call.argument<String>("category")),
+                            requireNotNull(call.argument<String>("title")),
+                            requireNotNull(call.argument<String>("body"))
+                        ))
+                        else -> result.notImplemented()
+                    }
+                } catch (error: Exception) {
+                    result.error("notification_failed", "Operação indisponível.", null)
+                }
+            }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "luckyscan50/receipt_crops")
             .setMethodCallHandler { call, result ->
                 worker.execute {
@@ -278,7 +307,21 @@ class MainActivity : FlutterActivity() {
         }
     }
 
+    override fun onRequestPermissionsResult(
+        requestCode: Int, permissions: Array<out String>, grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        notifications.permissionResult(requestCode)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: android.content.Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        receiptCamera.activityResult(requestCode, resultCode, data)
+    }
+
     override fun onDestroy() {
+        receiptCamera.dispose()
+        notifications.dispose()
         worker.execute {
             decoders.values.forEach { it.recycle() }
             decoders.clear()

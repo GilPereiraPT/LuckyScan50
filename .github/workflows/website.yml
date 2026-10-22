@@ -1,0 +1,123 @@
+name: LuckyScan50 website
+on:
+  push:
+    branches: ['feat/manual-draw-picker']
+    paths: ['website/**', 'tools/check_website.py', 'tools/test_website_interactions.cjs', 'tools/test_website_counter.cjs', '.github/workflows/website.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: luckyscan50-website
+  cancel-in-progress: false
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Validate pages, links and assets
+        run: python tools/check_website.py
+      - name: Validate JavaScript syntax and interactions
+        run: |
+          node --check website/script.js
+          node --check website/counter.js
+          node tools/test_website_interactions.cjs
+          node tools/test_website_counter.cjs
+  release:
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v6
+      - name: Preserve the existing verified signed APK as a public release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          apk_name=LuckyScan50-0.2.8-arm64.apk
+          release_dir="$RUNNER_TEMP/luckyscan-release"
+          mkdir -p "$release_dir"
+          if gh release view v0.2.8 --json tagName >/dev/null 2>&1; then
+            gh release download v0.2.8 --pattern "$apk_name" --dir "$release_dir"
+          else
+            gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/12268513054/zip" > "$RUNNER_TEMP/signed-apk.zip"
+            export LUCKYSCAN_ARCHIVE="$RUNNER_TEMP/signed-apk.zip"
+            export LUCKYSCAN_APK_OUTPUT="$release_dir/$apk_name"
+            python - <<'PY'
+          import hashlib, os, zipfile
+          from pathlib import Path
+          archive = Path(os.environ['LUCKYSCAN_ARCHIVE'])
+          assert hashlib.sha256(archive.read_bytes()).hexdigest() == '0df9caaf41805e486b013b5be092b386c48873868f1a6914aed071730d40df2d'
+          with zipfile.ZipFile(archive) as source:
+              names = [name for name in source.namelist() if name.endswith('.apk')]
+              assert len(names) == 1
+              apk = source.read(names[0])
+          assert hashlib.sha256(apk).hexdigest() == '31accc9958779dffc032d1e109567f0746432179e1454eb055f28548f591e619'
+          Path(os.environ['LUCKYSCAN_APK_OUTPUT']).write_bytes(apk)
+          PY
+            gh release create v0.2.8 "$release_dir/$apk_name" --target 699ba94933bf769bb152b05b1d94c96f875cea8a --title "LuckyScan50 0.2.8 — Android" --notes-file website/release-notes.md
+          fi
+          echo "31accc9958779dffc032d1e109567f0746432179e1454eb055f28548f591e619  $release_dir/$apk_name" | sha256sum --check
+          echo "APK 0.2.8 verified and available in GitHub Releases." >> "$GITHUB_STEP_SUMMARY"
+  package:
+    needs: [validate, release]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pages: read
+    outputs:
+      pages_ready: ${{ steps.pages.outputs.ready }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Prepare only public website files
+        run: |
+          python - <<'PY'
+          import shutil
+          from pathlib import Path
+          root = Path('website')
+          output = Path('_site')
+          output.mkdir()
+          for name in ('index.html', 'ajuda.html', 'privacidade.html', 'termos.html',
+                       'styles.css', 'script.js', 'counter.js', 'robots.txt', 'sitemap.xml', '.nojekyll'):
+              shutil.copy2(root / name, output / name)
+          shutil.copytree(root / 'assets', output / 'assets')
+          PY
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+      - name: Check whether GitHub Pages is enabled
+        id: pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if build_type=$(gh api "repos/$GITHUB_REPOSITORY/pages" --jq .build_type 2>/dev/null) && [ "$build_type" = workflow ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "### Website ready; activate GitHub Pages" >> "$GITHUB_STEP_SUMMARY"
+            echo "Open repository Settings → Pages → Source: GitHub Actions, then re-run this workflow." >> "$GITHUB_STEP_SUMMARY"
+            echo "Only website files were packaged; no API data or credentials are included." >> "$GITHUB_STEP_SUMMARY"
+          fi
+  deploy:
+    needs: package
+    if: needs.package.outputs.pages_ready == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publish LuckyScan50
+        id: deployment
+        uses: actions/deploy-pages@v5

@@ -1,10 +1,15 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-feature android:name="android.hardware.camera.any" android:required="false"/>
     <application
         android:label="LuckyScan50"
         android:allowBackup="false"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <activity android:name=".ReceiptCameraActivity" android:exported="false"
+            android:screenOrientation="portrait" android:theme="@android:style/Theme.Material.NoActionBar"/>
         <activity
             android:name=".MainActivity"
             android:exported="true"

@@ -54,12 +54,62 @@ void main() {
     expect(v.knownCents, 0);
     expect(v.complete, isFalse);
   });
-  test('partial results do not settle a bet', () {
-    final v = verify(receipt(), [
-      {...draw(), 'status': 'numbers_confirmed'},
+  test(
+    'confirmed keys identify winners while unpublished prizes stay pending',
+    () {
+      final v = verify(receipt(), [
+        {...draw(), 'status': 'numbers_confirmed'},
+      ]);
+      expect(v.pendingDraws, 1);
+      expect(v.unknownPrizes, 1);
+      expect(v.knownCents, 0);
+    },
+  );
+  test('losing confirmed keys settle without waiting for prize amounts', () {
+    final r = Receipt.fromJson({
+      ...receipt().toJson(),
+      'drawIds': ['001/2026'],
+      'lines': [
+        BetLine([20, 21, 22, 23, 24], [11, 12]).toJson(),
+      ],
+    });
+    final check = verify(r, [
+      {...draw(), 'status': 'numbers_confirmed', 'tiers': []},
     ]);
-    expect(v.pendingDraws, 2);
-    expect(v.knownCents, 0);
+    expect(check.label, 'Sem prémio');
+    expect(check.complete, isTrue);
+    expect(canArchiveReceipt(r, check), isTrue);
+  });
+  test('archive survives serialization and preserves finances', () {
+    final r = Receipt.fromJson({
+      ...receipt().toJson(),
+      'drawIds': ['001/2026'],
+      'lines': [
+        BetLine([20, 21, 22, 23, 24], [11, 12]).toJson(),
+      ],
+      'archived': true,
+    });
+    final restored = Receipt.fromJson(r.toJson());
+    expect(restored.archived, isTrue);
+    expect(receiptStatus(restored, verify(restored, [draw()])), 'Arquivado');
+    expect(finances([restored], [draw()])['spent'], 500);
+    final legacy = {...r.toJson()}..remove('archived');
+    expect(Receipt.fromJson(legacy).archived, isFalse);
+  });
+  test('M1lhão pending is distinct from settled Euromilhões', () {
+    final r = Receipt.fromJson({
+      ...receipt().toJson(),
+      'drawIds': ['001/2026'],
+      'milhaoDrawIds': ['001/2026'],
+      'milhaoCodes': ['ABC 12345'],
+      'lines': [
+        BetLine([20, 21, 22, 23, 24], [11, 12]).toJson(),
+      ],
+    });
+    final check = verify(r, [draw()]);
+    expect(check.label, 'M1lhão pendente');
+    expect(canArchiveReceipt(r, check), isFalse);
+    expect(verify(r, [draw()], includeMilhao: false).label, 'Sem prémio');
   });
   test('same numbers on genuine separate receipts are allowed', () {
     expect(finances([receipt(), receipt(id: 'two')], [])['spent'], 1000);

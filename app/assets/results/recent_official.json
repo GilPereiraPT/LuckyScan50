@@ -1,0 +1,377 @@
+[
+  {
+    "game": "euromilhoes",
+    "drawId": "081/2026",
+    "date": "2026-10-09",
+    "numbers": [
+      5,
+      20,
+      24,
+      31,
+      45
+    ],
+    "stars": [
+      5,
+      10
+    ],
+    "sourceUrl": "https://www.jogossantacasa.pt/web/SCCartazResult/euroMilhoes",
+    "retrievedAt": "2026-10-19T13:15:28.494551+00:00",
+    "status": "complete",
+    "tiers": [
+      {
+        "tier": 1,
+        "main": 5,
+        "stars": 2,
+        "amountCents": null,
+        "winnersPortugal": 0,
+        "winnersTotal": 0
+      },
+      {
+        "tier": 2,
+        "main": 5,
+        "stars": 1,
+        "amountCents": 20450537,
+        "winnersPortugal": 0,
+        "winnersTotal": 3
+      },
+      {
+        "tier": 3,
+        "main": 5,
+        "stars": 0,
+        "amountCents": 2389813,
+        "winnersPortugal": 0,
+        "winnersTotal": 6
+      },
+      {
+        "tier": 4,
+        "main": 4,
+        "stars": 2,
+        "amountCents": 159507,
+        "winnersPortugal": 3,
+        "winnersTotal": 28
+      },
+      {
+        "tier": 5,
+        "main": 4,
+        "stars": 1,
+        "amountCents": 11620,
+        "winnersPortugal": 85,
+        "winnersTotal": 708
+      },
+      {
+        "tier": 6,
+        "main": 3,
+        "stars": 2,
+        "amountCents": 5348,
+        "winnersPortugal": 157,
+        "winnersTotal": 1626
+      },
+      {
+        "tier": 7,
+        "main": 4,
+        "stars": 0,
+        "amountCents": 3945,
+        "winnersPortugal": 116,
+        "winnersTotal": 1549
+      },
+      {
+        "tier": 8,
+        "main": 2,
+        "stars": 2,
+        "amountCents": 1306,
+        "winnersPortugal": 2401,
+        "winnersTotal": 23388
+      },
+      {
+        "tier": 9,
+        "main": 3,
+        "stars": 1,
+        "amountCents": 1072,
+        "winnersPortugal": 3056,
+        "winnersTotal": 31788
+      },
+      {
+        "tier": 10,
+        "main": 3,
+        "stars": 0,
+        "amountCents": 931,
+        "winnersPortugal": 6009,
+        "winnersTotal": 68103
+      },
+      {
+        "tier": 11,
+        "main": 1,
+        "stars": 2,
+        "amountCents": 684,
+        "winnersPortugal": 10706,
+        "winnersTotal": 112271
+      },
+      {
+        "tier": 12,
+        "main": 2,
+        "stars": 1,
+        "amountCents": 545,
+        "winnersPortugal": 42768,
+        "winnersTotal": 443848
+      },
+      {
+        "tier": 13,
+        "main": 2,
+        "stars": 0,
+        "amountCents": 402,
+        "winnersPortugal": 86238,
+        "winnersTotal": 968094
+      }
+    ]
+  },
+  {
+    "game": "euromilhoes",
+    "drawId": "082/2026",
+    "date": "2026-10-13",
+    "numbers": [
+      21,
+      23,
+      39,
+      44,
+      49
+    ],
+    "stars": [
+      4,
+      11
+    ],
+    "sourceUrl": "https://www.jogossantacasa.pt/web/SCCartazResult/euroMilhoes",
+    "retrievedAt": "2026-10-19T13:15:28.514223+00:00",
+    "status": "complete",
+    "tiers": [
+      {
+        "tier": 1,
+        "main": 5,
+        "stars": 2,
+        "amountCents": null,
+        "winnersPortugal": 0,
+        "winnersTotal": 0
+      },
+      {
+        "tier": 2,
+        "main": 5,
+        "stars": 1,
+        "amountCents": 23449979,
+        "winnersPortugal": 0,
+        "winnersTotal": 2
+      },
+      {
+        "tier": 3,
+        "main": 5,
+        "stars": 0,
+        "amountCents": 3653764,
+        "winnersPortugal": 0,
+        "winnersTotal": 3
+      },
+      {
+        "tier": 4,
+        "main": 4,
+        "stars": 2,
+        "amountCents": 189676,
+        "winnersPortugal": 1,
+        "winnersTotal": 18
+      },
+      {
+        "tier": 5,
+        "main": 4,
+        "stars": 1,
+        "amountCents": 13554,
+        "winnersPortugal": 35,
+        "winnersTotal": 464
+      },
+      {
+        "tier": 6,
+        "main": 3,
+        "stars": 2,
+        "amountCents": 6976,
+        "winnersPortugal": 62,
+        "winnersTotal": 953
+      },
+      {
+        "tier": 7,
+        "main": 4,
+        "stars": 0,
+        "amountCents": 4676,
+        "winnersPortugal": 80,
+        "winnersTotal": 999
+      },
+      {
+        "tier": 8,
+        "main": 2,
+        "stars": 2,
+        "amountCents": 1596,
+        "winnersPortugal": 1077,
+        "winnersTotal": 14632
+      },
+      {
+        "tier": 9,
+        "main": 3,
+        "stars": 1,
+        "amountCents": 1293,
+        "winnersPortugal": 1586,
+        "winnersTotal": 20144
+      },
+      {
+        "tier": 10,
+        "main": 3,
+        "stars": 0,
+        "amountCents": 900,
+        "winnersPortugal": 4998,
+        "winnersTotal": 53856
+      },
+      {
+        "tier": 11,
+        "main": 1,
+        "stars": 2,
+        "amountCents": 751,
+        "winnersPortugal": 5750,
+        "winnersTotal": 78212
+      },
+      {
+        "tier": 12,
+        "main": 2,
+        "stars": 1,
+        "amountCents": 613,
+        "winnersPortugal": 24219,
+        "winnersTotal": 301923
+      },
+      {
+        "tier": 13,
+        "main": 2,
+        "stars": 0,
+        "amountCents": 402,
+        "winnersPortugal": 64962,
+        "winnersTotal": 741148
+      }
+    ]
+  },
+  {
+    "game": "euromilhoes",
+    "drawId": "083/2026",
+    "date": "2026-10-16",
+    "numbers": [
+      7,
+      15,
+      16,
+      22,
+      35
+    ],
+    "stars": [
+      4,
+      6
+    ],
+    "sourceUrl": "https://www.jogossantacasa.pt/web/SCCartazResult/euroMilhoes",
+    "retrievedAt": "2026-10-17T11:00:00Z",
+    "status": "complete",
+    "tiers": [
+      {
+        "tier": 1,
+        "main": 5,
+        "stars": 2,
+        "amountCents": null,
+        "winnersPortugal": 0,
+        "winnersTotal": 0
+      },
+      {
+        "tier": 2,
+        "main": 5,
+        "stars": 1,
+        "amountCents": null,
+        "winnersPortugal": 0,
+        "winnersTotal": 0
+      },
+      {
+        "tier": 3,
+        "main": 5,
+        "stars": 0,
+        "amountCents": 15453308,
+        "winnersPortugal": 0,
+        "winnersTotal": 5
+      },
+      {
+        "tier": 4,
+        "main": 4,
+        "stars": 2,
+        "amountCents": 93045,
+        "winnersPortugal": 1,
+        "winnersTotal": 49
+      },
+      {
+        "tier": 5,
+        "main": 4,
+        "stars": 1,
+        "amountCents": 10106,
+        "winnersPortugal": 61,
+        "winnersTotal": 831
+      },
+      {
+        "tier": 6,
+        "main": 3,
+        "stars": 2,
+        "amountCents": 4555,
+        "winnersPortugal": 166,
+        "winnersTotal": 1949
+      },
+      {
+        "tier": 7,
+        "main": 4,
+        "stars": 0,
+        "amountCents": 3363,
+        "winnersPortugal": 162,
+        "winnersTotal": 1855
+      },
+      {
+        "tier": 8,
+        "main": 2,
+        "stars": 2,
+        "amountCents": 1178,
+        "winnersPortugal": 2439,
+        "winnersTotal": 26470
+      },
+      {
+        "tier": 9,
+        "main": 3,
+        "stars": 1,
+        "amountCents": 992,
+        "winnersPortugal": 3079,
+        "winnersTotal": 35052
+      },
+      {
+        "tier": 10,
+        "main": 3,
+        "stars": 0,
+        "amountCents": 815,
+        "winnersPortugal": 7470,
+        "winnersTotal": 79495
+      },
+      {
+        "tier": 11,
+        "main": 1,
+        "stars": 2,
+        "amountCents": 590,
+        "winnersPortugal": 12123,
+        "winnersTotal": 132769
+      },
+      {
+        "tier": 12,
+        "main": 2,
+        "stars": 1,
+        "amountCents": 507,
+        "winnersPortugal": 44061,
+        "winnersTotal": 486902
+      },
+      {
+        "tier": 13,
+        "main": 2,
+        "stars": 0,
+        "amountCents": 367,
+        "winnersPortugal": 105333,
+        "winnersTotal": 1084418
+      }
+    ]
+  }
+]

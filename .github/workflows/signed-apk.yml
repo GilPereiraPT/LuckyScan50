@@ -12,7 +12,7 @@ on:
       ANDROID_KEY_PASSWORD:
         required: true
   push:
-    branches: ['codex/luckyscan50-android-wallet']
+    branches: ['codex/luckyscan50-android-wallet', 'feat/manual-draw-picker', 'feat/owner-app-statistics']
     paths: ['app/**', 'qa/**', 'tools/**', '.github/workflows/**']
 permissions:
   contents: read
@@ -81,6 +81,9 @@ jobs:
       - name: Build private signed ARM64 release APK
         working-directory: app
         run: flutter build apk --release --target-platform android-arm64 --dart-define=LUCKYSCAN_BUILD_SHA="$GITHUB_SHA"
+      - name: Native capture quality regression tests
+        working-directory: app/android
+        run: ./gradlew :app:testReleaseUnitTest -Ptarget-platform=android-arm64 -x :app:compileFlutterBuildRelease
       - name: Install pinned APK verification tools
         run: '"$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "build-tools;35.0.0"'
       - name: Verify certificate, ABI, integrity and 16 KB alignment

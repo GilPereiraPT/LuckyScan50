@@ -2,6 +2,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:luckyscan50/manual_bets_page.dart';
 
 void main() {
+  test('draw calendar and combination price', () {
+    final options = manualDrawOptions(DateTime(2026, 10, 19), []);
+    expect(options['081/2026'], '2026-10-09');
+    expect(options['082/2026'], '2026-10-13');
+    expect(options['083/2026'], '2026-10-16');
+    expect(manualCostCents(18), 4500);
+    expect(manualCostCents(0), 0);
+    final overridden = manualDrawOptions(DateTime(2026), [
+      {'game': 'euromilhoes', 'drawId': '083/2026', 'date': '2026-10-17'},
+    ]);
+    expect(overridden['083/2026'], '2026-10-17');
+  });
   test('single selection produces exactly one valid line', () {
     final s = ManualSelection();
     s.numbers.addAll([48, 6, 29, 32, 20]);

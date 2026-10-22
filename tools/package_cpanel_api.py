@@ -3,6 +3,7 @@ import argparse
 from datetime import datetime, timezone
 import hashlib
 import json
+import re
 from pathlib import Path
 import subprocess
 import zipfile
@@ -10,13 +11,14 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def build(destination):
+def build(destination, source_commit=None):
     files = {}
     api = ROOT / 'api-python'
     for path in sorted(api.glob('*.py')):
         if not path.name.startswith('test_'):
             files[path.name] = path.read_bytes()
-    for name in ('requirements.txt', 'rss-collector.example.json', 'verified-draw-dates.example.json'):
+    for name in ('requirements.txt', 'rss-collector.example.json', 'verified-draw-dates.example.json',
+                 'gmail.env.example', 'wordpress.env.example', 'app-services.env.example', 'claim-deadlines.example.json', 'email-templates.example.json'):
         files[name] = (api / name).read_bytes()
     files['README.md'] = (api / 'README.md').read_text().replace('../docs/', 'documentacao/').encode()
     for path in sorted((api / 'migrations').glob('*.sql')):
@@ -34,7 +36,12 @@ def build(destination):
     files['INSTALAR_RSS.md'] = (ROOT / 'docs/rss-cron-cpanel.md').read_text().replace(
         '(historical-results-sources.md)', '(documentacao/historical-results-sources.md)').replace(
         '(official-results-cpanel.md)', '(documentacao/official-results-cpanel.md)').encode()
-    commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
+    files['INSTALAR_GMAIL.md'] = (ROOT / 'docs/gmail-cpanel.md').read_bytes()
+    files['INSTALAR_PROPRIETARIO_E_ESTATISTICAS.md'] = (ROOT / 'docs/OWNER_AND_APP_STATISTICS.md').read_bytes()
+    files['INSTALAR_WORDPRESS.md'] = (ROOT / 'docs/wordpress-mail-cpanel.md').read_bytes()
+    commit = source_commit or subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
+    if not re.fullmatch(r'[0-9a-f]{40}', commit):
+        raise ValueError('Expected a full source commit SHA')
     files['build-info.json'] = (json.dumps({'commit': commit, 'createdAt': datetime.now(timezone.utc).isoformat(),
         'python': '3.12', 'remoteCollectionEnabledByDefault': False,
         'containsProductionData': False}, indent=2) + '\n').encode()
@@ -58,4 +65,7 @@ def build(destination):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('output', type=Path)
-    print(json.dumps(build(parser.parse_args().output), indent=2))
+    parser.add_argument('--source-commit', help='Source snapshot commit when packaging outside a Git checkout')
+    args = parser.parse_args()
+    print(json.dumps(build(args.output, args.source_commit), indent=2))
+

@@ -38,6 +38,12 @@ def main():
         branding = ROOT / 'app/assets/branding'
         if branding.is_dir():
             shutil.copytree(branding, app / 'assets/branding', dirs_exist_ok=True)
+        # The audited public result snapshot is also declared in pubspec.
+        # Copy only this file, keeping private receipt assets excluded.
+        recent_results = ROOT / 'app/assets/results/recent_official.json'
+        if recent_results.is_file():
+            (app / 'assets/results').mkdir(parents=True, exist_ok=True)
+            shutil.copy2(recent_results, app / 'assets/results/recent_official.json')
         spec = (app / 'pubspec.yaml').read_text()
         extra = '  sqflite_common_ffi: ^2.3.6\n'
         if args.mode == 'android':

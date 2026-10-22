@@ -1,0 +1,18 @@
+{
+  "confirm": {
+    "subject": "Confirme os avisos do LuckyScan50",
+    "body": "Foi pedida uma subscrição de avisos do LuckyScan50 para este endereço.\n\nPara confirmar, abra a ligação e escolha Confirmar:\n{confirm_url}\n\nA ligação é válida por 24 horas. Se não fez este pedido, ignore a mensagem.\n"
+  },
+  "results": {
+    "subject": "LuckyScan50 — resultado {label}",
+    "body": "{label}\nData: {draw_date}\nChave: {winning_key}\n\nFonte: {source_url}\n"
+  },
+  "prizes": {
+    "subject": "LuckyScan50 — prémio por levantar",
+    "body": "Um recibo tem {prize_amount} € em prémios identificados ainda não registados como recebidos.\nAbra a app, confirme o recibo e atualize o recebimento se já levantou o prémio.\n{sync_note}"
+  },
+  "expiry": {
+    "subject": "LuckyScan50 — prazo de levantamento próximo",
+    "body": "Concurso: {draw}\nData-limite validada: {deadline}\nFaltam {days_remaining} dia(s). Confirme se já levantou o prémio.\nFonte: {source_url}\n{sync_note}"
+  }
+}

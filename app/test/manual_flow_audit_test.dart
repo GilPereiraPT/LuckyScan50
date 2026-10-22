@@ -10,6 +10,8 @@ import 'package:luckyscan50/manual_bets_page.dart';
 class _RecordingWallet implements WalletStore {
   final saved = <Receipt>[];
   @override
+  Future<List<Map<String, dynamic>>> results() async => [];
+  @override
   Future<void> save(Receipt receipt) async => saved.add(receipt);
   @override
   Future<bool> duplicateCode(String code, String id) async => false;
@@ -36,8 +38,7 @@ void main() {
     for (final star in [1, 2]) {
       state.toggle(star, true);
     }
-    state.draw.text = '083/2026';
-    state.cost.text = '2,20';
+    state.selectedDraw = '083/2026';
     await tester.pump();
     final first = state.save() as Future<void>;
     final second = state.save() as Future<void>;
@@ -49,7 +50,7 @@ void main() {
     await tester.pumpAndSettle();
     await Future.wait([first, second]);
     expect(store.saved, hasLength(1));
-    expect(store.saved.single.costCents, 220);
+    expect(store.saved.single.costCents, 250);
   });
 
   testWidgets('imported receipt confirmation excludes concurrent saves', (

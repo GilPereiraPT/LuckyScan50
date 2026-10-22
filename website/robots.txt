@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://gilpereirapt.github.io/LuckyScan50/sitemap.xml

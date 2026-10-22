@@ -23,7 +23,11 @@ void main() {
     await tester.tap(find.text('Bilhetes'));
     await tester.pumpAndSettle();
     expect(find.text('Sem bilhetes para esta pesquisa.'), findsOneWidget);
-    await tester.tap(find.text('Criar aposta manual'));
+    await tester.tap(find.text('Início'));
+    await tester.pumpAndSettle();
+    expect(find.text('Fotografar talão'), findsOneWidget);
+    expect(find.text('Importar imagem'), findsOneWidget);
+    await tester.tap(find.text('Introduzir números manualmente'));
     await tester.pumpAndSettle();
     expect(find.text('Introdução manual'), findsOneWidget);
     expect(find.text('As suas chaves, à sua maneira'), findsOneWidget);
