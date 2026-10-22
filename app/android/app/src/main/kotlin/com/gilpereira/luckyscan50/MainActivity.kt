@@ -29,6 +29,9 @@ class MainActivity : FlutterActivity() {
     private val decoders = mutableMapOf<String, BitmapRegionDecoder>()
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        val privateStorage = PrivateAppStorage(this)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "luckyscan50/private_storage")
+            .setMethodCallHandler { call, result -> privateStorage.handle(call, result) }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "luckyscan50/receipt_camera")
             .setMethodCallHandler { call, result ->
                 if (call.method == "capture") receiptCamera.open(result) else result.notImplemented()

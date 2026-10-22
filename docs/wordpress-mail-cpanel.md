@@ -4,7 +4,7 @@ Este modo aproveita o FluentSMTP já configurado em policlinicosdesantoandre.com
 
 ## 1. Instalar o plugin
 
-No WordPress, abrir **Plugins → Adicionar novo → Carregar plugin**, selecionar `LuckyScan50-Mail-Bridge-1.0.0.zip`, instalar e ativar.
+No WordPress, abrir **Plugins → Adicionar novo → Carregar plugin**, selecionar `LuckyScan50-Mail-Bridge-1.1.0.zip`, instalar e ativar.
 
 Abrir **Definições → LuckyScan50 Mail**. A página apresenta dois valores:
 
@@ -84,3 +84,21 @@ Copie `email-templates.example.json` para `email-templates.json`, numa pasta pri
 O ficheiro contém quatro modelos: `confirm` (confirmação), `results` (resultados), `prizes` (prémios por levantar) e `expiry` (prazos a caducar). Em cada um, edite `subject` e `body`. Mantenha os campos entre chavetas presentes no exemplo: são substituídos pelos dados reais. O assunto tem de incluir LuckyScan50 e ocupar uma única linha. Os valores monetários usam vírgula decimal.
 
 O cancelamento da subscrição e o aviso de aplicação não oficial são acrescentados automaticamente. O modelo de confirmação deve manter `{confirm_url}`. JSON inválido ou campos em falta impedem a criação de novas mensagens; os emails já em fila conservam o conteúdo com que foram criados. Para validar antes de ativar: `python3 -m unittest discover -s validacao/api-python` (na pasta do pacote extraído).
+
+## Estatísticas e chaves de proprietário (1.1.0)
+
+Atualize o plugin existente carregando o ZIP 1.1.0 e escolhendo substituir a
+versão instalada. A pasta do plugin, a chave de email e a tabela de entregas
+mantêm-se. Instale também o novo pacote da API Python e configure os serviços da
+app conforme `INSTALAR_PROPRIETARIO_E_ESTATISTICAS.md`.
+
+Em **Definições → LuckyScan50 API**, guarde o mesmo `LUCKYSCAN_ADMIN_TOKEN` do
+servidor Python. Pode, em alternativa, defini-lo na constante privada
+`LUCKYSCAN50_APP_ADMIN_TOKEN` no `wp-config.php`. Não é a chave de email.
+
+O botão de consulta apresenta estatísticas e as últimas 100 licenças. Pode criar
+uma chave de proprietário (apresentada apenas na resposta de criação) e revogar
+licenças. Na app, mantenha premida a linha da versão no rodapé das Definições
+para abrir a ativação. As chamadas administrativas partem do WordPress para a
+API por HTTPS; a chave administrativa nunca vai para a APK nem para o JavaScript.
+A página exige administração WordPress e os formulários verificam nonce.

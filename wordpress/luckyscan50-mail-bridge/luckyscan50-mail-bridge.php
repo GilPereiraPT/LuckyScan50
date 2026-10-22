@@ -1,13 +1,14 @@
 <?php
 /**
  * Plugin Name: LuckyScan50 Mail Bridge
- * Description: Recebe pedidos autenticados da API LuckyScan50 e envia através de wp_mail/FluentSMTP.
- * Version: 1.0.0
+ * Description: Ponte de email e administração privada das estatísticas e licenças da API LuckyScan50.
+ * Version: 1.1.0
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Author: LuckyScan50
  */
 defined('ABSPATH') || exit;
+require_once __DIR__ . '/app-services-admin.php';
 
 final class LuckyScan50_Mail_Bridge {
     const OPTION = 'luckyscan50_mail_bridge_key';

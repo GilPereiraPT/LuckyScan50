@@ -1,7 +1,7 @@
 name: WordPress mail bridge validation
 on:
   push:
-    branches: ['feat/manual-draw-picker']
+    branches: ['feat/manual-draw-picker', 'feat/owner-app-statistics']
     paths: ['wordpress/**', 'api-python/**', '.github/workflows/wordpress-mail-validation.yml']
 permissions:
   contents: read
@@ -17,3 +17,5 @@ jobs:
       - run: python3 -m unittest discover -s api-python -v
       - run: php -l wordpress/luckyscan50-mail-bridge/luckyscan50-mail-bridge.php
       - run: php wordpress/tests/mail_bridge_test.php
+      - run: php -l wordpress/luckyscan50-mail-bridge/app-services-admin.php
+      - run: php wordpress/tests/app_services_admin_test.php

@@ -85,3 +85,9 @@ permitem promover parciais compatíveis com revisão; divergências ficam em qua
 Não usa pubDate como data, jackpot como prémio unitário ou valores Portal como escalões.
 
 Ver [ficheiros a atualizar e instalação sem mudar Cron](../docs/official-results-cpanel.md).
+
+## Proprietário e estatísticas da app
+
+Os serviços opcionais de proprietário, métricas com consentimento e painel
+privado estão descritos em [configuração dos serviços da app](../docs/OWNER_AND_APP_STATISTICS.md).
+No pacote cPanel, consulte `INSTALAR_PROPRIETARIO_E_ESTATISTICAS.md`.

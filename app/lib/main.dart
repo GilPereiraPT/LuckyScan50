@@ -1,4 +1,8 @@
 import 'dart:async';
+import 'data/app_services.dart';
+import 'app_privacy_page.dart';
+import 'package:flutter/services.dart';
+import 'milhao_draw_picker.dart';
 import 'data/receipt_camera.dart';
 import 'notification_settings_page.dart';
 import 'data/email_notifications_client.dart';
@@ -35,7 +39,29 @@ const buildSha = String.fromEnvironment(
   'LUCKYSCAN_BUILD_SHA',
   defaultValue: 'local',
 );
-const appVersion = '0.2.14+16';
+const appVersion = '0.2.15+17';
+
+final appServicesProvider = ChangeNotifierProvider<AppServices>(
+  (ref) => AppServices(store: ref.watch(storeProvider), version: appVersion),
+);
+
+/// Optional diagnostics must never alter receipt processing, even if a
+/// provider cannot be initialized (for example, an unavailable local store).
+void recordAppEvent(WidgetRef ref, String event) {
+  try {
+    unawaited(ref.read(appServicesProvider).record(event));
+  } catch (_) {
+    // No receipt data is needed or sent when optional services are unavailable.
+  }
+}
+
+void refreshAppEntitlement(WidgetRef ref) {
+  try {
+    unawaited(ref.read(appServicesProvider).refreshOwner());
+  } catch (_) {
+    // The wallet remains usable independently of the entitlement service.
+  }
+}
 
 final receiptScannerProvider = Provider<ReceiptScanner>(
   (ref) => scanReceiptImage,
@@ -107,6 +133,8 @@ final router = GoRouter(
       path: '/notifications',
       builder: (_, __) => const NotificationSettingsPage(),
     ),
+    GoRoute(path: '/privacy', builder: (_, __) => const AppPrivacyPage()),
+    GoRoute(path: '/owner', builder: (_, __) => const OwnerActivationPage()),
     GoRoute(path: '/about', builder: (_, __) => const AboutPage()),
     GoRoute(path: '/api', builder: (_, __) => const ApiOverviewPage()),
     GoRoute(
@@ -181,6 +209,7 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      recordAppEvent(ref, 'app_open');
       sync(quiet: true);
       offerNotifications();
     });
@@ -231,6 +260,8 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed && !syncing) {
+      recordAppEvent(ref, 'app_open');
+      refreshAppEntitlement(ref);
       sync();
     }
   }
@@ -577,6 +608,12 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
         'Privacidade e preferências',
         style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
       ),
+      ListTile(
+        leading: const Icon(Icons.privacy_tip_outlined),
+        title: const Text('Privacidade e estatísticas de utilização'),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => context.push('/privacy'),
+      ),
       DropdownButtonFormField<ThemeMode>(
         initialValue: ref.watch(themeProvider),
         decoration: const InputDecoration(labelText: 'Tema'),
@@ -645,7 +682,10 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
       ),
       const Divider(),
       const SizedBox(height: 20),
-      const Text('LuckyScan50 · Gil Pereira · versão $appVersion'),
+      GestureDetector(
+        onLongPress: () => context.push('/owner'),
+        child: const Text('LuckyScan50 · Gil Pereira · versão $appVersion'),
+      ),
     ];
   }
 
@@ -793,7 +833,14 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
       emailClient.close();
     }
     await AndroidNotifications.cancelAll();
-    await ref.read(storeProvider).erase();
+    final services = ref.read(appServicesProvider);
+    await services.ready;
+    await services.setConsent(false);
+    await ref
+        .read(storeProvider)
+        .erase(
+          preserveSettings: {'metrics.consent.v1', 'metrics.delete.pending'},
+        );
     final images = Directory(
       p.join((await getApplicationDocumentsDirectory()).path, 'receipts'),
     );
@@ -997,6 +1044,10 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
           ? await _guidedScan(selected)
           : await ref.read(receiptScannerProvider)(selected);
       if (result == null || !mounted) return;
+      recordAppEvent(
+        ref,
+        selected == ImageSource.camera ? 'scan_camera' : 'scan_import',
+      );
       final fields = scanFields;
       final updates = receiptAutofill(
         result.receipt,
@@ -1034,12 +1085,18 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
       );
     } on ReceiptScanFailure catch (error) {
       if (mounted) {
+        recordAppEvent(ref, 'scan_error');
+      }
+      if (mounted) {
         message(
           context,
           'Falha em ${error.stage} (${error.errorType}). Pode continuar manualmente.',
         );
       }
     } catch (_) {
+      if (mounted) {
+        recordAppEvent(ref, 'scan_error');
+      }
       if (mounted) {
         message(
           context,
@@ -1147,6 +1204,7 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
       } else {
         await ref.read(storeProvider).save(receipt);
       }
+      recordAppEvent(ref, 'receipt_saved_import');
       ref.invalidate(receiptsProvider);
       if (mounted) context.pop();
     } catch (e) {
@@ -1467,10 +1525,14 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
               onChanged: (v) => setState(() => source = v!),
             ),
             field(code, 'Identificador do recibo (opcional)'),
-            field(cost, 'Valor total pago (€)', hint: '2,50'),
+            field(cost, 'Valor total pago (€)', hint: '2,50', decimal: true),
             field(draws, 'Concursos Euromilhões', hint: '083/2026, 084/2026'),
             field(receiptDate, 'Data do sorteio (AAAA-MM-DD)'),
-            field(expectedCount, 'Número esperado de apostas (confirmar)'),
+            field(
+              expectedCount,
+              'Número esperado de apostas (confirmar)',
+              numeric: true,
+            ),
             field(
               lines,
               'Chaves — uma por linha',
@@ -1478,7 +1540,7 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
               minLines: 5,
               maxLines: null,
             ),
-            field(milhaoDraws, 'Concursos M1lhão (opcional)', hint: '009/2026'),
+            MilhaoDrawPicker(controller: milhaoDraws, enabled: !busy),
             field(
               milhaoCodes,
               'Códigos M1lhão (um por linha)',
@@ -1496,12 +1558,24 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
     String? hint,
     int? maxLines = 1,
     int? minLines,
+    bool numeric = false,
+    bool decimal = false,
   }) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 8),
     child: TextField(
       controller: c,
       minLines: minLines,
       maxLines: maxLines,
+      keyboardType: numeric || decimal
+          ? TextInputType.numberWithOptions(decimal: decimal)
+          : maxLines == 1
+          ? TextInputType.text
+          : TextInputType.multiline,
+      inputFormatters: numeric
+          ? [FilteringTextInputFormatter.digitsOnly]
+          : decimal
+          ? [FilteringTextInputFormatter.allow(RegExp(r'[0-9,.]'))]
+          : null,
       decoration: InputDecoration(labelText: label, hintText: hint),
     ),
   );
@@ -1690,6 +1764,12 @@ class ReceiptPage extends ConsumerWidget {
                       title: const Text('Total efetivamente recebido'),
                       content: TextField(
                         controller: controller,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(RegExp(r'[0-9,.]')),
+                        ],
                         decoration: const InputDecoration(labelText: 'Euros'),
                       ),
                       actions: [
