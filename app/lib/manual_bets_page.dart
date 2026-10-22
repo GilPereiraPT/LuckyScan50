@@ -1,10 +1,14 @@
 import 'dart:math' as math;
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'milhao_draw_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'domain/wallet.dart';
 import 'main.dart'
     show
         storeProvider,
+        appServicesProvider,
         receiptsProvider,
         resultsProvider,
         brandedPageTitle,
@@ -295,6 +299,7 @@ class _ManualBetPageState extends ConsumerState<ManualBetPage> {
         milhaoCodes: codes,
       );
       await ref.read(storeProvider).save(receipt);
+      unawaited(ref.read(appServicesProvider).record('receipt_saved_manual'));
       ref.invalidate(receiptsProvider);
       if (mounted) {
         Navigator.of(context).pop();
@@ -635,13 +640,9 @@ class _ManualBetPageState extends ConsumerState<ManualBetPage> {
                           'Introduza as letras uma vez e o primeiro número. A sequência mantém as letras e os zeros iniciais.',
                         ),
                         const SizedBox(height: 12),
-                        TextField(
+                        MilhaoDrawPicker(
                           controller: milhaoDraw,
                           enabled: !saving,
-                          decoration: const InputDecoration(
-                            labelText: 'Concursos M1lhão',
-                            hintText: '000/2026, 001/2026',
-                          ),
                         ),
                         const SizedBox(height: 12),
                         TextField(
@@ -658,6 +659,9 @@ class _ManualBetPageState extends ConsumerState<ManualBetPage> {
                           controller: milhaoCount,
                           enabled: !saving,
                           keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
                           decoration: const InputDecoration(
                             labelText: 'Quantidade de códigos no comprovativo',
                           ),
@@ -748,6 +752,9 @@ class _ManualBetPageState extends ConsumerState<ManualBetPage> {
                       ),
                       TextField(
                         controller: paidAmount,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(RegExp(r'[0-9,.]')),
+                        ],
                         enabled: !saving,
                         keyboardType: const TextInputType.numberWithOptions(
                           decimal: true,

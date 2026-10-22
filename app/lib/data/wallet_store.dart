@@ -97,9 +97,21 @@ class WalletStore {
     await txn.delete('receipts', where: 'id=?', whereArgs: [id]);
     await txn.delete('history', where: 'receipt_id=?', whereArgs: [id]);
   });
-  Future<void> erase() async => db.transaction((txn) async {
-    for (final table in ['receipts', 'results', 'history', 'settings']) {
+  Future<void> erase({
+    Set<String> preserveSettings = const {},
+  }) async => db.transaction((txn) async {
+    for (final table in ['receipts', 'results', 'history']) {
       await txn.delete(table);
+    }
+    if (preserveSettings.isEmpty) {
+      await txn.delete('settings');
+    } else {
+      await txn.delete(
+        'settings',
+        where:
+            'key NOT IN (${List.filled(preserveSettings.length, '?').join(',')})',
+        whereArgs: preserveSettings.toList(),
+      );
     }
   });
   Future<void> restore(List<Receipt> receipts) async => db.transaction((
