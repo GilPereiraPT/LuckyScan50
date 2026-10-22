@@ -1,5 +1,4 @@
 import 'dart:math' as math;
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'milhao_draw_picker.dart';
@@ -8,7 +7,7 @@ import 'domain/wallet.dart';
 import 'main.dart'
     show
         storeProvider,
-        appServicesProvider,
+        recordAppEvent,
         receiptsProvider,
         resultsProvider,
         brandedPageTitle,
@@ -299,7 +298,7 @@ class _ManualBetPageState extends ConsumerState<ManualBetPage> {
         milhaoCodes: codes,
       );
       await ref.read(storeProvider).save(receipt);
-      unawaited(ref.read(appServicesProvider).record('receipt_saved_manual'));
+      recordAppEvent(ref, 'receipt_saved_manual');
       ref.invalidate(receiptsProvider);
       if (mounted) {
         Navigator.of(context).pop();

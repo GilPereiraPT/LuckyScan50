@@ -45,6 +45,24 @@ final appServicesProvider = ChangeNotifierProvider<AppServices>(
   (ref) => AppServices(store: ref.watch(storeProvider), version: appVersion),
 );
 
+/// Optional diagnostics must never alter receipt processing, even if a
+/// provider cannot be initialized (for example, an unavailable local store).
+void recordAppEvent(WidgetRef ref, String event) {
+  try {
+    unawaited(ref.read(appServicesProvider).record(event));
+  } catch (_) {
+    // No receipt data is needed or sent when optional services are unavailable.
+  }
+}
+
+void refreshAppEntitlement(WidgetRef ref) {
+  try {
+    unawaited(ref.read(appServicesProvider).refreshOwner());
+  } catch (_) {
+    // The wallet remains usable independently of the entitlement service.
+  }
+}
+
 final receiptScannerProvider = Provider<ReceiptScanner>(
   (ref) => scanReceiptImage,
 );
@@ -191,7 +209,7 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      unawaited(ref.read(appServicesProvider).record('app_open'));
+      recordAppEvent(ref, 'app_open');
       sync(quiet: true);
       offerNotifications();
     });
@@ -242,8 +260,8 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed && !syncing) {
-      unawaited(ref.read(appServicesProvider).record('app_open'));
-      unawaited(ref.read(appServicesProvider).refreshOwner());
+      recordAppEvent(ref, 'app_open');
+      refreshAppEntitlement(ref);
       sync();
     }
   }
@@ -1026,12 +1044,9 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
           ? await _guidedScan(selected)
           : await ref.read(receiptScannerProvider)(selected);
       if (result == null || !mounted) return;
-      unawaited(
-        ref
-            .read(appServicesProvider)
-            .record(
-              selected == ImageSource.camera ? 'scan_camera' : 'scan_import',
-            ),
+      recordAppEvent(
+        ref,
+        selected == ImageSource.camera ? 'scan_camera' : 'scan_import',
       );
       final fields = scanFields;
       final updates = receiptAutofill(
@@ -1070,7 +1085,7 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
       );
     } on ReceiptScanFailure catch (error) {
       if (mounted) {
-        unawaited(ref.read(appServicesProvider).record('scan_error'));
+        recordAppEvent(ref, 'scan_error');
       }
       if (mounted) {
         message(
@@ -1080,7 +1095,7 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
       }
     } catch (_) {
       if (mounted) {
-        unawaited(ref.read(appServicesProvider).record('scan_error'));
+        recordAppEvent(ref, 'scan_error');
       }
       if (mounted) {
         message(
@@ -1189,7 +1204,7 @@ class _AddReceiptState extends ConsumerState<AddReceipt> {
       } else {
         await ref.read(storeProvider).save(receipt);
       }
-      unawaited(ref.read(appServicesProvider).record('receipt_saved_import'));
+      recordAppEvent(ref, 'receipt_saved_import');
       ref.invalidate(receiptsProvider);
       if (mounted) context.pop();
     } catch (e) {
