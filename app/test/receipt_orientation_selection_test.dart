@@ -25,9 +25,7 @@ void main() {
   });
 
   test('sideways N anchors trigger rotation recovery', () {
-    const tokens = [
-      ReceiptToken('1.N', 100, 500, 160, width: 25, angle: 90),
-    ];
+    const tokens = [ReceiptToken('1.N', 100, 500, 160, width: 25, angle: 90)];
     expect(receiptNeedsOrientationSearch(tokens, 1200, 1900), isTrue);
   });
 

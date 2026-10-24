@@ -61,10 +61,12 @@ bool receiptNeedsOrientationSearch(
   if (uprightBetRowCount(tokens, width, height) > 0) return false;
   return tokens.isEmpty ||
       tokens.any(verticalReceiptToken) ||
-      !tokens.any((token) => RegExp(
-            r'^\s*\d{1,2}\s*[.)]?\s*N\b',
-            caseSensitive: false,
-          ).hasMatch(token.text)) ||
+      !tokens.any(
+        (token) => RegExp(
+          r'^\s*\d{1,2}\s*[.)]?\s*N\b',
+          caseSensitive: false,
+        ).hasMatch(token.text),
+      ) ||
       tokens.any((token) {
         if (!token.angle.isFinite ||
             !RegExp(
