@@ -290,8 +290,8 @@ Future<MultiPassResult?> recoverNumberedBets({
                 contrast: true,
               )
             : crop;
-        final pass =
-            'numbered-line-${row.index}-$kind@${scale.toInt()}x${attempt.contrast ? '-contrast' : ''}';
+        final suffix = attempt.contrast ? '-contrast' : '';
+        final pass = 'numbered-line-${row.index}-$kind@${scale.toInt()}x$suffix';
         final timer = Stopwatch()..start();
         try {
           final frame = await recognizeCrop(candidate, scale);
