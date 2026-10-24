@@ -111,7 +111,8 @@ void main() {
         ),
         isFalse,
       );
-      expect(receiptNeedsOrientationSearch([], 300, 300), isFalse);
+      // An empty OCR frame can itself be caused by a sideways photograph.
+      expect(receiptNeedsOrientationSearch([], 300, 300), isTrue);
     },
   );
 }
