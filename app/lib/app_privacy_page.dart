@@ -86,7 +86,7 @@ class _AppPrivacyPageState extends ConsumerState<AppPrivacyPage> {
             ],
             const SizedBox(height: 16),
             const Text(
-              'Serviço: LuckyScan50 · Gil Pereira. Destino: luckyscan50-api.policlinicosdesantoandre.com. A ligação HTTPS transmite o endereço IP ao servidor; a API usa uma derivação diária para limitar abusos e não guarda o IP nos eventos. Os registos técnicos do alojamento seguem a política desse serviço.',
+              'Serviço: LuckyScan50 · Gil Pereira. A ligação HTTPS transmite o endereço IP ao servidor dos resultados e dos serviços facultativos. A API utiliza uma derivação diária do IP para limitar abusos, sem o guardar nos eventos de estatísticas. A identificação do alojamento e o tratamento dos registos técnicos constam da política de privacidade pública.',
             ),
           ],
         ),
