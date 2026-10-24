@@ -55,20 +55,32 @@ bool receiptNeedsOrientationSearch(
   List<ReceiptToken> tokens,
   double width,
   double height,
-) =>
-    uprightBetRowCount(tokens, width, height) == 0 &&
-    (tokens.any(verticalReceiptToken) ||
-        tokens.any((token) {
-          if (!token.angle.isFinite ||
-              !RegExp(
-                r'^\s*\d{1,2}\s*[.)]?\s*N\b',
-                caseSensitive: false,
-              ).hasMatch(token.text)) {
-            return false;
-          }
-          final angle = (token.angle % 360 + 360) % 360;
-          return angle > 45 && angle < 315;
-        }));
+) {
+  // If the original frame contains no readable numbered N anchors,
+  // a sideways image may still produce only header text or no text at all.
+  if (uprightBetRowCount(tokens, width, height) > 0) return false;
+  return tokens.isEmpty ||
+      tokens.any(verticalReceiptToken) ||
+      !tokens.any((token) => RegExp(
+            r'^\s*\d{1,2}\s*[.)]?\s*N\b',
+            caseSensitive: false,
+          ).hasMatch(token.text)) ||
+      tokens.any((token) {
+        if (!token.angle.isFinite ||
+            !RegExp(
+              r'^\s*\d{1,2}\s*[.)]?\s*N\b',
+              caseSensitive: false,
+            ).hasMatch(token.text)) {
+          return false;
+        }
+        final angle = (token.angle % 360 + 360) % 360;
+        return angle > 45 && angle < 315;
+      });
+}
+
+/// Prefer independently detected physical bets over the first plausible row.
+bool prefersReceiptOrientation(int candidateRows, int bestRows) =>
+    candidateRows > bestRows;
 
 Future<ReceiptScan?> scanReceiptImage(ImageSource source) async {
   try {
@@ -91,13 +103,36 @@ Future<ReceiptScan> scanReceiptFile(String path) async {
   final preparedImages = <PreparedReceiptImage>[];
   const backend = ReceiptCropBackend();
   try {
+    // Native EXIF normalization yields an upright image with pixel
+    // coordinates shared by the recognizer and all subsequent crop passes.
+    // Keep a raw-file fallback if preparation is unavailable.
+    stage = 'normalização EXIF e preparação dos recortes';
+    PreparedReceiptImage? preparedImage;
+    final preparationClock = Stopwatch()..start();
+    try {
+      preparedImage = await backend.prepare(path);
+      preparedImages.add(preparedImage);
+      imageGeometry.addAll({
+        'preparedWidth': preparedImage.width,
+        'preparedHeight': preparedImage.height,
+        'workingQuarterTurns': 0,
+        'initialFrameNormalized': 1,
+      });
+    } catch (_) {
+      phaseTimings['imagePreparationUnavailable'] = 1;
+      imageGeometry['initialFrameNormalized'] = 0;
+    } finally {
+      phaseTimings['imagePreparation'] = preparationClock.elapsedMilliseconds;
+    }
+
     stage = 'reconhecimento ML Kit inicial';
     recognizer = TextRecognizer(script: TextRecognitionScript.latin);
     final engine = recognizer;
     final timer = Stopwatch()..start();
-    // Keep the initial full-frame observation, even if native crop prep fails.
     final initial = receiptFrame(
-      await engine.processImage(InputImage.fromFilePath(path)),
+      await engine.processImage(
+        InputImage.fromFilePath(preparedImage?.path ?? path),
+      ),
     );
     final ocrMs = timer.elapsedMilliseconds;
     final first = initial.parse();
@@ -105,18 +140,11 @@ Future<ReceiptScan> scanReceiptFile(String path) async {
     timer.reset();
     final orientationPasses = <OrientationPass>[];
     try {
-      stage = 'normalização EXIF e preparação dos recortes';
-      final preparationClock = Stopwatch()..start();
-      final prepared = await backend.prepare(path);
-      imageGeometry.addAll({
-        'preparedWidth': prepared.width,
-        'preparedHeight': prepared.height,
-        'workingQuarterTurns': 0,
-      });
-      phaseTimings['imagePreparation'] = preparationClock.elapsedMilliseconds;
-      preparedImages.add(prepared);
-      // ML Kit fromFilePath and the native crop backend both apply EXIF.
-      // Native prepare writes lossless upright pixels without changing input.
+      stage = 'preparação das regiões numéricas';
+      final prepared = preparedImage;
+      if (prepared == null) {
+        throw StateError('Native EXIF normalization unavailable');
+      }
       var normalized = prepared;
       var workingFrame = initial;
       final orientationClock = Stopwatch()..start();
@@ -125,6 +153,8 @@ Future<ReceiptScan> scanReceiptFile(String path) async {
         normalized.width,
         normalized.height,
       )) {
+        var bestRowCount = 0;
+        final expected = first.expectedLines;
         for (final turns in preferredReceiptTurns(initial.tokens)) {
           final rotated = await backend.rotate(prepared, turns);
           preparedImages.add(rotated);
@@ -140,10 +170,14 @@ Future<ReceiptScan> scanReceiptFile(String path) async {
           orientationPasses.add(
             OrientationPass(turns, frame, watch.elapsedMilliseconds, rowCount),
           );
-          if (rowCount >= 1) {
+          if (prefersReceiptOrientation(rowCount, bestRowCount)) {
+            bestRowCount = rowCount;
             imageGeometry['workingQuarterTurns'] = turns;
             normalized = rotated;
             workingFrame = frame;
+          }
+          // A single plausible N row must not hide more complete orientations.
+          if (expected != null && expected > 0 && bestRowCount >= expected) {
             break;
           }
         }
