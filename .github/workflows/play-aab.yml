@@ -1,0 +1,104 @@
+name: Build signed Google Play AAB (manual)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  validation:
+    uses: ./.github/workflows/ci-flutter.yml
+
+  play-aab:
+    needs: validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.35.7'
+          cache: true
+      - name: Configure private upload signing
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import base64
+          import os
+          from pathlib import Path
+          for name in ('KEYSTORE_B64', 'STORE_PASS', 'KEY_ALIAS', 'KEY_PASS'):
+              if not os.environ.get(name):
+                  raise SystemExit('Missing required upload-signing secret: ' + name)
+          keyfile = Path(os.environ['RUNNER_TEMP']) / 'luckyscan50-upload.jks'
+          keyfile.write_bytes(base64.b64decode(''.join(os.environ['KEYSTORE_B64'].split()), validate=True))
+          keyfile.chmod(0o600)
+          def escape(value):
+              return ''.join(('\\u%04x' % ord(c)) if c in '\\:=#! \n\r\t' or ord(c) > 126 else c for c in value)
+          properties = Path('app/android/key.properties')
+          properties.write_text(''.join(k + '=' + escape(v) + '\n' for k, v in {
+              'storeFile': str(keyfile),
+              'storePassword': os.environ['STORE_PASS'],
+              'keyAlias': os.environ['KEY_ALIAS'],
+              'keyPassword': os.environ['KEY_PASS'],
+          }.items()))
+          properties.chmod(0o600)
+          PY
+          keytool -exportcert -keystore "$RUNNER_TEMP/luckyscan50-upload.jks" -storepass:env STORE_PASS -alias "$KEY_ALIAS" | sha256sum | cut -d' ' -f1 > "$RUNNER_TEMP/upload-cert.sha256"
+      - name: Fetch locked Flutter dependencies
+        working-directory: app
+        run: flutter pub get --enforce-lockfile
+      - name: Build release bundle for supported ABIs
+        working-directory: app
+        run: flutter build appbundle --release --target-platform android-arm,android-arm64,android-x64 --dart-define=LUCKYSCAN_BUILD_SHA="$GITHUB_SHA"
+      - name: Verify signed AAB, expected key and ABI coverage
+        run: |
+          set -euo pipefail
+          AAB=app/build/app/outputs/bundle/release/app-release.aab
+          test -s "$AAB"
+          jarsigner -verify "$AAB" > "$RUNNER_TEMP/jarsigner.txt"
+          grep -Fq 'jar verified.' "$RUNNER_TEMP/jarsigner.txt"
+          keytool -printcert -jarfile "$AAB" -rfc | openssl x509 -outform DER | sha256sum | cut -d' ' -f1 > "$RUNNER_TEMP/bundle-cert.sha256"
+          cmp "$RUNNER_TEMP/upload-cert.sha256" "$RUNNER_TEMP/bundle-cert.sha256"
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          aab = Path('app/build/app/outputs/bundle/release/app-release.aab')
+          with ZipFile(aab) as archive:
+              files = set(archive.namelist())
+              assert archive.testzip() is None, 'Corrupted AAB'
+              assert 'base/manifest/AndroidManifest.xml' in files, 'Missing base manifest'
+              for abi in ('armeabi-v7a', 'arm64-v8a', 'x86_64'):
+                  assert 'base/lib/' + abi + '/libflutter.so' in files, 'Missing ABI: ' + abi
+          print('AAB structure, integrity and ABIs: OK')
+          PY
+          mkdir -p play-output
+          cp "$AAB" play-output/LuckyScan50-Play-release.aab
+          sha256sum play-output/LuckyScan50-Play-release.aab > play-output/SHA256SUMS.txt
+          {
+            echo '### Google Play bundle (manual build)'
+            echo "Commit: $GITHUB_SHA"
+            echo "SHA-256: $(cut -d' ' -f1 play-output/SHA256SUMS.txt)"
+            echo "Bytes: $(stat -c %s play-output/LuckyScan50-Play-release.aab)"
+            echo "Upload certificate matches configured key: yes"
+            echo 'ABI coverage: armeabi-v7a, arm64-v8a, x86_64'
+            echo 'This job does not publish to Google Play or establish policy compliance.'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload release bundle and checksum
+        uses: actions/upload-artifact@v6
+        with:
+          name: LuckyScan50-GooglePlay-AAB
+          path: play-output/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Remove signing material
+        if: always()
+        run: rm -f "$RUNNER_TEMP/luckyscan50-upload.jks" "$RUNNER_TEMP/upload-cert.sha256" "$RUNNER_TEMP/bundle-cert.sha256" app/android/key.properties
