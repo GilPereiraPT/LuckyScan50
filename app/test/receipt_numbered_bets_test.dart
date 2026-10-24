@@ -105,7 +105,7 @@ void main() {
     );
     expect(r.receipt.lines, isEmpty);
     expect(r.receipt.bets.first.stars, [4, 6]);
-    expect(r.passes.where((p) => p.crop.kind == 'N'), hasLength(2));
+    expect(r.passes.where((p) => p.crop.kind == 'N'), hasLength(3));
   });
   test('only the failed line is retried, at 2x', () async {
     final calls = <String>[];
@@ -122,6 +122,34 @@ void main() {
     expect(calls, ['N@1.0', 'N@2.0', 'E@1.0']);
     expect(r.receipt.lines, hasLength(1));
   });
+  test('native high-contrast N crop runs only after two failed reads', () async {
+    final attempts = <String>[];
+    final result = await read(
+      row(1, 70),
+      crop: (c, scale) async {
+        attempts.add('${c.kind}@${scale.toInt()}x${c.contrast ? '-contrast' : ''}');
+        if (c.kind == 'E') return const OcrFrame('04 06', []);
+        return OcrFrame(
+          c.contrast ? '07 15 16 22 35' : '07 15 X 22 35',
+          const [],
+        );
+      },
+    );
+    expect(attempts, [
+      'N@1x',
+      'N@2x',
+      'N@2x-contrast',
+      'E@1x',
+    ]);
+    expect(result.receipt.lines, ['07 15 16 22 35 + 04 06']);
+    expect(
+      result.evidence.first.acceptedValues
+          .where((v) => v.kind == 'N')
+          .every((v) => v.pass.endsWith('-contrast')),
+      isTrue,
+    );
+  });
+
   test('explicit foreign index in a crop is rejected', () async {
     final r = await read(
       row(1, 70),
