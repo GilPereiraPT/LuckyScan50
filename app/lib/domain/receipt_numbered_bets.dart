@@ -271,15 +271,34 @@ Future<MultiPassResult?> recoverNumberedBets({
         kind: kind,
         deskewDegrees: horizontalReceiptAngle(n.angle),
       );
-      for (final scale in [1.0, 2.0]) {
-        final pass = 'numbered-line-${row.index}-$kind@${scale.toInt()}x';
+      // Try the original pixels first. Increase contrast only when normal
+      // N/E line OCR at both scales cannot produce a complete valid group.
+      for (final attempt in [
+        (scale: 1.0, contrast: false),
+        (scale: 2.0, contrast: false),
+        (scale: 2.0, contrast: true),
+      ]) {
+        final scale = attempt.scale;
+        final candidate = attempt.contrast
+            ? BetCrop(
+                crop.index,
+                crop.box,
+                printedIndex: crop.printedIndex,
+                kind: crop.kind,
+                position: crop.position,
+                deskewDegrees: crop.deskewDegrees,
+                contrast: true,
+              )
+            : crop;
+        final pass =
+            'numbered-line-${row.index}-$kind@${scale.toInt()}x${attempt.contrast ? '-contrast' : ''}';
         final timer = Stopwatch()..start();
         try {
-          final frame = await recognizeCrop(crop, scale);
+          final frame = await recognizeCrop(candidate, scale);
           passes.add(
-            CropPass(pass, crop, scale, frame, timer.elapsedMilliseconds),
+            CropPass(pass, candidate, scale, frame, timer.elapsedMilliseconds),
           );
-          final reading = _lineReading(frame, crop, pass);
+          final reading = _lineReading(frame, candidate, pass);
           if (reading.values == null) continue;
           (kind == 'N' ? numbers : stars).addAll(reading.values!);
           evidence.addAll(reading.evidence);
@@ -288,7 +307,7 @@ Future<MultiPassResult?> recoverNumberedBets({
           passes.add(
             CropPass(
               pass,
-              crop,
+              candidate,
               scale,
               null,
               timer.elapsedMilliseconds,
