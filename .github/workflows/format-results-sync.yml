@@ -1,0 +1,36 @@
+name: Format results sync patch (temporary)
+on:
+  push:
+    branches:
+      - fix/accurate-results-sync-status-20261106
+    paths:
+      - .github/workflows/format-results-sync.yml
+      - app/lib/data/results_sync_summary.dart
+      - app/test/results_sync_summary_test.dart
+permissions:
+  contents: write
+jobs:
+  format:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: true
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.35.7'
+          channel: stable
+          cache: true
+      - name: Apply standard Dart formatting
+        run: dart format app/lib/data/results_sync_summary.dart app/test/results_sync_summary_test.dart
+      - name: Commit formatting
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/lib/data/results_sync_summary.dart app/test/results_sync_summary_test.dart
+          if ! git diff --cached --quiet; then
+            git commit -m "style(dart): format results sync patch"
+            git push origin HEAD:fix/accurate-results-sync-status-20261106
+          fi
