@@ -174,8 +174,12 @@ class CollectorTests(unittest.TestCase):
         config.write_text(json.dumps({'database': str(self.store.path), 'enabled': False, 'datesFile': str(dates)}))
         with patch('sys.argv', ['collect_results.py', '--rss', '--config', str(config), '--fixtures', str(FIXTURES)]):
             self.assertEqual(main(), 0)
-        self.assertEqual(len(self.store.all()), 1)
-        self.assertEqual(self.store.all()[0]['game'], 'euromilhoes')
+        # Both official cartazes are collected with the CLI defaults. The
+        # reviewed date remains game-specific; M1lhão has its own official date.
+        rows = {row['game']: row for row in self.store.all()}
+        self.assertEqual(set(rows), {'euromilhoes', 'milhao'})
+        self.assertEqual(rows['euromilhoes']['date'], '2026-10-16')
+        self.assertEqual(rows['milhao']['date'], '2026-09-25')
         self.assertEqual(len(rss.overview(self.store)['data']), 6)
 
     def test_invalid_reviewed_dates_rejected(self):

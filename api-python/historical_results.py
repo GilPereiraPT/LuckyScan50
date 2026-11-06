@@ -130,6 +130,11 @@ def apply_batch(store, items, report, apply=False, adapter=official):
             if not apply:
                 output['status'] = 'preview'
                 return output
+            if not changes:
+                # Avoid one full database backup on every routine poll when
+                # all official results are already present and unchanged.
+                output.update(status='up_to_date', unchanged=len(items))
+                return output
             # Preserve raw public responses and their hashes for provenance.
             audit = store.path.parent / 'history-imports'
             audit.mkdir(exist_ok=True, mode=0o700)

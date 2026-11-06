@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 import hashlib
 import json
 import re
+from urllib.request import Request, build_opener
 
 from domain import validate_result
 import official_cartaz as official
@@ -11,6 +12,21 @@ import rss_import as rss
 
 URL = 'https://www.jogossantacasa.pt/web/SCCartazResult/m1lhao'
 initialize = official.initialize
+
+
+def fetch():
+    """Retrieve the current M1lhão result over official HTTPS without redirects."""
+    request = Request(URL, headers={
+        'User-Agent': 'LuckyScan50-official/1.0',
+        'Accept': 'text/html',
+    })
+    with build_opener(rss.NoRedirect()).open(request, timeout=20) as response:
+        if response.status != 200 or response.url != URL:
+            raise ValueError('Unexpected official M1lhão HTTP response')
+        payload = response.read(official.MAX_BYTES + 1)
+        if len(payload) > official.MAX_BYTES:
+            raise ValueError('Official M1lhão cartaz exceeds size limit')
+        return payload
 
 
 def parse(payload):
