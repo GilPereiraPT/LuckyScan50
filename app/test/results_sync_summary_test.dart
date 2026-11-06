@@ -40,7 +40,7 @@ void main() {
   test('a successful request does not claim missing results were updated', () {
     final receipts = [
       receipt('first', ['086/2026', '088/2026']),
-      receipt('second', ['081/2026'], milhao: ['041/2026']),
+      receipt('second', ['081/2026'], milhao: ['010/2026']),
     ];
     final stored = [euroDraw('081/2026')];
     final summary = summarizeResultsSync(
@@ -52,7 +52,7 @@ void main() {
     expect(summary.pendingDraws, [
       'Euromilhões 086/2026',
       'Euromilhões 088/2026',
-      'M1lhão 041/2026',
+      'M1lhão 010/2026',
     ]);
     expect(summary.message, contains('faltam resultados'));
     expect(summary.message, isNot(contains('Resultados atualizados')));
@@ -84,12 +84,12 @@ void main() {
   test('a separately confirmed M1lhão draw resolves the pending status', () {
     final results = [
       euroDraw('081/2026'),
-      milhaoDraw('041/2026'),
+      milhaoDraw('010/2026'),
     ];
     final summary = summarizeResultsSync(
       previous: results,
       current: results,
-      receipts: [receipt('second', ['081/2026'], milhao: ['041/2026'])],
+      receipts: [receipt('second', ['081/2026'], milhao: ['010/2026'])],
     );
     expect(summary.pendingDraws, isEmpty);
     expect(summary.unconfirmedPrizes, 0);
