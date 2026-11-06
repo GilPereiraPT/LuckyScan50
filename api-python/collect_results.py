@@ -14,6 +14,7 @@ from urllib.parse import urlsplit
 from store import Store
 import rss_import as rss
 import official_cartaz
+import official_milhao
 
 log = logging.getLogger('luckyscan50.collect')
 
@@ -83,7 +84,7 @@ def announced_dates(store, manual):
             {key: sorted(days) for key, days in candidates.items() if len(days) > 1})
 
 
-def run_rss(database, *, fixtures=None, dates=None, cartaz=False):
+def run_rss(database, *, fixtures=None, dates=None, cartaz=False, milhao=False):
     """One bounded collection cycle. Called remotely only by explicit --rss.
 
     All feeds are staged before promoting any new result, so same-cycle source
@@ -148,6 +149,22 @@ def run_rss(database, *, fixtures=None, dates=None, cartaz=False):
                     official_cartaz.record(store, str(type(exc).__name__).encode(), 'failed', [type(exc).__name__])
                 except (OSError, ValueError, sqlite3.Error):
                     outcomes['cartaz']['auditError'] = 'storage_unavailable'
+        # M1lhão is an independent monthly game. The Euromilhões cartaz
+        # never supplies its winning code, date, or prize.
+        if milhao:
+            try:
+                if fixtures is None:
+                    # Use the same bounded, no-redirect HTTP transport with
+                    # the M1lhão-specific URL, never the Euromilhões URL.
+                    html = official_milhao.fetch()
+                else:
+                    html = (Path(fixtures).parent / 'official/milhao-structure-example.html').read_bytes()
+                    if len(html) > official_cartaz.MAX_BYTES:
+                        raise ValueError('M1lhão fixture exceeds size limit')
+                outcomes['milhao_cartaz'] = official_milhao.reconcile(store, html)
+            except (OSError, ValueError, sqlite3.Error) as exc:
+                outcomes['milhao_cartaz'] = {'error': type(exc).__name__}
+                log.error('Official M1lhão collection failed: %s', type(exc).__name__)
         if 'results' in payloads:
             # The results feed is complementary. Jackpots alone never inserts
             # a past result; its future announcement can supply the exact date.
@@ -179,7 +196,7 @@ def main():
     logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
     try:
         config = json.loads(args.config.read_text(encoding='utf-8')) if args.config else {}
-        if not isinstance(config, dict) or set(config) - {'database', 'enabled', 'datesFile', 'cartaz'}:
+        if not isinstance(config, dict) or set(config) - {'database', 'enabled', 'datesFile', 'cartaz', 'milhao'}:
             raise ValueError('Invalid collector configuration')
         database = args.database or config.get('database')
         if not isinstance(database, str) or not Path(database).is_absolute():
@@ -195,8 +212,10 @@ def main():
             raise ValueError('datesFile must be an absolute path')
         if type(config.get('cartaz', True)) is not bool:
             raise ValueError('cartaz must be a boolean')
+        if type(config.get('milhao', True)) is not bool:
+            raise ValueError('milhao must be a boolean')
         report = run_rss(database, fixtures=args.fixtures, dates=verified_dates(dates_path),
-                         cartaz=config.get('cartaz', True))
+                         cartaz=config.get('cartaz', True), milhao=config.get('milhao', True))
         print(json.dumps(report, ensure_ascii=False))
         return report['exitCode']
     except (OSError, ValueError, TypeError, sqlite3.Error) as exc:
