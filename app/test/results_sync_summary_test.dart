@@ -30,7 +30,9 @@ Receipt receipt(
   source: 'manual',
   code: '',
   costCents: 250,
-  lines: [BetLine([1, 2, 3, 4, 5], [1, 2])],
+  lines: [
+    BetLine([1, 2, 3, 4, 5], [1, 2]),
+  ],
   drawIds: euro,
   milhaoDrawIds: milhao,
   milhaoCodes: milhao.isEmpty ? [] : ['ABC 12345'],
@@ -62,7 +64,9 @@ void main() {
     final summary = summarizeResultsSync(
       previous: [euroDraw('081/2026')],
       current: [euroDraw('081/2026'), euroDraw('086/2026')],
-      receipts: [receipt('first', ['086/2026', '088/2026'])],
+      receipts: [
+        receipt('first', ['086/2026', '088/2026']),
+      ],
     );
     expect(summary.changedDraws, 1);
     expect(summary.pendingDraws, ['Euromilhões 088/2026']);
@@ -74,7 +78,9 @@ void main() {
     final summary = summarizeResultsSync(
       previous: [euroDraw('086/2026', retrievedAt: '2026-11-05T00:00:00Z')],
       current: [euroDraw('086/2026', retrievedAt: '2026-11-06T00:00:00Z')],
-      receipts: [receipt('first', ['086/2026'])],
+      receipts: [
+        receipt('first', ['086/2026']),
+      ],
     );
     expect(summary.changedDraws, 0);
     expect(summary.pendingDraws, isEmpty);
@@ -82,14 +88,13 @@ void main() {
   });
 
   test('a separately confirmed M1lhão draw resolves the pending status', () {
-    final results = [
-      euroDraw('081/2026'),
-      milhaoDraw('010/2026'),
-    ];
+    final results = [euroDraw('081/2026'), milhaoDraw('010/2026')];
     final summary = summarizeResultsSync(
       previous: results,
       current: results,
-      receipts: [receipt('second', ['081/2026'], milhao: ['010/2026'])],
+      receipts: [
+        receipt('second', ['081/2026'], milhao: ['010/2026']),
+      ],
     );
     expect(summary.pendingDraws, isEmpty);
     expect(summary.unconfirmedPrizes, 0);

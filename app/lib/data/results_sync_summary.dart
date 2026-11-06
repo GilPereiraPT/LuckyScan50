@@ -39,8 +39,7 @@ class ResultsSyncSummary {
   }
 }
 
-String _key(Map<String, dynamic> draw) =>
-    "${draw['game']}/${draw['drawId']}";
+String _key(Map<String, dynamic> draw) => "${draw['game']}/${draw['drawId']}";
 
 String _verificationContent(Map<String, dynamic> draw) => jsonEncode([
   draw['status'],
@@ -56,12 +55,8 @@ ResultsSyncSummary summarizeResultsSync({
   required List<Map<String, dynamic>> current,
   required List<Receipt> receipts,
 }) {
-  final previousByKey = {
-    for (final draw in previous) _key(draw): draw,
-  };
-  final currentByKey = {
-    for (final draw in current) _key(draw): draw,
-  };
+  final previousByKey = {for (final draw in previous) _key(draw): draw};
+  final currentByKey = {for (final draw in current) _key(draw): draw};
   var changed = 0;
   for (final entry in currentByKey.entries) {
     final old = previousByKey[entry.key];
