@@ -28,6 +28,7 @@ import 'data/receipt_diagnostic_report.dart';
 import 'domain/receipt_autofill.dart';
 import 'data/results_client.dart';
 import 'data/recent_results.dart';
+import 'data/results_sync_summary.dart';
 import 'receipt_draw_result.dart';
 import 'data/api_overview_page.dart';
 import 'data/wallet_store.dart';
@@ -282,18 +283,26 @@ class _HomeState extends ConsumerState<Home> with WidgetsBindingObserver {
     setState(() => syncing = true);
     final client = ResultsClient();
     try {
-      final previous = await ref.read(storeProvider).results();
+      final store = ref.read(storeProvider);
+      final previous = await store.results();
+      final previousEffective = await withRecentResults(previous);
       final rows = await client.fetch();
-      await ref.read(storeProvider).saveResults(rows);
+      await store.saveResults(rows);
+      final currentEffective = await withRecentResults(await store.results());
+      final summary = summarizeResultsSync(
+        previous: previousEffective,
+        current: currentEffective,
+        receipts: await store.receipts(),
+      );
       unawaited(syncEmailSafely());
       ref.invalidate(resultsProvider);
       try {
-        await notifyAfterSync(ref.read(storeProvider), previous, rows);
+        await notifyAfterSync(store, previous, rows);
       } catch (_) {
         // Notification failures must not turn a successful sync into an error.
       }
       if (mounted && !quiet) {
-        message(context, 'Resultados atualizados.');
+        message(context, summary.message);
       }
     } catch (_) {
       if (mounted && !quiet) {
