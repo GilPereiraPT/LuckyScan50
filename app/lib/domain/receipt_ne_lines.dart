@@ -27,15 +27,22 @@ class NeLineDigits {
 
   // Only for crops anchored to N/E, never metadata or ticket codes.
   static const lookAlikes = <String, String>{
-    'O': '0', 'o': '0',
-    'I': '1', 'i': '1', 'l': '1', 'L': '1', '|': '1',
-    'Z': '2', 'z': '2',
-    'S': '5', 's': '5',
-    'G': '6', 'B': '8',
+    'O': '0',
+    'o': '0',
+    'I': '1',
+    'i': '1',
+    'l': '1',
+    'L': '1',
+    '|': '1',
+    'Z': '2',
+    'z': '2',
+    'S': '5',
+    's': '5',
+    'G': '6',
+    'B': '8',
   };
   static const _noise = {'.', ',', ':', ';', "'", '`', '"', '-', '_', '~'};
-  static bool needsConfirmation(String raw) =>
-      RegExp(r'[|ZzGBL]').hasMatch(raw);
+  static bool needsConfirmation(String raw) => RegExp(r'[|ZzGBL]').hasMatch(raw);
 
   static ({String digits, List<String> observed, List<String?> notes})?
   normalize(String source) {
