@@ -69,12 +69,21 @@ void main() {
     expect(n.notes[2], contains('l→1'));
     expect(NeLineDigits.parse(n.digits, stars: false), [7, 15, 16, 22, 35]);
     expect(NeLineDigits.normalize('o4,06')!.digits, '0406');
-    expect(NeLineDigits.normalize('I S')!.notes.whereType<String>(), hasLength(2));
+    expect(
+      NeLineDigits.normalize('I S')!.notes.whereType<String>(),
+      hasLength(2),
+    );
     expect(NeLineDigits.normalize('iL|ZzGB')!.digits, '1112268');
     expect(NeLineDigits.needsConfirmation('3|'), isTrue);
     expect(NeLineDigits.needsConfirmation('4B'), isTrue);
     expect(NeLineDigits.normalize('儿4 06'), isNull);
     expect(NeLineDigits.normalize('07 X 16 22 35'), isNull);
-    expect(NeLineDigits.parse(NeLineDigits.normalize('07 15 16 22 3S 1')!.digits, stars: false), isNull);
+    expect(
+      NeLineDigits.parse(
+        NeLineDigits.normalize('07 15 16 22 3S 1')!.digits,
+        stars: false,
+      ),
+      isNull,
+    );
   });
 }
