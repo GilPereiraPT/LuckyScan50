@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'receipt_geometry.dart';
+import 'receipt_ne_lines.dart';
 import 'receipt_parser.dart';
 
 class CellGrid {
@@ -107,7 +108,7 @@ CellGrid planBetCells(
     for (final t in tokens) {
       final v = verticalReceiptToken(t);
       final numeric = RegExp(
-        r'^[0-9OIS]{1,2}$',
+        r'^[0-9OoIiLl|ZzSsGB]{1,2}$',
         caseSensitive: false,
       ).hasMatch(t.text.trim());
       if (!v && !numeric) continue;
@@ -210,17 +211,17 @@ CellGrid planBetCells(
   String text,
   String kind,
 ) {
-  final raw = text.trim().toUpperCase();
+  final raw = text.trim();
   if (kind != 'N' && kind != 'E') {
     return (value: null, raw: raw, correction: null);
   }
-  if (!RegExp(r'^[0-9OIS]{1,2}$').hasMatch(raw)) {
+  final normalized = NeLineDigits.normalize(raw);
+  if (normalized == null ||
+      normalized.digits.isEmpty ||
+      normalized.digits.length > 2) {
     return (value: null, raw: raw, correction: null);
   }
-  final normal = raw
-      .replaceAll('O', '0')
-      .replaceAll('I', '1')
-      .replaceAll('S', '5');
+  final normal = normalized.digits;
   final v = int.tryParse(normal);
   return (
     value: v != null && v >= 1 && v <= (kind == 'E' ? 12 : 50) ? v : null,
@@ -278,7 +279,7 @@ CellGrid planVisualBetCells(
   if (pitch <= h * 1.1 || pitch > height / 2) {
     return const CellGrid([], [], ['Espaçamento N não fiável.']);
   }
-  final numeric = RegExp(r'^[0-9OIS]{1,2}$', caseSensitive: false);
+  final numeric = RegExp(r'^[0-9OoIiLl|ZzSsGB]{1,2}$', caseSensitive: false);
   final angles = tokens
       .where(
         (t) =>
