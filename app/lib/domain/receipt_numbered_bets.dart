@@ -82,7 +82,7 @@ List<ReceiptToken> _markers(List<ReceiptToken> tokens) {
 }
 
 // This parser is used only for a crop to the right of a known N/E marker.
-// O/o has no alphabetic meaning in that numeric-only region.
+// Look-alikes are normalized only in that numeric-only region.
 ({List<int>? values, List<ValueEvidence> evidence}) _lineReading(
   OcrFrame frame,
   BetCrop crop,
@@ -97,10 +97,10 @@ List<ReceiptToken> _markers(List<ReceiptToken> tokens) {
     }
     raw = marker[3]!;
   }
-  final normalized = raw.replaceAll(RegExp('[Oo]'), '0');
-  final values = NeLineDigits.parse(normalized, stars: crop.kind == 'E');
+  final normalized = NeLineDigits.normalize(raw);
+  if (normalized == null) return (values: null, evidence: <ValueEvidence>[]);
+  final values = NeLineDigits.parse(normalized.digits, stars: crop.kind == 'E');
   if (values == null) return (values: null, evidence: <ValueEvidence>[]);
-  final digits = raw.replaceAll(RegExp(r'\s+'), '');
   return (
     values: values,
     evidence: [
@@ -109,12 +109,11 @@ List<ReceiptToken> _markers(List<ReceiptToken> tokens) {
           crop.kind!,
           i,
           values[i],
-          digits.substring(i * 2, i * 2 + 2),
+          normalized.observed[i * 2] + normalized.observed[i * 2 + 1],
           pass,
-          correction:
-              RegExp('[Oo]').hasMatch(digits.substring(i * 2, i * 2 + 2))
-              ? 'O→0 em linha numérica'
-              : null,
+          correction: normalized.notes.sublist(i * 2, i * 2 + 2).every((n) => n == null)
+              ? null
+              : normalized.notes.sublist(i * 2, i * 2 + 2).whereType<String>().join('; '),
           betIndex: crop.index,
           bounds: crop.box,
         ),
@@ -271,6 +270,8 @@ Future<MultiPassResult?> recoverNumberedBets({
         kind: kind,
         deskewDegrees: horizontalReceiptAngle(n.angle),
       );
+      List<int>? pending;
+      List<ValueEvidence> pendingEvidence = [];
       for (final scale in [1.0, 2.0]) {
         final pass = 'numbered-line-${row.index}-$kind@${scale.toInt()}x';
         final timer = Stopwatch()..start();
@@ -281,6 +282,15 @@ Future<MultiPassResult?> recoverNumberedBets({
           );
           final reading = _lineReading(frame, crop, pass);
           if (reading.values == null) continue;
+          final ambiguous = reading.evidence.any((v) => NeLineDigits.needsConfirmation(v.raw));
+          if (pending != null) {
+            if (pending.join(',') != reading.values!.join(',')) continue;
+            evidence.addAll(pendingEvidence);
+          } else if (ambiguous) {
+            pending = reading.values;
+            pendingEvidence = reading.evidence;
+            continue;
+          }
           (kind == 'N' ? numbers : stars).addAll(reading.values!);
           evidence.addAll(reading.evidence);
           break;
