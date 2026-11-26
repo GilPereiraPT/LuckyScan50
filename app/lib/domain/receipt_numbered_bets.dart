@@ -111,9 +111,14 @@ List<ReceiptToken> _markers(List<ReceiptToken> tokens) {
           values[i],
           normalized.observed[i * 2] + normalized.observed[i * 2 + 1],
           pass,
-          correction: normalized.notes.sublist(i * 2, i * 2 + 2).every((n) => n == null)
+          correction: normalized.notes
+              .sublist(i * 2, i * 2 + 2)
+              .every((n) => n == null)
               ? null
-              : normalized.notes.sublist(i * 2, i * 2 + 2).whereType<String>().join('; '),
+              : normalized.notes
+                    .sublist(i * 2, i * 2 + 2)
+                    .whereType<String>()
+                    .join('; '),
           betIndex: crop.index,
           bounds: crop.box,
         ),
@@ -282,7 +287,9 @@ Future<MultiPassResult?> recoverNumberedBets({
           );
           final reading = _lineReading(frame, crop, pass);
           if (reading.values == null) continue;
-          final ambiguous = reading.evidence.any((v) => NeLineDigits.needsConfirmation(v.raw));
+          final ambiguous = reading.evidence.any(
+            (v) => NeLineDigits.needsConfirmation(v.raw),
+          );
           if (pending != null) {
             if (pending.join(',') != reading.values!.join(',')) continue;
             evidence.addAll(pendingEvidence);
