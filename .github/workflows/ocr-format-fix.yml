@@ -1,0 +1,40 @@
+name: OCR Dart formatting repair
+on:
+  push:
+    branches:
+      - fix/ocr-numeric-tolerance-20261126
+    paths:
+      - .github/workflows/ocr-format-fix.yml
+permissions:
+  contents: write
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/ocr-numeric-tolerance-20261126
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.35.7'
+          channel: stable
+      - name: Format and validate
+        working-directory: app
+        run: |
+          flutter pub get
+          dart format lib/domain/receipt_cell_recovery.dart lib/domain/receipt_ne_lines.dart lib/domain/receipt_numbered_bets.dart test/receipt_numeric_line_test.dart
+          dart format --output=none --set-exit-if-changed lib test ../qa/android/integration_test ../qa/android/test_driver ../qa/host
+      - name: Publish formatting only
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/lib/domain/receipt_cell_recovery.dart app/lib/domain/receipt_ne_lines.dart app/lib/domain/receipt_numbered_bets.dart app/test/receipt_numeric_line_test.dart
+          if ! git diff --cached --quiet; then
+            git commit -m "Apply official Dart formatter to OCR changes"
+            git push origin HEAD:fix/ocr-numeric-tolerance-20261126
+          fi
+      - name: Analyze and test formatted source
+        working-directory: app
+        run: |
+          flutter analyze
+          flutter test
