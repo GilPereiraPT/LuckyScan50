@@ -22,10 +22,9 @@ class ResultsSyncSummary {
       final imported = changedDraws > 0
           ? '$changedDraws resultado(s) novo(s) ou corrigido(s). '
           : '';
-      return imported +
-          'Consulta concluída, mas faltam resultados para '
-              '${pendingDraws.length} concurso(s) dos seus bilhetes: '
-              '$example$suffix.';
+      return '${imported}Consulta concluída, mas faltam resultados para '
+          '${pendingDraws.length} concurso(s) dos seus bilhetes: '
+          '$example$suffix.';
     }
     if (unconfirmedPrizes > 0) {
       return 'Consulta concluída, mas há '
