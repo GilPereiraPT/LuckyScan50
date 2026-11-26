@@ -111,9 +111,8 @@ List<ReceiptToken> _markers(List<ReceiptToken> tokens) {
           values[i],
           normalized.observed[i * 2] + normalized.observed[i * 2 + 1],
           pass,
-          correction: normalized.notes
-              .sublist(i * 2, i * 2 + 2)
-              .every((n) => n == null)
+          correction:
+              normalized.notes.sublist(i * 2, i * 2 + 2).every((n) => n == null)
               ? null
               : normalized.notes
                     .sublist(i * 2, i * 2 + 2)

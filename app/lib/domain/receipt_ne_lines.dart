@@ -42,7 +42,8 @@ class NeLineDigits {
     'B': '8',
   };
   static const _noise = {'.', ',', ':', ';', "'", '`', '"', '-', '_', '~'};
-  static bool needsConfirmation(String raw) => RegExp(r'[|ZzGBL]').hasMatch(raw);
+  static bool needsConfirmation(String raw) =>
+      RegExp(r'[|ZzGBL]').hasMatch(raw);
 
   static ({String digits, List<String> observed, List<String?> notes})?
   normalize(String source) {

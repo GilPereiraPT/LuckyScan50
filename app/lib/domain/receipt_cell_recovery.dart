@@ -171,9 +171,10 @@ Future<MultiPassResult> recoverReceiptCells({
             values[i],
             normalized.observed.sublist(i * 2, i * 2 + 2).join(),
             'line-$index-$kind@1x',
-            correction: normalized.notes
-                .sublist(i * 2, i * 2 + 2)
-                .every((n) => n == null)
+            correction:
+                normalized.notes
+                    .sublist(i * 2, i * 2 + 2)
+                    .every((n) => n == null)
                 ? null
                 : normalized.notes
                       .sublist(i * 2, i * 2 + 2)
