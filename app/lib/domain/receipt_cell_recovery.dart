@@ -159,7 +159,9 @@ Future<MultiPassResult> recoverReceiptCells({
       );
       final frame = await read(entire, 1, 'line-$index-$kind@1x');
       if (frame == null) continue;
-      final values = NeLineDigits.parse(frame.text.trim(), stars: kind == 'E');
+      final normalized = NeLineDigits.normalize(frame.text.trim());
+      if (normalized == null) continue;
+      final values = NeLineDigits.parse(normalized.digits, stars: kind == 'E');
       if (values == null) continue;
       for (var i = 0; i < values.length; i++) {
         observations.add(
@@ -167,8 +169,11 @@ Future<MultiPassResult> recoverReceiptCells({
             kind,
             i,
             values[i],
-            values[i].toString().padLeft(2, '0'),
+            normalized.observed.sublist(i * 2, i * 2 + 2).join(),
             'line-$index-$kind@1x',
+            correction: normalized.notes.sublist(i * 2, i * 2 + 2).every((n) => n == null)
+                ? null
+                : normalized.notes.sublist(i * 2, i * 2 + 2).whereType<String>().join('; '),
             betIndex: index,
             bounds: parts[i].box,
             // Full-line reading remains one ML Kit observation, not two votes.
@@ -271,7 +276,7 @@ Future<MultiPassResult> recoverReceiptCells({
   }
   if (observations.any((v) => v.correction != null)) {
     warnings.add(
-      'Correções O/0, I/1 ou S/5 apenas em células N/E; confirmar valores assinalados.',
+      'Correções de caracteres semelhantes apenas em células N/E; confirmar valores assinalados.',
     );
   }
   T? keep<T>(T? before, T? after, String label) {
